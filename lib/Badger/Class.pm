@@ -581,6 +581,21 @@ sub get_methods {
     }
 }
 
+sub set_methods {
+    my ($self, $names) = @_;
+    $names = [ $names ] unless ref $names eq ARRAY;
+    $names = [ map { split DELIMITER } @$names ];
+    no strict 'refs';
+    foreach (@$names) {
+        my $name = $_;
+        *{$self->{ name } . '::' . $name} = sub {
+            @_ == 2 
+                ? ($_[0]->{ $name } = $_[1])
+                :  $_[0]->{ $name };
+        };
+    }
+}
+
 
 sub _debug {
     print STDERR @_;

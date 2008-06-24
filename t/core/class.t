@@ -13,7 +13,7 @@
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
-use Test::More tests => 75;
+use Test::More tests => 77;
 
 our $DEBUG= $Badger::Class::DEBUG = grep(/^-d/, @ARGV);
 
@@ -345,6 +345,7 @@ sub init {
 
 class->method( hello => sub { 'hello world' } );
 class->get_methods('foo bar');
+class->set_methods('wiz');
 
 package main;
 
@@ -352,6 +353,9 @@ is( Test::Method1->hello, 'hello world', 'method() test' );
 my $t1 = Test::Method1->new( foo => 'Hello', bar => 'World' );
 is( $t1->foo, 'Hello', 'generated foo get method' );
 is( $t1->bar, 'World', 'generated bar get method' );
+
+is( $t1->wiz('waz'), 'waz', 'set wiz' );
+is( $t1->wiz, 'waz', 'get wiz' );
 
 __END__
 
