@@ -35,10 +35,14 @@ use constant {
     NONE            => 'none',       # used to disable various things
     DEFAULT         => 'default',    # used to explicitly select the default option
     CRLF            => "\015\012",   # unambiguous CR+LF sequence
+
+    # match a comma or whitespace
+    DELIMITER       => qr/(?:,\s*)|\s+/,
+
 };
 
 CONSTANTS->export_any(qw( 
-    CONSTANTS LAST OFF ON ALL NONE DEFAULT CRLF
+    CONSTANTS LAST OFF ON ALL NONE DEFAULT CRLF DELIMITER
 ));
 
 CONSTANTS->export_tags({

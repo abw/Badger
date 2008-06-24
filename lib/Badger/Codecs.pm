@@ -21,14 +21,13 @@ use Badger::Class
     base      => 'Badger::Prototype Badger::Exporter',
     utils     => 'UTILS',
     import    => 'class',
-    constants => 'HASH ARRAY',
+    constants => 'HASH ARRAY DELIMITER',
     constant  => {
         CODECS        => 'CODECS',
         CODEC_BASE    => 'CODEC_BASE',
         CODEC_METHOD  => 'codec',
         ENCODE_METHOD => 'encode',
         DECODE_METHOD => 'decode',
-        DELIMITER     => qr/(?:,\s*)|\s+/,
     };
 
 our $CODEC_BASE = ['Badger::Codec'];

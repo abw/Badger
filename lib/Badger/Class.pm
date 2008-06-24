@@ -16,7 +16,7 @@ package Badger::Class;
 use strict;
 use warnings;
 use base 'Badger::Exporter';
-use Badger::Constants;
+use Badger::Constants qw( DELIMITER ARRAY );
 use Badger::Utils 'load_module';
 use Carp;
 use constant {
@@ -31,7 +31,6 @@ use overload
 
 our $VERSION    = 0.01;
 our $DEBUG      = 0 unless defined $DEBUG;
-our $DELIMITER  = qr/(?:,\s*)|\s+/;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
     base version debug constant constants exports throws messages utils
@@ -277,7 +276,7 @@ sub base {
     my ($self, $bases) = @_;
     my $pkg = $self->{ name };
     $bases = [ $bases ] unless ref $bases eq 'ARRAY';
-    $bases = [ map { split $DELIMITER } @$bases ];
+    $bases = [ map { split DELIMITER } @$bases ];
     my @load;
     while (my $base = shift @$bases) {
         no strict 'refs';
@@ -419,7 +418,7 @@ sub debugging {
 sub constants {
     my $self = shift;
     my $constants = @_ == 1 ? shift : { @_ };
-    $constants = [ split($DELIMITER, $constants) ] 
+    $constants = [ split(DELIMITER, $constants) ] 
         unless ref $constants eq 'ARRAY';
     CONSTANTS->export($self->{ name }, @$constants);
 }
@@ -439,7 +438,7 @@ sub constant {
     # split string into pairs of assignments, e.g. "foo=bar, baz=bam"
     $constants = {
         map { split /\s*=>?\s*/ }
-        split($DELIMITER, $constants)
+        split(DELIMITER, $constants)
     } unless ref $constants eq 'HASH';
     
     
@@ -522,8 +521,8 @@ sub utils {
     my $self = shift;
     my $syms = @_ == 1 ? shift : { @_ };
     my $pkg  = $self->{ name };
-    $syms = [ split($DELIMITER, $syms) ] 
-        unless ref $syms eq 'ARRAY';
+    $syms = [ split(DELIMITER, $syms) ] 
+        unless ref $syms eq ARRAY;
 
 #    _debug("utils for $pkg from ", ref $self, "\n");
     $self->load_utils;
@@ -567,6 +566,19 @@ sub method {
     my ($self, $name, $code) = @_;
     no strict 'refs';
     *{$self->{ name } . '::' . $name} = $code;
+}
+
+sub get_methods {
+    my ($self, $names) = @_;
+    $names = [ $names ] unless ref $names eq ARRAY;
+    $names = [ map { split DELIMITER } @$names ];
+    no strict 'refs';
+    foreach (@$names) {
+        my $name = $_;
+        *{$self->{ name } . '::' . $name} = sub {
+            $_[0]->{ $name };
+        };
+    }
 }
 
 

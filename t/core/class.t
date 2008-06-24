@@ -13,7 +13,7 @@
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
-use Test::More tests  => 73;
+use Test::More tests => 75;
 
 our $DEBUG= $Badger::Class::DEBUG = grep(/^-d/, @ARGV);
 
@@ -332,13 +332,26 @@ is( $dec, 'Hello World', 'decoded base64' );
 #-----------------------------------------------------------------------
 
 package Test::Method1;
-use Badger::Class 'class';
+use Badger::Class 
+    base   => 'Badger::Base',
+    import => 'class';
+
+sub init {
+    my ($self, $config) = @_;
+    $self->{ foo } = $config->{ foo };
+    $self->{ bar } = $config->{ bar };
+    return $self;
+}
 
 class->method( hello => sub { 'hello world' } );
+class->get_methods('foo bar');
 
 package main;
 
 is( Test::Method1->hello, 'hello world', 'method() test' );
+my $t1 = Test::Method1->new( foo => 'Hello', bar => 'World' );
+is( $t1->foo, 'Hello', 'generated foo get method' );
+is( $t1->bar, 'World', 'generated bar get method' );
 
 __END__
 
