@@ -13,7 +13,7 @@
 
 use strict;
 use warnings;
-use lib qw( ./lib ../lib ../../lib );
+use lib qw( ./t/codec/lib ./codec/lib ./lib ../lib ../../lib );
 use Badger::Codecs;
 use Test::More tests => 33;
 use constant CODECS => 'Badger::Codecs';
