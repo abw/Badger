@@ -556,6 +556,20 @@ sub codecs {
     CODECS->export_codecs($self->{ name }, shift);
 }
 
+
+#-----------------------------------------------------------------------
+# method($name, $code)
+#
+# Method to define a method.
+#-----------------------------------------------------------------------
+
+sub method {
+    my ($self, $name, $code) = @_;
+    no strict 'refs';
+    *{$self->{ name } . '::' . $name} = $code;
+}
+
+
 sub _debug {
     print STDERR @_;
 }

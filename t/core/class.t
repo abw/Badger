@@ -13,7 +13,7 @@
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
-use Test::More tests  => 72;
+use Test::More tests  => 73;
 
 our $DEBUG= $Badger::Class::DEBUG = grep(/^-d/, @ARGV);
 
@@ -325,6 +325,20 @@ is( $enc, "SGVsbG8gV29ybGQ=\n", 'encoded base64' );
 
 my $dec = decode($enc);
 is( $dec, 'Hello World', 'decoded base64' );
+
+
+#-----------------------------------------------------------------------
+# test method() method
+#-----------------------------------------------------------------------
+
+package Test::Method1;
+use Badger::Class 'class';
+
+class->method( hello => sub { 'hello world' } );
+
+package main;
+
+is( Test::Method1->hello, 'hello world', 'method() test' );
 
 __END__
 
