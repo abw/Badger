@@ -74,20 +74,18 @@ __PACKAGE__->export_any('class', 'classes');
 
 # define custom hooks for load options
 __PACKAGE__->export_hooks({
-    map {
-        my $item = $_;
-        $item => sub {
-            my ($class, $target, $key, $symbols, $import) = @_;
-            croak "You didn't specify a value for the '$item' load option."
-                unless @$symbols;
-            # make sure we forward the $class to class() so this module can 
-            # be subclassed (e.g. Badger::Web::Class)
-            class($target, $class)->$item(shift @$symbols);
-        }
-    }
-    @HOOKS
+    map { ($_ => \&export_hook) } @HOOKS
 });
 
+sub export_hook {
+    my ($class, $target, $key, $symbols, $import) = @_;
+    croak "You didn't specify a value for the '$key' load option."
+        unless @$symbols;
+    # make sure we forward the $class to class() so this module can 
+    # be subclassed (e.g. Badger::Web::Class)
+    class($target, $class)->$key(shift @$symbols);
+}
+    
 sub export {
     my ($class, $package, @args) = @_;
     no strict 'refs';
