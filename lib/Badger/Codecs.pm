@@ -1,0 +1,478 @@
+#========================================================================
+#
+# Badger::Codecs
+#
+# DESCRIPTION
+#   Manager of Badger::Codec modules for encoding and decoding data.
+#
+# AUTHOR
+#   Andy Wardley   <abw@wardley.org>
+#
+#========================================================================
+
+package Badger::Codecs;
+
+use Carp;
+use Badger::Codec::Chain 
+    qw( CHAIN CHAINED );
+use Badger::Class
+    version   => 0.01,
+    debug     => 0,
+    base      => 'Badger::Prototype Badger::Exporter',
+    utils     => 'UTILS',
+    import    => 'class',
+    constants => 'HASH ARRAY',
+    constant  => {
+        CODECS        => 'CODECS',
+        CODEC_BASE    => 'CODEC_BASE',
+        CODEC_METHOD  => 'codec',
+        ENCODE_METHOD => 'encode',
+        DECODE_METHOD => 'decode',
+        DELIMITER     => qr/(?:,\s*)|\s+/,
+    };
+
+our $CODEC_BASE = ['Badger::Codec'];
+our $CODECS     = {
+    # any codecs with non-standard capitalisation can go here, but 
+    # generally we grok the module name from the $CODEC_BASE, e.g.
+    #    url      => 'Badger::Codec::URL',
+    #    base64   => 'Badger::Codec::Base64',
+};
+
+sub init {
+    my ($self, $config) = @_;
+    my $class = $self->class;
+    my $base  = $config->{ base };
+    $base = [ $base ] if $base && ref $base ne 'ARRAY';
+    $self->{ base   } = $class->list_vars(CODEC_BASE, $base);
+    $self->{ codecs } = $class->hash_vars(CODECS, $config->{ codecs });
+    return $self;
+}
+    
+sub base {
+    my $self = shift->prototype;
+    return @_ 
+        ? ($self->{ base } = ref $_[0] eq ARRAY ? shift : [ @_ ])
+        :  $self->{ base };
+}
+
+sub codecs {
+    my $self   = shift->prototype;
+    my $codecs = $self->{ codecs };
+    if (@_) {
+        my $args = ref $_[0] eq HASH ? shift : { @_ };
+        @$codecs{ keys %$args } = values %$args;
+    }
+    return $codecs;
+}
+
+sub codec {
+    my $self   = shift->prototype;
+    my $type   = shift; 
+    return $self->chain($type) if $type =~ CHAINED;       # handle chains
+    my $config = @_ && ref $_[0] eq HASH ? shift : { @_ };
+    my $codecs = $self->codecs;
+    my $codec  = $codecs->{ lc $type };
+    
+    if (! defined $codec) {
+        # we haven't got an entry in the $CODECS table so let's try 
+        # autoloading some modules using the $CODEC_BASE
+        $codec = $self->load_codec($type)
+             || return $self->error_msg( not_found => codec => $type );
+        $codec= $codec->new($config);
+    }
+    elsif (ref $codec) {
+        # if we've already got a codec object we can re-use it 
+        # unless we have config options, in which case we create
+        # a new object with the relevant configuration
+        $codec = $codec->new($config) if %$config;
+    }
+    else {
+        # otherwise we load the module and create a new codec object
+        UTILS->load_module($codec);
+        $codec = $codec->new($config);
+    }
+
+    # cache codec object and return
+    return ($codecs->{ lc $type } = $codec);
+}
+
+sub chain {
+    my $self = shift;
+    $self->debug("creating chain for $_[0]\n") if $DEBUG;
+    return CHAIN->new(@_);
+}
+
+sub group {
+    my $self = shift;
+    my $args = ref $_[0] eq HASH ? shift : { @_ };
+    $self->debug("creating group\n") if $DEBUG;
+    $self->todo;
+}
+
+sub load_codec {
+    my $self   = shift->prototype;
+    my $type   = shift;
+    my $bases  = $self->base;
+    my @names  = ($type, ucfirst $type, uc $type);   # foo, Foo, FOO
+    my $loaded = 0;
+    my $module;
+    
+    foreach my $base (@$bases) {
+        foreach my $name (@names) {
+            no strict 'refs';
+            $module = $base . '::' . $name;
+            $self->debug("maybe load $module ?\n") if $DEBUG;
+            # Some filesystems are case-insensitive (like Apple's HFS), so an 
+            # attempt to load Badger::Codec::foo may succeed, when the correct 
+            # package name is actually Badger::Codec::Foo
+            return $module 
+                if ($loaded || UTILS->maybe_load_module($module) && ++$loaded)
+                && @{$module . '::ISA'};
+        }
+    }
+    return $self->error_msg( not_found => codec => $type );
+}
+
+sub encode {
+    shift->codec(shift)->encode(@_);
+}
+
+sub decode {
+    shift->codec(shift)->decode(@_);
+}
+
+
+#-----------------------------------------------------------------------
+# export hooks
+#-----------------------------------------------------------------------
+
+class->exports( 
+    hooks => {
+        map { ($_ => \&export_hook) }
+        qw( codec codecs )
+    }
+);
+
+sub export_hook {
+    my ($class, $target, $key, $symbols) = @_;
+    croak "You didn't specify a value for the '$key' load option."
+        unless @$symbols;
+    my $method = "export_$key";
+    $class->$method($target, shift @$symbols);
+}
+
+sub export_codec {
+    my ($class, $target, $name, $alias) = @_;
+    my $codec   = $class->codec($name);
+    my $cmethod = $alias || CODEC_METHOD;
+    my $emethod = $alias ? join('_', ENCODE_METHOD, $alias) : ENCODE_METHOD;
+    my $dmethod = $alias ? join('_', DECODE_METHOD, $alias) : DECODE_METHOD;
+    no strict 'refs';
+    
+    # prefix target class onto above method names
+    $_= "${target}::$_" for ($cmethod, $emethod, $dmethod);
+    
+    $class->debug("exporting $codec codec to $target\n") if $DEBUG;
+
+    # NOTE: I think it's more correct to attempt the export regardless of 
+    # any existing sub and allow a redefine warning to be raised.  This is
+    # better than silently failing to export the requested items.
+    *{$cmethod} = sub { $codec };   # unless defined &{$cmethod};
+    *{$emethod} = $codec->encoder;  # unless defined &{$emethod};
+    *{$dmethod} = $codec->decoder;  # unless defined &{$dmethod};
+}
+
+sub export_codecs {
+    my ($class, $target, $names) = @_;
+    if (ref $names eq HASH) {
+        while (my ($key, $value) = each %$names) {
+            $class->export_codec($target, $value, $key);
+        }
+    }
+    else {
+        $names = [ split(DELIMITER, $names) ] unless ref $names eq ARRAY;
+        $class->export_codec($target, $_, $_) for @$names;
+    }
+}
+
+1;
+
+
+__END__
+
+=head1 NAME
+
+Badger::Codecs - modules for encoding and decoding data
+
+=head1 SYNOPSIS
+
+    # using class methods
+    use Badger::Codecs;
+    $encoded = Badger::Codecs->encode( base64 => $original );
+    $decoded = Badger::Codecs->decode( base64 => $encoded );
+
+    # creating a single codec object
+    $codec   = Badger::Codecs->codec('base64');
+    $encoded = $codec->encode($original);
+    $decoded = $codec->decode($encoded);
+
+    # creating a codecs collection
+    $codecs  = Badger::Codecs->new(
+        base   => ['My::Codec', 'Badger::Codec'],
+        codecs => {
+            # most codec names are grokked automatigally from the 
+            # base defined above - this hash is for any exceptions
+            wibble  => 'Ferret::Codec::Wibble',
+            frusset => 'Stoat::Codec::Frusset',
+        }
+    );
+    
+    # encode/decode via codecs collective
+    $encoded = $codecs->encode( wibble => $original );
+    $decoded = $codecs->decode( wibble => $encoded );
+    
+    # or via a specific codec
+    $codec   = $codecs->codec('wobble');
+    $encoded = $codec->encode($original);
+    $decoded = $codec->decode($encoded);
+
+    # importing a single codec
+    use Badger::Codecs 
+        codec => 'url';
+    
+    # codec() returns a Badger::Codec::URL object
+    $encoded = codec->encode($text);
+    $decoded = codec->decode($encoded);
+    
+    # encode() and decode() are imported subroutines
+    $encoded = encode($text);
+    $decoded = decode($encoded);
+
+    # import multiple codecs
+    use Badger::Codecs
+        codecs => 'url base64 storable';
+    
+    # codec objects
+    url->encode(...);       url->decode(...);
+    base64->encode(...);    base64->decode(...);
+    storable->encode(...);  storable->decode(...);
+    
+    # imported subroutines
+    encode_url(...);        decode_url(...);
+    encode_base64(...);     decode_base64(...);
+    encode_storable(...);   decode_storable(...);
+
+    # import a codec chain
+    use Badger::Codecs
+        codec => 'storable+base64';
+    
+    # as before, now both codecs are applied
+    codec->encode(...);
+    codec->decode(...); 
+    encode(...); 
+    decode(...)
+
+    # multiple codecs with various options
+    use Badger::Codecs
+        codecs => {
+            link  => 'url+html',
+            str64 => 'storable+base64',
+        };
+    
+    # codec objects
+    link->encode(...);      link->decode(...);
+    str64->encode(...);     str64->decode(...);
+    
+    # subroutines
+    encode_link(...);       decode_link(...);
+    encode_str64(...);      decode_str64(...);
+
+    
+=head1 DESCRIPTION
+
+A I<codec> is an object responsible for encoding and decoding data.
+This module implements a codec manager to locate, load and instantiate
+codec objects.
+
+First you need to load the C<Badger::Codecs> module.
+
+    use Badger::Codecs;
+    
+It can be used in regular OO style by first creating a C<Badger::Codecs>
+object and then calling methods on it.
+
+    my $codecs  = Badger::Codecs->new();
+    my $codec   = $codecs->codec('url');
+    my $encoded = $codec->encode($original);
+    my $decoded = $codec->decode($encoded);
+
+You can also call class methods directly.
+
+    my $codec   = Badger::Codecs->codec('url');
+    my $encoded = $codec->encode($original);
+    my $decoded = $codec->decode($encoded);
+
+Or like this:
+
+    my $encoded = Badger::Codecs->encode(url => $original);
+    my $decoded = Badger::Codecs->decode(url => $encoded);
+
+These examples are the equivalent of:
+
+    use Badger::Codec::URL;
+    my $codec   = Badger::Codec::URL->new;
+    my $encoded = $codec->encode($original);
+    my $decoded = $codec->decode($encoded);
+
+C<Badger::Codecs> will do its best to locate and load the correct codec 
+module for you.  It defines a base module (C<Badger::Codec> by default)
+to which the name of the requested codec is appended in various forms.
+
+It first tries the name exactly as specified.  If no corresponding codec
+module is found then it tries a capitalised version of the name, followed
+by an upper case version of the name.  So if you ask for a C<foo> codec,
+then you'll get back a C<Badger::Codec::foo>, C<Badger::Codec::Foo>,
+C<Badger::Codec::FOO> or an error will be thrown if none of thise can be
+found.
+
+    my $codec = Badger::Codecs->code('url');
+        # tries: Badger::Codec + url = Badger::Codec::url   # Nope
+        # tries: Badger::Codec + Url = Badger::Codec::Url   # Nope
+        # tries: Badger::Codec + URL = Badger::Codec::URL   # Yay!
+
+=head1 METHODS
+
+=head2 new()
+
+Constructor method to create a new C<Badger::Codecs> object.
+
+    my $codecs  = Badger::Codecs->new();
+    my $encoded = $codecs->encode( url => $source );
+
+=head3 Configuration Options
+
+=head4 base
+
+This option can be used to specify the name(s) of one or more modules which
+define a search path for codec modules. The default value is C<Badger::Codec>.
+
+    my $codecs = Badger::Codecs->new( 
+        base => 'My::Codec' 
+    );
+    my $codec = $codecs->codec('Foo');      # My::Codec::Foo
+
+Multiple paths can be specified using a reference to a list.
+
+    my $codecs = Badger::Codecs->new( 
+        base => ['My::Codec', 'Badger::Codec'],
+    );
+    my $codec = $codecs->codec('Bar');      # either My::Codec::Bar
+                                            # or Badger::Codec::Bar
+
+=head4 codecs
+
+The C<codecs> configuration option can be used to define specific codec
+mappings to bypass the automagical name grokking mechanism described 
+in L</base> above.
+
+    my $codecs = Badger::Codecs->new( 
+        codecs => {
+            foo => 'Ferret::Codec::Foo', 
+            bar => 'Stoat::Codec::Bar',
+        },
+    );
+    my $codec = $codecs->codec('foo');      # Ferret::Codec::Foo
+
+=head2 encode($type, $data)
+
+All-in-one method for encoding data via a particular codec.
+
+    # class method
+    Badger::Codecs->encode( url => $source );
+    
+    # object method
+    my $codec = Badger::Codecs->new();
+    $codec->encode( url => $source );
+
+=head2 decode($type, $data)
+
+All-in-one method for decoding data via a particular codec.
+
+    # class method
+    Badger::Codecs->decode( url => $encoded );
+    
+    # object method
+    my $codec = Badger::Codecs->new();
+    $codec->decode( url => $encoded );
+
+=head2 codec($type, %config)
+
+Creates and returns a C<Badger::Codec> object for the specified
+C<$type>.  Any additional arguments are forwarded to the codec's 
+constructor method.
+
+    my $codec   = Badger::Codecs->codec('html');
+    my $encoded = $codec->encode('<foo>hello</foo>');
+    my $decoded = $codec->decode($encoded);
+
+If the named codec cannot be found then an error is thrown.
+
+=head2 base(@modules)
+
+The L<base()> method can also be used to set the base module path.  It
+can be called as an object or class method.
+
+    # object method
+    my $codecs = Badger::Codecs->new;
+    $codecs->base('My::Codec');
+    $codecs->encode( Foo => $data );            # My::Codec::Foo
+    
+    # class method
+    Badger::Codecs->base('My::Codec');
+    Badger::Codecs->encode( Foo => $data );     # My::Codec::Foo
+
+Multiple items can be specified as a list of arguments or by reference 
+to a list.
+
+    $codecs->base('Ferret::Codec', 'Stoat::Codec');     
+    $codecs->base(['Ferret::Codec', 'Stoat::Codec']);
+
+=head2 codecs(\%new_codecs)
+
+The L<codecs()> method can be used to add specific codec mappings
+to the internal C<codecs> lookup table.  It can be called as an object
+method or a class method.
+
+    # object method
+    $codecs->codecs(
+        wam => 'Ferret::Codec::Wam', 
+        bam => 'Stoat::Codec::Bam',
+    );
+    my $codec = $codecs->codec('wam');          # Ferret::Codec::Wam
+    
+    # class method
+    Badger::Codecs->codecs(
+        wam => 'Ferret::Codec::Wam', 
+        bam => 'Stoat::Codec::Bam',
+    );
+    my $codec = Badger::Codecs->codec('bam');   # Stoat::Codec::Bam
+
+=head1 AUTHOR
+
+Andy Wardley E<lt>abw@wardley.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2005-2008 Andy Wardley. All rights reserved.
+
+=cut
+
+# Local Variables:
+# mode: Perl
+# perl-indent-level: 4
+# indent-tabs-mode: nil
+# End:
+#
+# vim: expandtab shiftwidth=4:
+
