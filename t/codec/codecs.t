@@ -15,7 +15,7 @@ use strict;
 use warnings;
 use lib qw( ./t/codec/lib ./codec/lib ./lib ../lib ../../lib );
 use Badger::Codecs;
-use Test::More tests => 33;
+use Test::More tests => 34;
 use constant CODECS => 'Badger::Codecs';
 $Badger::Codecs::DEBUG = grep(/^-d/, @ARGV);
 
@@ -179,6 +179,14 @@ is( $dec->{ message }, $hello, 'integrity check' );
 
 is( decode(encode($data))->{ message }, 
     $hello, 'transcoded via storable+base64 encode/decode subs' );
+
+is( Badger::Codecs->decode( 
+        'storable+base64' => Badger::Codecs->encode(
+            'storable+base64' => $data
+        )
+    )->{ message }, 
+    $hello, 'transcoded via storable+base64 encode/decode subs' );
+
 
 
 #-----------------------------------------------------------------------

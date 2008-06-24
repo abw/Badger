@@ -103,13 +103,6 @@ sub chain {
     return CHAIN->new(@_);
 }
 
-sub group {
-    my $self = shift;
-    my $args = ref $_[0] eq HASH ? shift : { @_ };
-    $self->debug("creating group\n") if $DEBUG;
-    $self->todo;
-}
-
 sub load_codec {
     my $self   = shift->prototype;
     my $type   = shift;
@@ -178,7 +171,7 @@ sub export_codec {
     # NOTE: I think it's more correct to attempt the export regardless of 
     # any existing sub and allow a redefine warning to be raised.  This is
     # better than silently failing to export the requested items.
-    *{$cmethod} = sub { $codec };   # unless defined &{$cmethod};
+    *{$cmethod} = sub() { $codec }; # unless defined &{$cmethod};
     *{$emethod} = $codec->encoder;  # unless defined &{$emethod};
     *{$dmethod} = $codec->decoder;  # unless defined &{$dmethod};
 }
@@ -233,7 +226,7 @@ Badger::Codecs - modules for encoding and decoding data
     $decoded = $codecs->decode( wibble => $encoded );
     
     # or via a specific codec
-    $codec   = $codecs->codec('wobble');
+    $codec   = $codecs->codec('wibble');
     $encoded = $codec->encode($original);
     $decoded = $codec->decode($encoded);
 
@@ -251,15 +244,13 @@ Badger::Codecs - modules for encoding and decoding data
 
     # import multiple codecs
     use Badger::Codecs
-        codecs => 'url base64 storable';
+        codecs => 'base64 storable';
     
     # codec objects
-    url->encode(...);       url->decode(...);
     base64->encode(...);    base64->decode(...);
     storable->encode(...);  storable->decode(...);
     
     # imported subroutines
-    encode_url(...);        decode_url(...);
     encode_base64(...);     decode_base64(...);
     encode_storable(...);   decode_storable(...);
 
@@ -288,6 +279,17 @@ Badger::Codecs - modules for encoding and decoding data
     encode_link(...);       decode_link(...);
     encode_str64(...);      decode_str64(...);
 
+    # accessing codecs via Badger::Class
+    use Badger::Class 
+        codec => 'base64';
+
+    codec(); encode(...); decode(...);      # as above
+    
+    use Badger::Class 
+        codecs => 'base64 storable';
+    
+    base64();   encode_base64(...);    decode_base64(...);
+    storable(); encode_storable(...);  decode_storable(...);
     
 =head1 DESCRIPTION
 
@@ -333,7 +335,7 @@ It first tries the name exactly as specified.  If no corresponding codec
 module is found then it tries a capitalised version of the name, followed
 by an upper case version of the name.  So if you ask for a C<foo> codec,
 then you'll get back a C<Badger::Codec::foo>, C<Badger::Codec::Foo>,
-C<Badger::Codec::FOO> or an error will be thrown if none of thise can be
+C<Badger::Codec::FOO> or an error will be thrown if none of these can be
 found.
 
     my $codec = Badger::Codecs->code('url');
@@ -373,8 +375,7 @@ Multiple paths can be specified using a reference to a list.
 =head4 codecs
 
 The C<codecs> configuration option can be used to define specific codec
-mappings to bypass the automagical name grokking mechanism described 
-in L</base> above.
+mappings to bypass the automagical name grokking mechanism.
 
     my $codecs = Badger::Codecs->new( 
         codecs => {
@@ -392,8 +393,8 @@ All-in-one method for encoding data via a particular codec.
     Badger::Codecs->encode( url => $source );
     
     # object method
-    my $codec = Badger::Codecs->new();
-    $codec->encode( url => $source );
+    my $codecs = Badger::Codecs->new();
+    $codecs->encode( url => $source );
 
 =head2 decode($type, $data)
 
@@ -403,8 +404,8 @@ All-in-one method for decoding data via a particular codec.
     Badger::Codecs->decode( url => $encoded );
     
     # object method
-    my $codec = Badger::Codecs->new();
-    $codec->decode( url => $encoded );
+    my $codecs = Badger::Codecs->new();
+    $codecs->decode( url => $encoded );
 
 =head2 codec($type, %config)
 
@@ -412,15 +413,15 @@ Creates and returns a C<Badger::Codec> object for the specified
 C<$type>.  Any additional arguments are forwarded to the codec's 
 constructor method.
 
-    my $codec   = Badger::Codecs->codec('html');
-    my $encoded = $codec->encode('<foo>hello</foo>');
+    my $codec   = Badger::Codecs->codec('storable');
+    my $encoded = $codec->encode($original);
     my $decoded = $codec->decode($encoded);
 
 If the named codec cannot be found then an error is thrown.
 
 =head2 base(@modules)
 
-The L<base()> method can also be used to set the base module path.  It
+The L<base()> method can be used to set the base module path.  It
 can be called as an object or class method.
 
     # object method
@@ -457,6 +458,82 @@ method or a class method.
         bam => 'Stoat::Codec::Bam',
     );
     my $codec = Badger::Codecs->codec('bam');   # Stoat::Codec::Bam
+
+=head1 CHAINED CODECS
+
+Codecs can be chained together in sequence. Specify the names of the
+individual codes separated by C<+> characters. Whitespace between the names
+and C<+> is optional. The codec chain returned (L<Badger::Codec::Chain>)
+behaves exactly like any other codec. The only difference being that it
+is apply several codecs in sequence.
+
+    my $codec = Badger::Codecs->codec('storable+base64');
+    $encoded = $codec->encode($data);       # encode storable then base64
+    $decoded = $codec->decode($encoded);    # decode base64 then storable
+
+Note that the decoding process for a chain happens in reverse order
+to ensure that a round trip between L<encode()> and L<decode()> returns
+the original unencoded data.
+
+=head1 IMPORT HOOKS
+
+The C<codec> and C<codecs> import hooks can be used to load and define
+codec subroutines into another module.
+
+    package My::Module;
+    
+    use Badger::Codecs
+        codec => 'base64';
+
+The C<codec> import hook defines a C<codec()> subroutine which returns a 
+reference to a codec object.  It also defined C<encode()> and C<decode()>
+subroutines which are mapped to the codec.
+
+    # using the codec reference
+    $encoded = codec->encode($original);
+    $decoded = codec->decode($encoded);
+
+    # using the encode/decode subs
+    $encoded = encode($original);
+    $decoded = decode($encoded);
+
+The C<codecs> import hook allows you to define several codecs at once. A
+subroutine is generated to reference each codec, along with encoding and
+decoding subroutines.
+
+    use Badger::Codecs
+        codecs => 'base64 storable';
+
+    # codec objects
+    $encoded = base64->encode($original);
+    $decoded = base64->decode($encoded);
+    $encoded = storable->encode($original);
+    $decoded = storable->decode($encoded);
+    
+    # imported subroutines
+    $encoded = encode_base64($original);
+    $decoded = decode_base64($encoded);
+    $encoded = encode_storable($original);
+    $decoded = decode_storable($encoded);
+
+You can define alternate names for codecs by providing a reference to a
+hash array.
+
+    use Badger::Codecs
+        text => 'base64',
+        data => 'storable+base64';
+    
+    # codec objects
+    $encoded = text->encode($original);
+    $decoded = text->decode($encoded);
+    $encoded = data->encode($original);
+    $decoded = data->decode($encoded);
+
+    # imported subroutines
+    $encoded = encode_text($original);
+    $decoded = decode_text($encoded);
+    $encoded = encode_data($original);
+    $decoded = decode_data($encoded);
 
 =head1 AUTHOR
 

@@ -13,7 +13,7 @@
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
-use Test::More tests  => 70;
+use Test::More tests  => 72;
 
 our $DEBUG= $Badger::Class::DEBUG = grep(/^-d/, @ARGV);
 
@@ -312,6 +312,19 @@ is( $bot->id, 'class.bottom', 'bot id' );
 is( $mid->id, 'class.middle', 'mid id' );
 is( $top->id, 'class.top', 'top id' );
 
+#-----------------------------------------------------------------------
+# test codec/codecs
+#-----------------------------------------------------------------------
+
+package Test::Codec1;
+use Test::More;
+use Badger::Class codec => 'base64';
+
+my $enc = encode('Hello World');
+is( $enc, "SGVsbG8gV29ybGQ=\n", 'encoded base64' );
+
+my $dec = decode($enc);
+is( $dec, 'Hello World', 'decoded base64' );
 
 __END__
 

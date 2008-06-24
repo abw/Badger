@@ -22,6 +22,7 @@ use Carp;
 use constant {
     CONSTANTS => 'Badger::Constants',
     EXPORTER  => 'Badger::Exporter',
+    CODECS    => 'Badger::Codecs',
     UTILS     => 'Badger::Utils',
 };
 use overload 
@@ -34,6 +35,7 @@ our $DELIMITER  = qr/(?:,\s*)|\s+/;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
     base version debug constant constants exports throws messages utils
+    codec codecs
 );
 
 
@@ -534,6 +536,25 @@ sub load_utils {
     # ick! we have to use the real module name if we want to use 'require'...
     require Badger::Utils;
 }    
+
+#-----------------------------------------------------------------------
+# codec($name)
+# codecs($names)
+#
+# Method to export codec(s) from Badger::Codecs.
+#-----------------------------------------------------------------------
+
+sub codec {
+    my $self = shift;
+    require Badger::Codecs;   # more ick! why bother with CODECS?
+    CODECS->export_codec($self->{ name }, shift);
+}
+
+sub codecs {
+    my $self = shift;
+    require Badger::Codecs;   # more ick! why bother with CODECS?
+    CODECS->export_codecs($self->{ name }, shift);
+}
 
 sub _debug {
     print STDERR @_;
