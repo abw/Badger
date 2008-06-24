@@ -34,10 +34,11 @@ use constant {
     ALL             => 'all',        # used to enable various things
     NONE            => 'none',       # used to disable various things
     DEFAULT         => 'default',    # used to explicitly select the default option
+    CRLF            => "\015\012",   # unambiguous CR+LF sequence
 };
 
 CONSTANTS->export_any(qw( 
-    CONSTANTS LAST OFF ON ALL NONE DEFAULT
+    CONSTANTS LAST OFF ON ALL NONE DEFAULT CRLF
 ));
 
 CONSTANTS->export_tags({
