@@ -23,9 +23,6 @@ use Badger::Class
     get_methods  => 'path name volume directory',
     utils        => 'blessed',
     constant     => {
-        FILESPEC     => 'File::Spec',
-        DOTDOT       =>  File::Spec->updir(),
-        DOT          =>  File::Spec->curdir(),
         is_file      => 0,
         is_directory => 0,
         type         => 'Path',
@@ -67,7 +64,7 @@ class->methods(
 # define some aliases
 *is_dir = \&is_directory;
 *dir    = \&directory;
-*vol    = \&volume;
+*vol    = \&volume;     # goes up to 11
 *up     = \&parent;
 
 
@@ -114,16 +111,24 @@ sub parent {
     my $self   = shift;
     my $skip   = shift || 0;
     my $parent = $self->{ parent } 
-        ||= $self->{ directory }
+        ||=  $self->{ directory }
             ? $self->filesystem->dir($self->{ directory })
             : $self->filesystem->cwd;
-    return $skip
-        ? $parent->parent($skip - 1)
-        : $parent;
+
+    return 
+        # don't both returning parents above the root
+        $self->{ path } eq $parent->{ path } ? $self
+        # delegate to parent if there are generations to skip
+      : $skip ? $parent->parent($skip - 1)
+        # otherwise we've found the parent we're looking for
+      : $parent;
 }
 
 sub is_absolute {
-    FILESPEC->file_name_is_absolute($_[0]->{ path });
+    my $self = shift;
+    $self->{ absolute } = $self->filesystem->path_is_absolute($self->{ path })
+        unless defined $self->{ absolute };
+    return $self->{ absolute };
 }
 
 sub is_relative {
@@ -134,32 +139,21 @@ sub absolute {
     my $self = shift;
     return $self->is_absolute
          ? $self
-         : $self->new( FILESPEC->rel2abs($self->{ path }) );
+         : $self->new( $self->filesystem->make_absolute($self->{ path }) );
 }
 
 sub relative {
     my $self = shift;
-    return $self->new( FILESPEC->abs2rel($self->{ path }, shift) )->collapse;
+    return $self->new( 
+        $self->filesystem->make_relative($self->{ path }, shift) 
+    )->collapse;
 }
 
 sub collapse {
     my $self = shift->absolute;
-    my @dirs = FILESPEC->splitdir( $self->{ directory } );
-    my ($node, @path);
-    while (@dirs) {
-        $node = shift @dirs;
-        if ($node eq DOT) {
-            # do nothing
-        }
-        elsif ($node eq DOTDOT) {
-            pop @path if @path;
-        }
-        else {
-            push(@path, $node);
-        }
-    }
-    $self->{ directory } = FILESPEC->catdir(@path);
-    $self->{ path      } = FILESPEC->catpath(@$self{@VDN_FIELDS});
+    my $fs   = $self->filesystem;
+    $self->{ directory } = $fs->collapse_dir($self->{ directory });
+    $self->{ path      } = $fs->join_path(@$self{@VDN_FIELDS});
     return $self;
 }
 
