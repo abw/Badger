@@ -16,7 +16,7 @@ package Badger::Class;
 use strict;
 use warnings;
 use base 'Badger::Exporter';
-use Badger::Constants qw( DELIMITER ARRAY );
+use Badger::Constants qw( DELIMITER ARRAY HASH CODE );
 use Badger::Utils 'load_module';
 use Carp;
 use constant {
@@ -34,7 +34,7 @@ our $DEBUG      = 0 unless defined $DEBUG;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
     base version debug constant constants exports throws messages utils
-    codec codecs
+    codec codecs methods get_methods set_methods
 );
 
 
@@ -84,6 +84,7 @@ sub export_hook {
         unless @$symbols;
     # make sure we forward the $class to class() so this module can 
     # be subclassed (e.g. Badger::Web::Class)
+#   _debug("HOOK: $target / $class / $key / $symbols->[0]\n");
     class($target, $class)->$key(shift @$symbols);
 }
     
@@ -209,7 +210,7 @@ sub hash_vars {
     foreach $hash ( reverse(@$vars), @_ ) {
         next unless defined $hash;
         return $self->{name}->error("Invalid $name configuration option (not a hash ref): $hash")
-            unless ref $hash eq 'HASH';
+            unless ref $hash eq HASH;
         @merged{ keys %$hash } = values %$hash;
     }
     
@@ -220,7 +221,7 @@ sub hash_value {
     my ($self, $name, $item, $default) = @_;
 
     foreach my $hash ($self->all_vars($name)) {
-        next unless ref $hash eq 'HASH';
+        next unless ref $hash eq HASH;
         return $hash->{ $item }
             if defined $hash->{ $item };
     }
@@ -439,7 +440,7 @@ sub constant {
     $constants = {
         map { split /\s*=>?\s*/ }
         split(DELIMITER, $constants)
-    } unless ref $constants eq 'HASH';
+    } unless ref $constants eq HASH;
     
     
     while (my ($name, $value) = each %$constants) {
@@ -492,7 +493,7 @@ sub throws {
 
 sub messages {
     my $self = shift;
-    my $args = @_ && ref $_[0] eq 'HASH' ? shift : { @_ };
+    my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
     my $pkg = $self->{ name };
     no strict 'refs';
     no warnings;
@@ -565,7 +566,19 @@ sub codecs {
 sub method {
     my ($self, $name, $code) = @_;
     no strict 'refs';
+    _debug("defining method: $self\::$name => $code\n") if $DEBUG;
     *{$self->{ name } . '::' . $name} = $code;
+}
+
+sub methods {
+    my $self = shift;
+    my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
+    no strict 'refs';
+    while (my ($name, $code) = each %$args) {
+        _debug("defining method: $self\::$name => $code\n") if $DEBUG;
+        *{$self->{ name } . '::' . $name} 
+            = ref $code eq CODE ? $code : sub { $code };
+    }
 }
 
 sub get_methods {
