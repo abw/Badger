@@ -13,7 +13,7 @@
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
-use Test::More tests => 77;
+use Test::More tests => 84;
 
 our $DEBUG= $Badger::Class::DEBUG = grep(/^-d/, @ARGV);
 
@@ -344,18 +344,53 @@ sub init {
 }
 
 class->method( hello => sub { 'hello world' } );
+class->methods( goodbye => sub { "see ya!" } );
 class->get_methods('foo bar');
 class->set_methods('wiz');
 
 package main;
 
 is( Test::Method1->hello, 'hello world', 'method() test' );
+is( Test::Method1->goodbye, 'see ya!', 'methods() test' );
 my $t1 = Test::Method1->new( foo => 'Hello', bar => 'World' );
 is( $t1->foo, 'Hello', 'generated foo get method' );
 is( $t1->bar, 'World', 'generated bar get method' );
 
 is( $t1->wiz('waz'), 'waz', 'set wiz' );
 is( $t1->wiz, 'waz', 'get wiz' );
+
+
+#-----------------------------------------------------------------------
+# and again via Badger::Class import hooks
+#-----------------------------------------------------------------------
+
+package Test::Method2;
+use Badger::Class 
+    base   => 'Badger::Base',
+    import => 'class',
+    get_methods => 'ding dong',
+    set_methods => 'dang',
+    methods     => {
+        welcome  => sub { 'Hello World' },
+        farewell => 'Goodbye cruel world',
+    };
+
+sub init {
+    my ($self, $config) = @_;
+    $self->{ ding } = $config->{ ding };
+    $self->{ dong } = $config->{ dong };
+    return $self;
+}
+
+package main;
+
+is( Test::Method2->welcome, 'Hello World', 'welcome method' );
+is( Test::Method2->farewell, 'Goodbye cruel world', 'farewell method' );
+my $t2 = Test::Method2->new( ding => 'Wrong', dong => 'Number' );
+is( $t2->ding, 'Wrong', 'generated ding get method' );
+is( $t2->dong, 'Number', 'generated dong get method' );
+is( $t2->dang('Ding-A-Ling'), 'Ding-A-Ling', 'set dang' );
+is( $t2->dang, 'Ding-A-Ling', 'get dang' );
 
 __END__
 
