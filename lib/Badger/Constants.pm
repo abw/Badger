@@ -29,6 +29,8 @@ use constant {
     
     # generally useful constants
     LAST            => -1,          
+    FALSE           => 0,
+    TRUE            => 1,
     OFF             => 0,            # in the beginning was the void...
     ON              => 1,            # let there be light!
     ALL             => 'all',        # used to enable various things
@@ -42,7 +44,7 @@ use constant {
 };
 
 CONSTANTS->export_any(qw( 
-    CONSTANTS LAST OFF ON ALL NONE DEFAULT CRLF DELIMITER
+    CONSTANTS LAST FALSE TRUE OFF ON ALL NONE DEFAULT CRLF DELIMITER
 ));
 
 CONSTANTS->export_tags({
