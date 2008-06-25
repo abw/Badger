@@ -33,6 +33,8 @@ our $MESSAGES      = {
     not_implemented => '%s is not implemented in %s',
     no_component    => 'No %s component defined',
     bad_method      => "Invalid method '%s' called on %s at %s line %s",
+    unexpected      => 'Invalid %s specified: %s (expected a %s)',
+    missing         => 'No %s specified',
     todo            => '%s is TODO in %s',
 };
 
