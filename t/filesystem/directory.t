@@ -15,7 +15,7 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use Badger::Filesystem::Directory;
-use Test::More tests => 16;
+use Test::More tests => 22;
 
 our $DEBUG = $Badger::Filesystem::Directory::DEBUG = grep(/^-d/, @ARGV);
 our $DIR = 'Badger::Filesystem::Directory';
@@ -39,6 +39,16 @@ is( $DIR->new({ name => 'example' })->name,
 is ( $DIR->new({ path => 'example' })->name,
     'example', 'got dir using path param hash' );
 
+
+$dir = $DIR->new('/foo/bar/baz');
+is( $dir, '/foo/bar/baz', 'foo/bar/baz path');
+is( $dir->dir, '/foo/bar/', 'foo/bar dir');
+is( $dir->name, 'baz', 'baz file' );
+
+$dir = $DIR->new('/foo/bar/baz/');
+is( $dir, '/foo/bar/baz', 'foo/bar/baz path with trailing slash');
+is( $dir->dir, '/foo/bar/', 'foo/bar dir with trailing slash');
+is( $dir->name, 'baz', 'baz file with trailing slash' );
 
 #-----------------------------------------------------------------------
 # test the up() method (alias for parent())
