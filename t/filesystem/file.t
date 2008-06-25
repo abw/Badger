@@ -1,0 +1,100 @@
+#============================================================= -*-perl-*-
+#
+# t/filesystem/file.t
+#
+# Test the Badger::Filesystem::File module.
+#
+# Written by Andy Wardley <abw@wardley.org>
+#
+# This is free software; you can redistribute it and/or modify it
+# under the same terms as Perl itself.
+#
+#========================================================================
+
+use lib qw( ./lib ../lib ../../lib );
+use strict;
+use warnings;
+use Badger::Filesystem;
+use Badger::Filesystem::File '@STAT_FIELDS';
+use Badger::Filesystem::Directory;
+use Test::More tests => 30;
+
+our $DEBUG = $Badger::Filesystem::File::DEBUG = grep(/^-d/, @ARGV);
+our $FILE  = 'Badger::Filesystem::File';
+our $FS    = 'Badger::Filesystem';
+our $cwd   = $FS->cwd;
+our @tdir  = -d 't' ? qw( t filesystem ) : ($FS->dot);
+
+my $file = $FILE->new('file.t');
+ok( $file, 'created a new file' );
+is( $file->name, 'file.t', 'got file name' );
+ok( ! $file->volume, 'got (no) file volume' );
+ok( ! $file->dir, 'got (no) file directory' );
+ok( ! $file->is_absolute, 'file is not absolute' );
+
+$file = $FILE->new([@tdir, 'file.t']);
+ok( $file->exists, 'file exists' );
+
+my @stat = (stat($file->path), -r _, -w _, -x _, -o _);
+foreach my $m (@STAT_FIELDS) {
+    is( $file->$m, $stat[0], "file $m is " . shift(@stat) );
+}
+
+ok( $FILE->new(path => '/example/file.foo')->is_absolute, 'file is absolute' );
+ok( $FILE->new(name => 'file.foo', directory => '/example')->is_absolute, 'directory file is absolute' );
+ok( $FILE->new(name => 'file.foo', dir => '/example')->is_absolute, 'dir file is absolute' );
+
+is( $FILE->new(name => 'file.t')->name,     'file.t', 'got file using name param' );
+is( $FILE->new(path => 'file.t')->name,     'file.t', 'got file using path param' );
+is( $FILE->new({ name => 'file.t' })->name, 'file.t', 'got file using name param hash' );
+is( $FILE->new({ path => 'file.t' })->name, 'file.t', 'got file using path param hash' );
+
+
+__END__
+test_file('file.t');
+test_file('example/file.t');
+test_file('../x/y/../z/../../floop/./././../file.t');
+test_file('/tmp/foo/file.t');
+
+test_dir('example');
+test_dir('example/foo');
+test_dir('../example/foo');
+test_dir('/tmp/example/foo');
+test_dir('../../../tmp/../example/x/../y/../foo');
+
+sub test_file {
+    test_path($FILE->new(@_));
+}
+
+sub test_dir {
+    test_path($DIR->new(@_));
+}
+
+sub test_path {
+    my $path = shift;
+    my $cwd = $DIR->cwd;
+    print "\n";
+    print "path: $path\n";
+    print "is absolute? ", $path->is_absolute ? 'yes' : 'no', "\n";
+    print "is file? ", $path->is_file ? 'yes' : 'no', "\n";
+    print "is dir? ", $path->is_dir ? 'yes' : 'no', "\n";
+    print "is directory? ", $path->is_directory ? 'yes' : 'no', "\n";
+    print "directory: ", $path->directory, "\n";
+    print "absolute: ", $path->absolute, "\n";
+    print "parent: ", $path->parent, "\n";
+    print "collapse: ", $path->collapse, "\n";
+    print "from home: ", $path->relative('/Users/abw'), "\n";
+    print "exists: ", $path->exists ? 'yes' : 'no', "\n";
+    if ($path->exists) {
+        print "owner: ", $path->owner ? 'yes' : 'no', "\n";
+        print "readable: ", $path->readable ? 'yes' : 'no', "\n";
+        print "writeable: ", $path->writeable ? 'yes' : 'no', "\n";
+        print "executable: ", $path->executable ? 'yes' : 'no', "\n";
+    }
+    print "above here: ", $path->above($cwd) ? 'yes' : 'no', "\n";
+    print "below here: ", $path->below($cwd) ? 'yes' : 'no', "\n";
+    print "below /Users/abw: ", $path->below('/Users/abw') ? 'yes' : 'no', "\n";
+    print "below /tmp: ", $path->below('/tmp') ? 'yes' : 'no', "\n";
+    print "path: $path\n";
+}
+    
