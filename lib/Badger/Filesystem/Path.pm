@@ -178,7 +178,7 @@ sub collapse {
 }
 
 sub exists {
-    -e $_[0]->{ path };
+    -e $_[0]->definitive;
 }
 
 sub must_exist {

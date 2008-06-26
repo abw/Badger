@@ -34,6 +34,9 @@ use Badger::Class
             types   => 'File Dir Directory',
             dirs    => 'ROOTDIR UPDIR CURDIR',
         },
+    },
+    messages => {
+        open_failed => 'Failed to open %s %s: %s',
     };
 
 use Badger::Filesystem::File;
@@ -93,6 +96,9 @@ sub init {
     my $sep = FILESPEC->catdir(('badger') x 2);
     $sep =~ s/badger//g;
     $self->{ separator } = $sep;
+
+    # flag to indicate if directory scans should return all entries
+    $self->{ all_entries } = $config->{ all_entries } || 0;
     
     return $self;
 }
@@ -190,7 +196,9 @@ sub is_relative {
 sub definitive {
     my $self = shift;
     my $path = $self->absolute(@_);
-    FILESPEC->catdir($self->{ root }, $path);
+    return ref $self && $self->{ virtual }
+        ? FILESPEC->catdir($self->{ root }, $path)
+        : $path;
 }
 
 sub absolute {
@@ -206,15 +214,83 @@ sub relative {
 }
 
 sub open_file {
-    shift;
+    my $self = shift;
+    my $path = $self->definitive(shift);
     require IO::File;
-    IO::File->new(@_);
+    $self->debug("about to open file $path (", join(', ', @_), ")\n") if $DEBUG;
+    return IO::File->new($path, @_)
+        || $self->error_msg( open_failed => file => $path => $! );
+}
+
+sub read_file {
+    my $self = shift;
+    my $fh   = $self->open_file(shift, 'r');
+    return wantarray
+        ? <$fh>
+        : do { local $/ = undef; <$fh> };
+}
+
+sub write_file {
+    my $self = shift;
+    my $fh   = $self->open_file(shift, 'w');
+    return $fh unless @_;           # return handle if no args
+    print $fh @_;                   # or print args and close
+    $fh->close;
+    return 1;
+}
+
+sub append_file {
+    my $self = shift;
+    my $fh   = $self->open_file(shift, 'a');
+    return $fh unless @_;           # return handle if no args
+    print $fh @_;                   # or print args and close
+    $fh->close;
+    return 1;
 }
 
 sub open_directory {
-    shift;
+    my $self = shift;
+    my $path = $self->definitive(shift);
     require IO::Dir;
-    IO::Dir->new(@_);
+    return IO::Dir->new($path, @_)
+        || $self->error_msg( open_failed => directory => $path => $! );
+}
+
+sub read_directory {
+    my $self = shift;
+    my $dirh = $self->open_directory(shift);
+    my $all  = shift;
+    my ($path, @paths);
+    while (defined ($path = $dirh->read)) {
+        push(@paths, $path);
+    }
+    @paths = FILESPEC->no_upwards(@paths)
+        unless $all || ref $self && $self->{ all_entries };
+
+    $dirh->close;
+    return wantarray ? @paths : \@paths;
+}
+
+sub directory_children {
+    my $self  = shift;
+    my $dir   = shift;
+    my @paths = $self->read_directory($dir, @_);
+    my $base  = $self->{ root } if $self->{ virtual };
+    my $path;
+
+    @paths = map {
+        $path = $self->join_dir($dir, $_);
+        $self->debug("$dir + $_ => $path") if $DEBUG;
+        
+        # if we're using a virtual root then we need to tack that on to
+        # the start of the path for the directory entry
+        stat($base ? $self->join_dir($base, $path) : $path);
+        -d _ ? $self->directory($path) : 
+        -f _ ? $self->file($path) :
+               $self->path($path);
+    } @paths;
+    
+    return wantarray ? @paths : \@paths;
 }
 
 sub _child_args {
@@ -226,9 +302,9 @@ sub _child_args {
         $args = { path => undef };
     }
     elsif (@_ == 1) {
-        $args = ref $_[0] eq HASH ? shift
-            : ! ref $_[0] ? { path => shift }
-            : return $self->error_msg( unexpected => "$type arguments" => $_[0], 'hash ref' )
+        $args = ref $_[0] eq HASH ? shift : { path => shift };
+#            : ! ref $_[0] ? { path => shift }
+#            : return $self->error_msg( unexpected => "$type arguments" => $_[0], 'hash ref' )
     }
     else {
         $args = { path => [@_] };
@@ -239,3 +315,33 @@ sub _child_args {
 
 1;
 
+__END__
+=head1 METHODS
+
+=head2 open_directory(@path)
+
+Returns an L<IO::Dir> handle opened for reading a directory or throws
+an error if the open failed.
+
+=head2 read_directory($dir,$all)
+
+Returns a list (in list context) or a reference to a list (in scalar context)
+containing the entries in the directory. 
+
+    my @paths = $filesystem->read_directory('/path/to/dir');
+
+By default, this excludes the current and parent entries (C<.> and C<..> or
+whatever the equivalents are for your filesystem. Pass a true value for the
+optional second argument to include these items.
+
+    my @paths = $filesystem->read_directory('/path/to/dir', 1);
+
+=head2 directory_children($dir,$all)
+
+Returns a list (in list context) or a reference to a list (in scalar
+context) of objects to represent the contents of a directory.  As per
+L<read_directory()>, the current (C<.>) and parent (C<..>) directories
+are excluded unless you set the C<$all> flag to a true value.  Files are
+returned as L<Badger::Filesystem::File> objects, directories as
+L<Badger::Filesystem::File> objects.  Anything else is returned as a
+generic L<Badger::Filesystem::Path> object.

@@ -64,5 +64,26 @@ sub open {
     $self->filesystem->open_file($self->{ path }, @_);
 }
 
+sub text {
+    my $text = shift->read(@_);
+    # TODO: bless
+    return $text;
+}
+
+sub read {
+    my $self = shift;
+    $self->filesystem->read_file($self->{ path });
+}
+
+sub write {
+    my $self = shift;
+    $self->filesystem->write_file($self->{ path }, @_);
+}
+
+sub append {
+    my $self = shift;
+    $self->filesystem->append_file($self->{ path }, @_);
+}
+
 1;
 
