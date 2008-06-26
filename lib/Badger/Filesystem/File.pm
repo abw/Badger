@@ -24,6 +24,8 @@ use Badger::Class
 
 use Badger::Filesystem::Path ':fields';
 
+*base = \&directory;
+
 sub init {
     my ($self, $config) = @_;
     my ($path, $vol, $dir, $name);
@@ -43,14 +45,6 @@ sub init {
     return $self;
 }
 
-#sub collapse {
-#    my $self = shift->absolute;
-#    my $fs   = $self->filesystem;
-#    $self->{ directory } = $fs->collapse_dir($self->{ directory });
-#    $self->{ path      } = $fs->join_path(@$self{@VDN_FIELDS});
-#    return $self;
-#}
-#
 sub directory {
     $_[0]->parent;
 }

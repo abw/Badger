@@ -138,6 +138,11 @@ sub is_relative {
     shift->is_absolute ? 0 : 1;
 }
 
+sub definitive {
+    my $self = shift;
+    $self->filesystem->definitive($self->{ path });
+}
+
 sub absolute {
     my $self = shift;
     return $self->is_absolute
@@ -147,13 +152,21 @@ sub absolute {
 
 sub relative {
     my $self = shift;
-    my $base = $self->directory || $self->{ path }; # allow files to return parent dir
     my $fs   = $self->filesystem;
     my $path = $fs->join_dir(@_);
-    $path = $fs->join_dir($base, $path) unless $fs->is_absolute($path);
+    # If the path isn't already absolute then we merge it onto our 
+    # directory or path if directory is undefined.  By calling the 
+    # base() method, we allow the file subclass to return its
+    # parent directory so that things Just Work[tm]
+    $path = $fs->join_dir($self->base, $path) 
+        unless $fs->is_absolute($path);
     $path = $fs->collapse_dir($path);
-#    $self->debug("relative path: $base + ", join('/', @_), " = $path\n");
     return $self->new($path);
+}
+
+sub base {
+    my $self = shift;
+    return $self->{ directory } || $self->{ path };
 }
 
 sub collapse {
@@ -163,12 +176,6 @@ sub collapse {
     $self->{ path      } = $fs->join_path(@$self{@VDN_FIELDS});
     return $self;
 }
-
-#sub collapse {
-#    my $self = shift->absolute;
-#    $self->{ path } = $self->filesystem->collapse_dir($self->{ path });
-#    return $self;
-#}
 
 sub exists {
     -e $_[0]->{ path };

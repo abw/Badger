@@ -216,9 +216,10 @@ sub is_relative {
     shift->is_absolute(@_) ? 0 : 1;
 }
 
-sub relative {
+sub definitive {
     my $self = shift;
-    FILESPEC->abs2rel($self->join_dir(@_), $self->cwd);
+    my $path = $self->absolute(@_);
+    FILESPEC->catdir($self->{ root }, $path);
 }
 
 sub absolute {
@@ -231,10 +232,9 @@ sub absolute {
     FILESPEC->catdir($self->cwd, $path);
 }
 
-sub definitive {
+sub relative {
     my $self = shift;
-    my $path = $self->absolute(@_);
-    FILESPEC->catdir($self->root, $path);
+    FILESPEC->abs2rel($self->join_dir(@_), $self->cwd);
 }
 
 sub open_file {

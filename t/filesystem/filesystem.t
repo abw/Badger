@@ -15,7 +15,7 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use Badger::Filesystem qw( :types :dirs );
-use Test::More tests => 11;
+use Test::More tests => 12;
 
 our $DEBUG = $Badger::Filesystem::DEBUG = grep(/^-d/, @ARGV);
 our $FS    = 'Badger::Filesystem';
@@ -62,4 +62,5 @@ is( $file1->absolute, '/foo/bar', 'absolute foo bar in virtual root fs' );
 $file1 = $fs->file('/foo/bar');
 is( $file1->absolute, '/foo/bar', 'absolute /foo/bar in virtual root fs' );
 
+is( $file1->definitive, '/path/to/my/web/pages/foo/bar', 'definitive path adds root' );
 
