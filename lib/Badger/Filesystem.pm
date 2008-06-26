@@ -36,7 +36,8 @@ use Badger::Class
         },
     },
     messages => {
-        open_failed => 'Failed to open %s %s: %s',
+        open_failed   => 'Failed to open %s %s: %s',
+        delete_failed => 'Failed to delete %s %s: %s',
     };
 
 use Badger::Filesystem::File;
@@ -213,6 +214,25 @@ sub relative {
     FILESPEC->abs2rel($self->join_dir(@_), $self->cwd);
 }
 
+sub touch_file {
+    my $self = shift;
+    my $path = $self->definitive(shift);
+    if (-e $path) {
+        my $now = time();
+        utime $now, $now, $path;
+    } 
+    else {
+        $self->write_file($path);
+    }
+}
+
+sub delete_file {
+    my $self = shift;
+    my $path = $self->definitive(shift);
+    unlink($path)
+        || return $self->error_msg( delete_failed => file => $path => $! );
+}
+
 sub open_file {
     my $self = shift;
     my $path = $self->definitive(shift);
@@ -246,6 +266,20 @@ sub append_file {
     print $fh @_;                   # or print args and close
     $fh->close;
     return 1;
+}
+
+sub create_directory { 
+    my $self = shift;
+    my $path = $self->definitive(shift);
+    require File::Path;
+    File::Path::mkpath($path, @_)
+} 
+    
+sub delete_directory { 
+    my $self = shift;
+    my $path = $self->definitive(shift);
+    require File::Path;
+    File::Path::rmtree($path, @_)
 }
 
 sub open_directory {

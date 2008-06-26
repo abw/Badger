@@ -66,6 +66,16 @@ sub file {
         : $self->error( missing => 'file name' );
 }
 
+sub create { 
+    my $self = shift;
+    $self->filesystem->create_directory($self->{ path }, @_);
+}
+
+sub delete { 
+    my $self = shift;
+    $self->filesystem->delete_directory($self->{ path }, @_);
+}
+
 sub open { 
     my $self = shift;
     $self->filesystem->open_directory($self->{ path }, @_);
