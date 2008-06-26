@@ -529,7 +529,12 @@ sub warnings {
 }
 
 
-
+sub try {
+    my $self   = shift;
+    my $method = shift || return $self->error_msg( missing => 'method to try' );
+    eval { $self->$method(@_) }
+        || $self->decline(@_);
+}
     
 
 
