@@ -1,1 +1,26 @@
+Filesystem
+----------
+
+* relative resolved against existing file/dir
+
+* file()/directory() in path/file/dir (i.e. subdir/file)
+
+* directory files/dirs/paths
+
+* exists() should check the type for file/dir
+
+* directory mkdir/rmdir  create/delete
+
+* directory children/files/directories/dirs
+
+* file read/write/text/lines/etc
+
+* virtual filesystems with a non-root root
+
+* virtual filesystems composed across several real filesystems
+
+
+Misc
+----
+
 * Move Badger::Exception to Badger::Error and clean out
