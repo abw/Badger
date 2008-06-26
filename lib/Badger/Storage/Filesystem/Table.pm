@@ -78,8 +78,8 @@ sub fetch_record {
     my $self = shift;
     my $id   = $self->record_id(shift);
     my $file = $self->{ directory }->file($id);
-    # decline - because a record not existing is not an error
-    return $self->decline_msg( non_existing => file => $file ) unless $file->exists;
+    # decline - because a record not existing is not an error??
+    return $self->error_msg( non_existing => file => $file ) unless $file->exists;
     my $data = $file->read;
     $self->debug("fetched filesystem record for $id in $file\n") if $DEBUG;
     $self->record_object( file => $file, data => $self->decode($data) );

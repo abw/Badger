@@ -32,7 +32,7 @@ ok( $store, 'created new filesystem store' );
 my $badgers = $store->table('badgers');
 ok( $badgers, 'got a badgers table' );
 
-my $franky = $badgers->fetch_record('franky');
+my $franky = $badgers->try( fetch_record => 'franky' );
 if ($franky) {
     print "franky: $franky\n";
     ok($franky->delete, "got existing Franky Badger");

@@ -46,7 +46,7 @@ sub table {
     my $self = shift;
     my $name  = $self->table_id(shift);
     return $self->{ tables }->{ $name } 
-       ||= $self->open_table($name)
+       ||= $self->try( open_table => $name )
        ||  $self->create_table($name);      # TODO: this should be optional
 }
 
