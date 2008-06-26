@@ -147,7 +147,7 @@ sub absolute {
     my $self = shift;
     return $self->is_absolute
          ? $self
-         : $self->new( $self->filesystem->absolute($self->{ path }) );
+         : $self->filesystem->absolute($self->{ path });
 }
 
 sub relative {
@@ -158,10 +158,10 @@ sub relative {
     # directory or path if directory is undefined.  By calling the 
     # base() method, we allow the file subclass to return its
     # parent directory so that things Just Work[tm]
-    $path = $fs->join_dir($self->base, $path) 
-        unless $fs->is_absolute($path);
-    $path = $fs->collapse_dir($path);
-    return $self->new($path);
+#    $self->debug("relative path: $path   is_absolute?\n");
+    return $fs->is_absolute($path)
+         ? $path
+         : $fs->collapse_dir( $fs->join_dir($self->base, $path) );
 }
 
 sub base {

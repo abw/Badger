@@ -25,6 +25,7 @@ use Badger::Class
         ROOTDIR     =>  File::Spec->rootdir,
         UPDIR       =>  File::Spec->updir,
         CURDIR      =>  File::Spec->curdir,
+        Path        => 'Badger::Filesystem::Path',
         File        => 'Badger::Filesystem::File',
         Directory   => 'Badger::Filesystem::Directory',
     },
@@ -49,28 +50,11 @@ class->methods(
             $_[0]->prototype->{ $name };
         }
     }
-    qw( path rootdir updir curdir separator )
+    qw( root rootdir updir curdir separator virtual )
 );
 
 *dir       = \&directory;
 *open_dir  = \&open_directory;
-
-sub new {
-    my $class = shift; $class = ref $class || $class;
-    my $args;
-    
-    if (@_ == 1) {
-        $args = ref $_[0] eq HASH ? shift
-            : ! ref $_[0] ? { root => shift }
-            : return $class->error_msg( bad_args => $_[0] )
-    }
-    else {
-        $args = { root => [ @_ ] };
-    }
-
-    my $self = bless { }, $class;
-    $self->init($args);
-}
 
 sub init {
     my ($self, $config) = @_;
@@ -85,10 +69,17 @@ sub init {
     # then cwd() should always return '/'.  This is so that the absolute()
     # method will resolve a relative path like 'index.html' as '/index.html'
     # rather than whatever the real cwd is.
-    $self->{ root    } = $config->{ root    } || ROOTDIR;
-    $self->{ cwd     } = $config->{ cwd     } || ROOTDIR 
-        if $config->{ root } ne ROOTDIR;
-
+    if (my $root = $config->{ root }) {
+        $root = $self->join_dir(@$root) if ref $root eq ARRAY;
+        $self->{ root    } = $root;
+        $self->{ cwd     } = $config->{ cwd } || ROOTDIR;
+        $self->{ virtual } = 1;
+    }
+    else {
+        $self->{ root    } = ROOTDIR;
+        $self->{ virtual } = 0;
+    }
+    
     # the tokens used to represent the root directory ('/'), the 
     # parent directory ('..') and current directory ('.') default to
     # constants grokked from File::Spec
@@ -106,42 +97,22 @@ sub init {
     return $self;
 }
 
-sub file {
-    my $self = shift->prototype;
-    my $args;
-    
-    if (@_ == 1) {
-        $args = ref $_[0] eq HASH ? shift
-            : ! ref $_[0] ? { path => shift }
-            : return $self->error_msg( unexpected => 'file arguments' => $_[0], 'hash ref' )
-    }
-    else {
-        # if the path is empty, the File constructor will complain so we
-        # don't bother checking for no args at this point
-        $args = { path => [@_] };
-    }
-    $args->{ filesystem } = $self;
+sub path {
+    Path->new( shift->_child_args( path => @_ ) );
+}
 
-    File->new($args);
+sub file {
+    File->new( shift->_child_args( file => @_ ) );
 }
 
 sub directory {
-    my $self = shift->prototype;
-    my $args;
+    my $self = shift;
+    my $args = $self->_child_args( directory => @_ );
     
-    if (! @_) {
-        $args = { path => $self->cwd };
-    }
-    elsif (@_ == 1) {
-        $args = ref $_[0] eq HASH ? shift
-            : ! ref $_[0] ? { path => shift }
-            : return $self->error_msg( unexpected => 'file arguments' => $_[0], 'hash ref' )
-    }
-    else {
-        $args = { path => [@_] };
-    }
-    $args->{ filesystem } = $self;
-
+    # default directory is the current working directory
+    $args->{ path } = $self->cwd
+        if exists $args->{ path } && ! defined $args->{ path };
+    
     Directory->new($args);
 }
 
@@ -226,9 +197,6 @@ sub absolute {
     my $self = shift;
     my $path = $self->join_dir(@_);
     return $path if FILESPEC->file_name_is_absolute($path);
-    # TODO: at some point we'll be allowing filesystems to be "mounted"
-    # to a virtual root, in which case we'll need to call a $self method
-    # to get the virtual root or cwd.  But for now, getcwd will do.
     FILESPEC->catdir($self->cwd, $path);
 }
 
@@ -247,6 +215,26 @@ sub open_directory {
     shift;
     require IO::Dir;
     IO::Dir->new(@_);
+}
+
+sub _child_args {
+    my $self = shift->prototype;
+    my $type = shift;
+    my $args;
+    
+    if (! @_) {
+        $args = { path => undef };
+    }
+    elsif (@_ == 1) {
+        $args = ref $_[0] eq HASH ? shift
+            : ! ref $_[0] ? { path => shift }
+            : return $self->error_msg( unexpected => "$type arguments" => $_[0], 'hash ref' )
+    }
+    else {
+        $args = { path => [@_] };
+    }
+    $args->{ filesystem } = $self;
+    return $args;
 }
 
 1;

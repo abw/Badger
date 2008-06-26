@@ -54,11 +54,26 @@ sub base {
 
 sub open { 
     my $self = shift;
-    $self->filesystem->open_dir($self->{ path }, @_);
+    $self->filesystem->open_directory($self->{ path }, @_);
+}
+
+sub directory {
+    my $self = shift;
+    return @_
+        ? $self->filesystem->directory( $self->relative(@_) )
+        : $self;
+}
+
+sub file {
+    my $self = shift;
+    return @_
+        ? $self->filesystem->file( $self->relative(@_) )
+        : $self->error( missing => 'file name' );
 }
 
 sub children {
     my $self = shift->must_exist;
+    
     $self->todo;
 }
 

@@ -15,7 +15,7 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use Badger::Filesystem::Directory;
-use Test::More tests => 22;
+use Test::More tests => 30;
 
 our $DEBUG = $Badger::Filesystem::Directory::DEBUG = grep(/^-d/, @ARGV);
 our $DIR = 'Badger::Filesystem::Directory';
@@ -63,3 +63,22 @@ is( $dir->up(2), '/path/to', 'path up, skip two' );
 is( $dir->up(3), '/path', 'path up, skip three' );
 is( $dir->up(4), '/', 'path up, skip four' );
 is( $dir->up(42), '/', 'path up, skip fourty two' );
+
+is( $dir->directory('two'), '/path/to/file/number/one/two', 
+    'relative path down' );
+is( $dir->directory('../three'), '/path/to/file/number/three', 
+    'relative path up' );
+is( $dir->directory('../../four'), '/path/to/file/four', 
+    'relative path up up' );
+is( $dir->directory('/five'), '/five', 
+    'absolute path on relative path' );
+
+is( $dir->file('two.txt'), '/path/to/file/number/one/two.txt', 
+    'relative file down' );
+is( $dir->directory('../three.pm'), '/path/to/file/number/three.pm', 
+    'relative file up' );
+is( $dir->directory('../../four.pl'), '/path/to/file/four.pl', 
+    'relative file up up' );
+is( $dir->directory('/five'), '/five', 
+    'absolute file on relative path' );
+

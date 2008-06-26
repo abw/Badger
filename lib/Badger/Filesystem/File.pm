@@ -46,7 +46,17 @@ sub init {
 }
 
 sub directory {
-    $_[0]->parent;
+    my $self = shift;
+    return @_
+        ? $self->filesystem->directory( $self->relative(@_) )
+        : $self->parent;
+}
+
+sub file {
+    my $self = shift;
+    return @_
+        ? $self->filesystem->file( $self->relative(@_) )
+        : $self;
 }
 
 sub open {
