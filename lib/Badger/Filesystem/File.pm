@@ -85,5 +85,10 @@ sub append {
     $self->filesystem->append_file($self->{ path }, @_);
 }
 
+sub delete {
+    my $self = shift;
+    $self->filesystem->delete_file($self->{ path }, @_);
+}
+
 1;
 

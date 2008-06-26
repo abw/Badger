@@ -31,8 +31,16 @@ use Badger::Class
 
 use Badger::Config;
 our $CONFIG     = 'Badger::Config';
-our $COMPONENTS = { };
-our $DELEGATES  = { };
+our $COMPONENTS = {
+    codecs     => 'Badger::Codecs',
+    filesystem => 'Badger::Filesystem',
+};
+our $DELEGATES  = { 
+    file      => 'filesystem',      # hub->file ==> hub->filesystem->file
+    directory => 'filesystem',
+    dir       => 'filesystem',
+    codec     => 'codecs',
+};
 our $LOADED     = { };
 our $AUTOLOAD;
 
@@ -239,7 +247,6 @@ sub destroy {
     # we may have established with other items that point back to us
     %$self = ();
 }
-
 
 sub DESTROY {
     my $self = shift;
