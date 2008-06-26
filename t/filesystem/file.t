@@ -17,13 +17,13 @@ use warnings;
 use Badger::Filesystem;
 use Badger::Filesystem::File '@STAT_FIELDS';
 use Badger::Filesystem::Directory;
-use Test::More tests => 30;
+use Test::More tests => 31;
 
 our $DEBUG = $Badger::Filesystem::File::DEBUG = grep(/^-d/, @ARGV);
 our $FILE  = 'Badger::Filesystem::File';
 our $FS    = 'Badger::Filesystem';
 our $cwd   = $FS->cwd;
-our @tdir  = -d 't' ? qw( t filesystem ) : ($FS->dot);
+our @tdir  = -d 't' ? qw( t filesystem ) : ($FS->curdir);
 
 my $file = $FILE->new('file.t');
 ok( $file, 'created a new file' );
@@ -39,6 +39,9 @@ my @stat = (stat($file->path), -r _, -w _, -x _, -o _);
 foreach my $m (@STAT_FIELDS) {
     is( $file->$m, $stat[0], "file $m is " . shift(@stat) );
 }
+
+my $expect = $FS->dir($cwd, @tdir, 'file.t');
+is( $file->absolute, $expect, "absolute path is $expect" );
 
 ok( $FILE->new(path => '/example/file.foo')->is_absolute, 'file is absolute' );
 ok( $FILE->new(name => 'file.foo', directory => '/example')->is_absolute, 'directory file is absolute' );

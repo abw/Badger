@@ -15,21 +15,37 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use Badger::Filesystem::Path;
-use Test::More tests => 2;
+use Test::More tests => 11;
 
 our $DEBUG = $Badger::Filesystem::Path::DEBUG = grep(/^-d/, @ARGV);
 our $PATH  = 'Badger::Filesystem::Path';
+our $FS    =  $PATH->filesystem;
+our $CWD   = $FS->cwd;
+my ($path, $sub);
 
-my $path = $PATH->new('foo');
-ok( $path, 'created a new file' );
+$path = $PATH->new('foo');
+ok( $path, 'created a new file: foo' );
+ok( $path->is_relative, 'foo is relative' );
+ok( ! $path->is_absolute, 'foo is not absolute' );
+is( $path->absolute, $FS->join_dir($CWD, 'foo'), 'foo absolute is ' . $path->absolute );
 
-test_path( 'foo', path => 'foo' );
+SKIP: {
+    skip('Non-standard file separators', 7)
+        unless $FS->rootdir eq '/' && $FS->separator eq '/';
 
-sub test_path {
-    my $path  = $PATH->new(shift);
-    my %tests = @_;
-    while (my ($key, $value) = each %tests) {
-        is( $path->$key, $value, "$path $key is " . (defined $value ? $value : 'undefined') );
-    }
+    $path = $PATH->new('/foo');
+    ok( $path, 'created a new file: /foo' );
+    ok( ! $path->is_relative, '/foo is not relative' );
+    ok( $path->is_absolute, '/foo is absolute' );
+    is( $path->absolute, '/foo', '/foo is already absolute' );
+    
+    #-----------------------------------------------------------------------
+    # test construction
+    #-----------------------------------------------------------------------
+    
+    $path = $PATH->new('/foo/bar/baz');
+    is( $path->relative('bam'), '/foo/bar/baz/bam', '/foo/bar/baz + bam' );
+    is( $path->relative('/bam'), '/bam', '/foo/bar/baz + /bam' );
+    is( $path->relative('../../wam'), '/foo/wam', '/foo/bar/baz + ../../wam' );
 }
     

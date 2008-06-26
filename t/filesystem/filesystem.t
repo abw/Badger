@@ -23,14 +23,9 @@ our $FS    = 'Badger::Filesystem';
 my $fs = $FS->new;
 ok( $fs, 'created a new filesystem' );
 
-is( $fs->root, ROOTDIR, 'root is ' . ROOTDIR );
+is( $fs->rootdir, ROOTDIR, 'root is ' . ROOTDIR );
 is( $fs->updir, UPDIR, 'updir is ' . UPDIR );
 is( $fs->curdir, CURDIR, 'curdir is ' . CURDIR );
-
-# alternate names
-is( $fs->slash, SLASH, "slash is " . SLASH . " (and also a guitarist in Guns'N'Roses)");
-is( $fs->dotdot, DOTDOT, 'dotdot is ' . DOTDOT );
-is( $fs->dot, DOT, 'dot is ' . DOT );
 
 
 #-----------------------------------------------------------------------
@@ -49,4 +44,22 @@ is( $file1->filesystem, $file2->filesystem,
 
 is( $file1->filesystem, $fs, 
     'matches our filesystem: ' . $fs );
+
+#-----------------------------------------------------------------------
+# test a virtual root directory
+#-----------------------------------------------------------------------
+
+$fs = $FS->new({
+    root      => '/path/to/my/web/pages', 
+    rootdir   => '/',
+    separator => '/',
+});
+ok( $fs, 'created filesystem with virtual root' );
+
+$file1 = $fs->file('foo', 'bar');
+is( $file1->absolute, '/foo/bar', 'absolute foo bar in virtual root fs' );
+
+$file1 = $fs->file('/foo/bar');
+is( $file1->absolute, '/foo/bar', 'absolute /foo/bar in virtual root fs' );
+
 
