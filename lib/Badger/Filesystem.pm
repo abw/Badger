@@ -26,13 +26,12 @@ use Badger::Class
         UPDIR       =>  File::Spec->updir,
         CURDIR      =>  File::Spec->curdir,
         File        => 'Badger::Filesystem::File',
-        Dir         => 'Badger::Filesystem::Directory',
         Directory   => 'Badger::Filesystem::Directory',
     },
     exports => {
         tags    => { 
             types   => 'File Dir Directory',
-            dirs    => 'ROOTDIR UPDIR CURDIR SLASH DOTDOT DOT',
+            dirs    => 'ROOTDIR UPDIR CURDIR',
         },
     };
 
@@ -50,20 +49,11 @@ class->methods(
             $_[0]->prototype->{ $name };
         }
     }
-    qw( path root updir curdir path_separator )
+    qw( path rootdir updir curdir separator )
 );
 
-# aliases for the above
-*slash     = \&root;
-*SLASH     = \&ROOTDIR;
-*dotdot    = \&updir;
-*DOTDOT    = \&UPDIR;
-*dot       = \&curdir;
-*DOT       = \&CURDIR;
-*path_sep  = \&path_separator;
-*separator = \&path_separator;
 *dir       = \&directory;
-*dot       = \&curdir;
+*open_dir  = \&open_directory;
 
 sub new {
     my $class = shift; $class = ref $class || $class;
@@ -71,14 +61,11 @@ sub new {
     
     if (@_ == 1) {
         $args = ref $_[0] eq HASH ? shift
-            : ! ref $_[0] ? { path => shift }
+            : ! ref $_[0] ? { root => shift }
             : return $class->error_msg( bad_args => $_[0] )
     }
-    elsif (@_ == 0) {
-        $args = { path => ROOTDIR };
-    }
     else {
-        $args = { @_ };
+        $args = { root => [ @_ ] };
     }
 
     my $self = bless { }, $class;
@@ -88,36 +75,38 @@ sub new {
 sub init {
     my ($self, $config) = @_;
 
-    $self->{ path } = $config->{ path }
-        || return $self->error_msg( missing => 'path' );
+    # A virtual root directory can be specified to effectively chroot
+    # the filesystem to a sub-directory.  For example, you can create a
+    # filesystem with a root directory set to wherever your web pages
+    # are (e.g. /path/to/your/web/pages).  Then any "absolute" paths
+    # will be resolved relative to that root, e.g. /index.html is an
+    # absolute path in a virtual file system with a definitive path of
+    # /path/to/your/web/pages/index.html.  If we do have a virtual root
+    # then cwd() should always return '/'.  This is so that the absolute()
+    # method will resolve a relative path like 'index.html' as '/index.html'
+    # rather than whatever the real cwd is.
+    $self->{ root    } = $config->{ root    } || ROOTDIR;
+    $self->{ cwd     } = $config->{ cwd     } || ROOTDIR 
+        if $config->{ root } ne ROOTDIR;
 
-    $self->{ root   } = $config->{ root   } || $config->{ slash  } || ROOTDIR;
-    $self->{ updir  } = $config->{ updir  } || $config->{ dotdot } || UPDIR;
-    $self->{ curdir } = $config->{ curdir } || $config->{ dot    } || CURDIR;
+    # the tokens used to represent the root directory ('/'), the 
+    # parent directory ('..') and current directory ('.') default to
+    # constants grokked from File::Spec
+    $self->{ rootdir } = $config->{ rootdir } || ROOTDIR;
+    $self->{ updir   } = $config->{ updir   } || UPDIR;
+    $self->{ curdir  } = $config->{ curdir  } || CURDIR;
 
     # this is an ugly hack, but the File::Spec modules hard-code the path
     # separator in the catdir() method so we have to make this round-trip
-    # to determine the path separator in a cross-platform fashion
+    # to determine the path separator in a cross-platform manner
     my $sep = FILESPEC->catdir(('badger') x 2);
     $sep =~ s/badger//g;
-    $self->{ path_separator } = $sep;
+    $self->{ separator } = $sep;
     
     return $self;
 }
 
 sub file {
-    File->new( _child_args(@_) );
-}
-
-sub directory {
-    Directory->new( _child_args(@_) );
-}
-
-sub cwd {
-    $_[0]->directory(getcwd);
-}
-
-sub _child_args {
     my $self = shift->prototype;
     my $args;
     
@@ -127,17 +116,53 @@ sub _child_args {
             : return $self->error_msg( unexpected => 'file arguments' => $_[0], 'hash ref' )
     }
     else {
-        $args = { @_ };
+        # if the path is empty, the File constructor will complain so we
+        # don't bother checking for no args at this point
+        $args = { path => [@_] };
     }
     $args->{ filesystem } = $self;
-    return $args;
+
+    File->new($args);
 }
+
+sub directory {
+    my $self = shift->prototype;
+    my $args;
+    
+    if (! @_) {
+        $args = { path => $self->cwd };
+    }
+    elsif (@_ == 1) {
+        $args = ref $_[0] eq HASH ? shift
+            : ! ref $_[0] ? { path => shift }
+            : return $self->error_msg( unexpected => 'file arguments' => $_[0], 'hash ref' )
+    }
+    else {
+        $args = { path => [@_] };
+    }
+    $args->{ filesystem } = $self;
+
+    Directory->new($args);
+}
+
+sub cwd {
+    my $self = shift->prototype;
+    # if we have a hard-code cwd set then return that, otherwise call 
+    # getcwd to return the real current working directory.  NOTE: we don't
+    # cache the dynamically resolved cwd as it'll change if chdir() is called
+    $self->{ cwd } || getcwd;
+}
+
+# I don't like calling this path.  Path implies directory path to me, 
+# not volume/dir/name
 
 sub join_path {
     my $self = shift;
     my @args = map { defined($_) ? $_ : '' } @_[0..2];
     FILESPEC->canonpath( FILESPEC->catpath(@args) );
 }
+
+# and this works with files, too.  this one should be join_path
 
 sub join_dir {
     my $self = shift;
@@ -163,9 +188,9 @@ sub split_dir {
 }
 
 sub collapse_dir {
-    my $self = shift;
+    my $self = shift->prototype;
     my @dirs = $self->split_dir(shift); 
-    my ($up, $cur) = @$self{ updir curdir };
+    my ($up, $cur) = @$self{qw( updir curdir )};
     my ($node, @path);
     while (@dirs) {
         $node = shift @dirs;
@@ -182,21 +207,47 @@ sub collapse_dir {
     $self->join_dir(@path);
 }
 
-sub path_is_absolute {
+sub is_absolute {
     my $self = shift;
-    FILESPEC->file_name_is_absolute($self->join_dir(@_));
+    FILESPEC->file_name_is_absolute($self->join_dir(@_)) ? 1 : 0;
 }
 
-sub make_relative {
-    my $self = shift;
-    FILESPEC->abs2rel($self->join_dir(@_));
+sub is_relative {
+    shift->is_absolute(@_) ? 0 : 1;
 }
 
-sub make_absolute {
+sub relative {
     my $self = shift;
-    FILESPEC->rel2abs($self->join_dir(@_));
+    FILESPEC->abs2rel($self->join_dir(@_), $self->cwd);
 }
 
+sub absolute {
+    my $self = shift;
+    my $path = $self->join_dir(@_);
+    return $path if FILESPEC->file_name_is_absolute($path);
+    # TODO: at some point we'll be allowing filesystems to be "mounted"
+    # to a virtual root, in which case we'll need to call a $self method
+    # to get the virtual root or cwd.  But for now, getcwd will do.
+    FILESPEC->catdir($self->cwd, $path);
+}
+
+sub definitive {
+    my $self = shift;
+    my $path = $self->absolute(@_);
+    FILESPEC->catdir($self->root, $path);
+}
+
+sub open_file {
+    shift;
+    require IO::File;
+    IO::File->new(@_);
+}
+
+sub open_directory {
+    shift;
+    require IO::Dir;
+    IO::Dir->new(@_);
+}
 
 1;
 

@@ -96,13 +96,16 @@ sub new {
 
 sub init {
     my ($self, $config) = @_;
-    $self->{ path } = $config->{ path }
-        || return $self->error_msg( missing => 'path' );
+    my $path = $config->{ path } || return $self->error_msg( missing => 'path' );
+    my $fs   = $self->filesystem;
+    $path = $self->{ path } = $fs->join_dir($path);
     return $self;
 }
 
 sub filesystem {
     my $self = shift;
+    return $self->class->any_var('FILESYSTEM')->prototype
+        unless ref $self;
     $self->{ filesystem } 
         ||= $self->class->any_var('FILESYSTEM')->prototype;
 }
@@ -126,27 +129,31 @@ sub parent {
 
 sub is_absolute {
     my $self = shift;
-    $self->{ absolute } = $self->filesystem->path_is_absolute($self->{ path })
+    $self->{ absolute } = $self->filesystem->is_absolute($self->{ path })
         unless defined $self->{ absolute };
     return $self->{ absolute };
 }
 
 sub is_relative {
-    ! $_[0]->is_absolute
+    shift->is_absolute ? 0 : 1;
 }
 
 sub absolute {
     my $self = shift;
     return $self->is_absolute
          ? $self
-         : $self->new( $self->filesystem->make_absolute($self->{ path }) );
+         : $self->new( $self->filesystem->absolute($self->{ path }) );
 }
 
 sub relative {
     my $self = shift;
-    return $self->new( 
-        $self->filesystem->make_relative($self->{ path }, shift) 
-    )->collapse;
+    my $base = $self->directory || $self->{ path }; # allow files to return parent dir
+    my $fs   = $self->filesystem;
+    my $path = $fs->join_dir(@_);
+    $path = $fs->join_dir($base, $path) unless $fs->is_absolute($path);
+    $path = $fs->collapse_dir($path);
+#    $self->debug("relative path: $base + ", join('/', @_), " = $path\n");
+    return $self->new($path);
 }
 
 sub collapse {
@@ -156,6 +163,12 @@ sub collapse {
     $self->{ path      } = $fs->join_path(@$self{@VDN_FIELDS});
     return $self;
 }
+
+#sub collapse {
+#    my $self = shift->absolute;
+#    $self->{ path } = $self->filesystem->collapse_dir($self->{ path });
+#    return $self;
+#}
 
 sub exists {
     -e $_[0]->{ path };

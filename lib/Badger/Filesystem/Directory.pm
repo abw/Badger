@@ -18,13 +18,13 @@ use Badger::Class
     base        => 'Badger::Filesystem::Path',
     constants   => 'ARRAY',
     constant    => {
-        is_directory => 1,
-        type         => 'Directory',
+        is_dir  => 1,
+        type    => 'Directory',
     };
 
 use Badger::Filesystem::Path ':fields';
 
-*is_dir = \&is_directory;
+*is_directory = \&is_dir;
 
 sub init {
     my ($self, $config) = @_;
@@ -48,17 +48,22 @@ sub init {
     return $self;
 }
 
-sub directory {
-    $_[0];
-}
-
-#sub open { 
-#    IO::Dir->new(@_) 
+#sub collapse {
+#    my $self = shift->absolute;
+#    my $fs   = $self->filesystem;
+#    $self->{ directory } = $fs->collapse_dir($self->{ directory });
+#    $self->{ path      } = $fs->join_path(@$self{@VDN_FIELDS});
+#    return $self;
 #}
+
+sub open { 
+    my $self = shift;
+    $self->filesystem->open_dir($self->{ path }, @_);
+}
 
 sub children {
     my $self = shift->must_exist;
-
+    $self->todo;
 }
 
 1;

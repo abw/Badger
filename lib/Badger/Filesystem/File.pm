@@ -43,8 +43,21 @@ sub init {
     return $self;
 }
 
+#sub collapse {
+#    my $self = shift->absolute;
+#    my $fs   = $self->filesystem;
+#    $self->{ directory } = $fs->collapse_dir($self->{ directory });
+#    $self->{ path      } = $fs->join_path(@$self{@VDN_FIELDS});
+#    return $self;
+#}
+#
 sub directory {
     $_[0]->parent;
+}
+
+sub open {
+    my $self = shift;
+    $self->filesystem->open_file($self->{ path }, @_);
 }
 
 1;
