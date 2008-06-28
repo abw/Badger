@@ -16,7 +16,7 @@ use warnings;
 
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Base;
-use Test::More tests  => 86;
+use Test::More tests  => 95;
 
 # run with -d flag to enable debugging, e.g. perl base.t -d
 our $DEBUG = $Badger::Base::DEBUG = grep(/^-d/, @ARGV);
@@ -57,7 +57,7 @@ ok( $obj->error() eq 'barf', 'got object error' );
 
 
 #------------------------------------------------------------------------
-# test the warning() and warnings() object methods
+# test the warn() method
 #------------------------------------------------------------------------
 
 my $warning;
@@ -112,6 +112,9 @@ use base 'Badger::Base';
 
 our $ON_WARN  = 'most_excellent';
 our $ON_ERROR = 'most_bogus';
+our $MESSAGES = {
+    totally => 'Totally %s dude',
+};
 
 sub most_excellent {
     my ($self, $message) = @_;
@@ -136,6 +139,9 @@ $obj->warn("I believe our adventure through time has taken a most serious turn."
 is( $obj->{ excellent }, "I believe our adventure through time has taken a most serious turn.", 'adventure through time');
 is( $goodness, 'this is good', 'warning chain was broken by the most excellent handler' );
 
+$obj->warn_msg( totally => 'bogus' );
+is( $obj->{ excellent }, "Totally bogus dude", 'Totally bogus dude');
+
 # redirect warnings to errors
 $obj = $pkg->new;
 $obj->on_warn('error');
@@ -143,6 +149,24 @@ eval { $obj->warn("This warning goes up to eleven") };
 is( $@, 'base error - This warning goes up to eleven', 'upgraded warning to error' );
 
 
+#-----------------------------------------------------------------------
+# test ON_ERROR is *NOT* inherited
+#-----------------------------------------------------------------------
+
+our $SAVE_THIS;
+
+package Foo;
+use base 'Badger::Base';
+our $ON_WARN = 'error';
+
+package Bar;
+use base 'Badger::Base';
+our $ON_WARN = sub { $SAVE_THIS = shift };
+
+package main;
+$obj = Bar->new();
+$obj->warn('poop');
+is( $SAVE_THIS, 'poop', "You've got poop on your shoes" );
 
 #------------------------------------------------------------------------
 # Badger::Test::Fail always fails, but we check it reports errors OK
@@ -452,14 +476,14 @@ like( $@,
     'bar not implemented' );
 
 eval { $incomplete->wam };
-is( $@, 
-    "my.incomplete error - wam() is TODO in My::Incomplete at line $wam_line", 
-    'wam todo' );
+like( $@, 
+      qr/my\.incomplete error - wam\(\) is TODO for My::Incomplete in .*? at line $wam_line/, 
+      'wam todo' );
 
 eval { $incomplete->bam };
-is( $@, 
-    "my.incomplete error - bam() second test case is TODO in My::Incomplete at line $bam_line", 
-    'bam not implemented' );
+like( $@, 
+      qr/my\.incomplete error - bam\(\) second test case is TODO for My::Incomplete in .*? at line $bam_line/, 
+      'bam not implemented' );
 
 
 #-----------------------------------------------------------------------
@@ -506,6 +530,12 @@ sub missing {
     shift->not_implemented;
 }
 
+sub not_done {
+    my $self = shift;
+    my $item = shift || $self->todo;
+    $self->todo('with argument');
+}
+
 package main;
 my $mouse = Danger::Mouse->new();
 ok( ! eval { $mouse->hurl('cheese') }, 'eval failed' );
@@ -517,8 +547,31 @@ is( $mouse->reason, 'danger.mouse error - HURLING: cheese', 'danger mouse error'
 ok( ! $mouse->try('missing'), 'try missing' );
 like( $mouse->reason, qr/danger\.mouse error - missing\(\) is not implemented for Danger::Mouse/, 'danger mouse missing' );
 
-    
-    
+ok( ! $mouse->try('not_done'), 'not_done' );
+like( $mouse->reason, qr/danger\.mouse error - not_done\(\) is TODO for Danger::Mouse/, 'danger mouse todo' );
+
+ok( ! $mouse->try( not_done => 10 ), 'not_done with arg' );
+like( $mouse->reason, qr/danger\.mouse error - not_done\(\) with argument is TODO for Danger::Mouse/, 'danger mouse todo' );
+
+
+#-----------------------------------------------------------------------
+# test fatal
+#-----------------------------------------------------------------------
+
+eval { $mouse->fatal('sun exploded') };
+like( $@, qr/Fatal badger error: sun exploded/, 'fatal error' );
+
+package Your::Badger::Module;
+use base 'Badger::Base';
+our $ID = 'YBM';
+
+package main;
+eval { Your::Badger::Module->error('Fail!') };
+is( $@, 'YBM error - Fail!', 'YBM Fail!' );
+
+Your::Badger::Module->id('BadgerMod');
+eval { Your::Badger::Module->error('Fail!') };
+is( $@, 'BadgerMod error - Fail!', 'BadgerMod Fail!' );
     
 __END__
 
