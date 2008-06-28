@@ -131,13 +131,21 @@ sub hash       { %{ hash_ref(@_)   || return } }
 sub var {
     my $self = shift;
     my $name = shift;
-    my $pkg  = $self->{ name };
     no strict 'refs';
     no warnings 'once';
     
     return @_
-        ? (${"${pkg}::$name"} = shift)
-        :  ${"${pkg}::$name"};
+        ? (${$self->{ name } . '::' . $name} = shift)
+        :  ${$self->{ name } . '::' . $name};
+}
+
+sub var_default {
+    my ($self, $name, $default) = @_;
+    no strict 'refs';
+    no warnings 'once';
+
+    return ${$self->{ name } .'::' . $name} 
+        ||= $default;
 }
 
 sub any_var {
@@ -172,6 +180,7 @@ sub all_vars {
         no warnings 'once';
         push(@values, $value)
             if defined ($value = ${"${pkg}::${name}"});
+        _debug("got: $value\n") if $DEBUG && $value;
     }
     return wantarray ? @values : \@values;
 }
@@ -182,14 +191,15 @@ sub list_vars {
     my $vars = $self->all_vars($name);
     my (@merged, $list);
 
-    # reverse the package vars so we get base classes first, followed by subclass,
-    # then we add any additional arguments on as well in the order specified
-    foreach $list ( reverse(@$vars), @_ ) {
+    foreach $list (@$vars, @_) {
         next unless defined $list;
-        return $self->{name}->error("Invalid $name configuration option (not a list ref): $list")
-            unless ref $list eq 'ARRAY';
-        next unless @$list;
-        push(@merged, @$list);
+        if (ref $list eq 'ARRAY') {
+            next unless @$list;
+            push(@merged, @$list);
+        }
+        else {
+            push(@merged, $list);
+        }
     }
 
     return \@merged;
