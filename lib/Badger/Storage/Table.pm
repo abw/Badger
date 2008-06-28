@@ -59,9 +59,8 @@ sub record_object {
 }
 
 sub create_record { shift->not_implemented }
-sub open_record   { shift->not_implemented }
+sub fetch_record  { shift->not_implemented }
 sub delete_record { shift->not_implemented }
-sub close_record  { shift->not_implemented }
 
 
 1;

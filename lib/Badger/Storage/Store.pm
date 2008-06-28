@@ -55,7 +55,7 @@ sub table_id {
     shift || return $self->error_msg( missing => 'table' );
 }
 
-sub table_object {                          # table object constructor
+sub table_object {
     my $self   = shift;
     my $config = @_ && ref $_[0] eq 'HASH' ? shift : { @_ };
     $config->{ store } = $self;

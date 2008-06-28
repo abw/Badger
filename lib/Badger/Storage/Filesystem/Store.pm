@@ -91,7 +91,7 @@ __END__
 
 =head1 NAME
 
-Badger::Filesystem::Store - storage backend using the filesystem
+Badger::Storage::Filesystem::Store - storage backend using the filesystem
 
 =head1 SYNOPSIS
 
