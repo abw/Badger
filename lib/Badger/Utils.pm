@@ -74,6 +74,23 @@ sub maybe_load_module {
     eval { shift->load_module(@_) } || 0;
 }
 
+sub xprintf {
+    my ($class, $format, @args) = @_;
+    $class->debug(" input format: $format\n") if $DEBUG;
+    $format =~ s/<(\d+)(?::([#\-\+ ]?[\w\.]+))?>/'%' . $1 . '$' . ($2 || 's')/eg;
+    $class->debug("output format: $format\n") if $DEBUG;
+    sprintf($format, @args);
+    # accept numerical flags like %0 %1 %2 as well as %s
+#    my $n = 0;
+#    $format =~ s/%(?:(s)|(\d+))/$1 ? $args[$n++] : $args[$2]/ge;
+#    return $format;
+}
+
+sub debug {
+    my $self = shift;
+    print STDERR @_;
+}
+
 1;
 
 __END__
