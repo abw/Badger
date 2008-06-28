@@ -14,20 +14,21 @@
 package Badger::Exception;
 
 use Badger::Class
-    base     => 'Badger::Base',
-    version  => 0.01,
-    debug    => 0,
-    constant => {
-        true => 1,
-    };
+    base        => 'Badger::Base',
+    version     => 0.01,
+    debug       => 0,
+    set_methods => 'type',
+    constants   => 'TRUE';
 
 use overload 
     q|""|    => 'text', 
-    bool     => 'true',
+    bool     => 'TRUE',
     fallback => 1;
 
-our $FORMAT  = '<type> error - <info>' unless defined $FORMAT;
-our $TYPE    = 'undef' unless defined $TYPE;
+our $FORMAT  = '<type> error - <info>'  unless defined $FORMAT;
+our $TYPE    = 'undef'                  unless defined $TYPE;
+our $INFO    = 'No information'         unless defined $INFO;
+our $ANON    = 'Unknown'                unless defined $ANON;
 
 
 sub init {
@@ -40,52 +41,25 @@ sub init {
     return $self;
 }
 
-
-#------------------------------------------------------------------------
-# type()
-#
-# Get/set the exception type.
-#------------------------------------------------------------------------
-
-sub type {
-    my $self = shift;
-    return @_ ? ($self->{ type } = shift) : $self->{ type };
-}
-
-
-#------------------------------------------------------------------------
-# info()
-#
-# Get/set the exception info.
-#------------------------------------------------------------------------
-
 sub info {
     my $self = shift;
-    return @_ ? ($self->{ info } = shift) : $self->{ info };
+    return @_ 
+        ? ($self->{ info }  = shift) 
+        : ($self->{ info } || $INFO);
 }
-
-
-#------------------------------------------------------------------------
-# file()
-#
-# Get/set the exception file information.
-#------------------------------------------------------------------------
 
 sub file {
     my $self = shift;
-    return @_ ? ($self->{ file } = shift) : ($self->{ file } || 'unknown');
+    return @_ 
+        ? ($self->{ file }  = shift) 
+        : ($self->{ file } || $ANON);
 }
-
-
-#------------------------------------------------------------------------
-# line()
-#
-# Get/set the line number.
-#------------------------------------------------------------------------
 
 sub line {
     my $self = shift;
-    return @_ ? ($self->{ line } = shift) : ($self->{ line } || 'unknown');
+    return @_ 
+        ? ($self->{ line }  = shift) 
+        : ($self->{ line } || $ANON);
 }
 
 
