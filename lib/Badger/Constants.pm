@@ -27,29 +27,37 @@ use constant {
     CODE            => 'CODE',
     REGEX           => 'Regexp',
     
-    # generally useful constants
-    LAST            => -1,          
+    # constant values
     FALSE           => 0,
     TRUE            => 1,
-    OFF             => 0,            # in the beginning was the void...
-    ON              => 1,            # let there be light!
-    ALL             => 'all',        # used to enable various things
-    NONE            => 'none',       # used to disable various things
-    DEFAULT         => 'default',    # used to explicitly select the default option
-    CRLF            => "\015\012",   # unambiguous CR+LF sequence
-
-    # match a comma or whitespace
-    DELIMITER       => qr/(?:,\s*)|\s+/,
+    OFF             => 0,            
+    ON              => 1,            
+    ALL             => 'all',
+    NONE            => 'none',
+    DEFAULT         => 'default',
+    
+    # misc constants used internally
+    BLANK           => '',
+    SPACE           => ' ',
+    LAST            => -1,                  # last item in a list
+    CRLF            => "\015\012",          # unambiguous CR+LF sequence
+    DELIMITER       => qr/(?:,\s*)|\s+/,    # match a comma or whitespace
+    PKG             => '::',                
+    REFS            => 'refs',
+    ONCE            => 'once',
 
 };
 
 CONSTANTS->export_any(qw( 
-    CONSTANTS LAST FALSE TRUE OFF ON ALL NONE DEFAULT CRLF DELIMITER
+    CONSTANTS LAST BLANK SPACE CRLF DELIMITER PKG REFS ONCE
 ));
 
 CONSTANTS->export_tags({
     types => [qw( 
         ARRAY HASH CODE REGEX
+    )],
+    values => [qw(
+        FALSE TRUE OFF ON ALL NONE DEFAULT
     )],
 });
 
