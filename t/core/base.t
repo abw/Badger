@@ -16,11 +16,11 @@ use warnings;
 
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Base;
-use Test::More tests  => 96;
+use Test::More tests  => 86;
 
 # run with -d flag to enable debugging, e.g. perl base.t -d
 our $DEBUG = $Badger::Base::DEBUG = grep(/^-d/, @ARGV);
-$Badger::Base::WARN_OUT_LOUD = $DEBUG;
+#$Badger::Base::WARN_OUT_LOUD = $DEBUG;
 
 my ($pkg, $obj);
 
@@ -60,67 +60,87 @@ ok( $obj->error() eq 'barf', 'got object error' );
 # test the warning() and warnings() object methods
 #------------------------------------------------------------------------
 
-ok( ! $obj->warning('first warning'), 'sent first warning' );
+my $warning;
+$SIG{__WARN__} = sub {
+    $warning = shift;
+};
+$obj->warn("Strange things are afoot at the Circle-K\n");
+is( $warning, "Strange things are afoot at the Circle-K\n", 'got warning' );
 
-my $warnings = $obj->warning() || die "no warnings returned\n";
-ok( $warnings, 'got warnings back' );
-is( ref $warnings, 'ARRAY', 'warnings is an array ref' );
-is( scalar @$warnings, 1, 'has one item' );
-is( $warnings->[0], 'first warning', 'first warning correct' );
+$obj = $pkg->new( on_warn => sub { 
+    my $msg = shift;
+    chomp $msg;
+    $warning = "WARN[$msg]";
+    return $msg;
+} );
 
-ok( ! $obj->warning('second ', 'warning'), 'sent second warning' );
-is( scalar @$warnings, 2, 'has two items' );
-is( $warnings->[0], 'first warning', 'first warning still correct' );
-is( $warnings->[1], 'second warning', 'second warning correct' );
+$obj->warn("Be excellent to each other\n");
+is( $warning, "WARN[Be excellent to each other]", 'got warning from custom handler' );
 
-ok( ! $obj->warning({ test => 'reference' }), 'sent reference warning' );
-is( $warnings->[2]->{ test }, 'reference', 'got reference warning back' );
+my $extra;
+$obj->on_warn( sub {
+    my $msg = shift;
+    chomp $msg;
+    $extra = "EXTRA[$msg]";
+    return $msg;
+});
 
-# warnings() returns list in list context
-my @warns = $obj->warnings();
-is( $warns[0], 'first warning', 'list warning one' );
-is( $warns[1], 'second warning', 'list warning two' );
-
-# warnings() returns list ref in scalar context
-my $warns = $obj->warnings();
-is( $warns, 3, 'three warnings' );
-$warns = $obj->warning();
-is( $warns->[0], 'first warning', 'list ref warning one' );
-is( $warns->[1], 'second warning', 'list ref warning two' );
-
-# warnings($a, $b, $c) sets several warnings
-ok( ! $obj->warnings('foo', 'bar', { ping => 'pong' }), 'set warnings' );
-is( $warns->[3], 'foo', 'foo warning' );
-is( $warns->[4], 'bar', 'bar warning' );
-is( $warns->[5]->{ ping }, 'pong', 'game of ping pong' );
+$obj->warn("Totally bogus, dude\n");
+is( $warning, "WARN[Totally bogus, dude]", 'got totally bogus warning' );
+is( $extra, "EXTRA[Totally bogus, dude]", 'got totally bogus extra warning' );
 
 
 #------------------------------------------------------------------------
-# test the warning() and warnings() class methods
+# test the $ON_WARN pkg var works
 #------------------------------------------------------------------------
 
 package Badger::Test::Warning;
-use base qw( Badger::Base );
-use vars qw( $WARNING );
+use base 'Badger::Base';
+
+our $ON_WARN = 'totally_bogus';
 
 package main;
+delete $SIG{__WARN__};
 
 my $wpkg = 'Badger::Test::Warning';
-ok( ! defined $wpkg->warning('warning one'), 'sent first pkg warning' );
-$warns = $wpkg->warning();
-ok( $warns, 'got package warnings back' );
-is( ref $warns, 'ARRAY', 'it is an array' );
-is( scalar @$warns, '1', 'it has one entry' );
-is( $warns->[0], 'warning one', 'package warning is correct' );
+eval { $wpkg->warn("fall apart") };
+like( $@, qr/Invalid on_warn method: totally_bogus/, 'detected bogus warn handler' );
 
-ok( ! defined $wpkg->warning('two'), 'sent second pkg warning' );
-is( join(', ', $wpkg->warnings()), 'warning one, two', 
-    'got back both package warnings' );
 
-is( $wpkg->warnings('three', 'four'), 0, 
-    'sent third and fourth pkg warning' );
-is( join(', ', $wpkg->warnings()), 'warning one, two, three, four', 
-    'got back all four package warnings' );
+package Badger::Test::Warning2;
+use base 'Badger::Base';
+
+our $ON_WARN  = 'most_excellent';
+our $ON_ERROR = 'most_bogus';
+
+sub most_excellent {
+    my ($self, $message) = @_;
+    $self->{ excellent } =  $message;
+    return 0;  # don't pass it on.
+}
+
+sub most_bogus {
+    my ($self, $message) = @_;
+    $self->{ bogus } =  $message;
+}
+
+package main;
+my $goodness = 'this is good';
+$SIG{__WARN__} = sub { $goodness = 'this is bad' };
+
+# 0 return value from most_excellent should terminate warning chain
+# before it gets a change to raise a regular warning
+$wpkg = 'Badger::Test::Warning2';
+$obj = $wpkg->new;
+$obj->warn("I believe our adventure through time has taken a most serious turn.");
+is( $obj->{ excellent }, "I believe our adventure through time has taken a most serious turn.", 'adventure through time');
+is( $goodness, 'this is good', 'warning chain was broken by the most excellent handler' );
+
+# redirect warnings to errors
+$obj = $pkg->new;
+$obj->on_warn('error');
+eval { $obj->warn("This warning goes up to eleven") };
+is( $@, 'base error - This warning goes up to eleven', 'upgraded warning to error' );
 
 
 
@@ -302,8 +322,8 @@ use base qw( Badger::Base );
 our $MESSAGES = {
     no_pony    => 'Missing pony! (got "%s")',
     no_buffy   => 'Missing Buffy! (got %s and %s)',
-    one_louder => '%0. Exactly. %1 louder',
-    not_ten    => "Well, it's %1 louder, isn't it? It's not %0.",
+    one_louder => '%1$s. Exactly. %2$s louder',
+    not_ten    => "Well, it's %2\$s louder, isn't it? It's not %1\$s.",
 };
 
 package main;
@@ -370,6 +390,7 @@ our @COMPLAINT;
 
 sub complain {
     push(@COMPLAINT, @_);
+    return @_;
 }
 
 package main;
@@ -422,12 +443,12 @@ my $incomplete = My::Incomplete->new();
 
 eval { $incomplete->foo };
 like( $@, 
-    qr/my.incomplete error - foo\(\) is not implemented in .*?base.t at line $foo_line/, 
+    qr/my.incomplete error - foo\(\) is not implemented .*?base.t at line $foo_line/, 
     'foo not implemented' );
 
 eval { $incomplete->bar };
 like( $@, 
-    qr/my.incomplete error - bar\(\) first test case is not implemented in .*?base.t at line $bar_line/, 
+    qr/my.incomplete error - bar\(\) first test case is not implemented .*?base.t at line $bar_line/, 
     'bar not implemented' );
 
 eval { $incomplete->wam };
@@ -440,6 +461,65 @@ is( $@,
     "my.incomplete error - bam() second test case is TODO in My::Incomplete at line $bam_line", 
     'bam not implemented' );
 
+
+#-----------------------------------------------------------------------
+# test decline() method an friends
+#-----------------------------------------------------------------------
+
+package Badger::Test::Decliner;
+use base 'Badger::Base';
+
+sub barf {
+    shift->error("failed in a miserable way");
+}    
+
+sub yelp {
+    shift->decline("decline in a wishy-washy way");
+}
+
+package main;
+
+my $dec = Badger::Test::Decliner->new;
+ok( ! $dec->yelp, 'yelp declined' );
+is( $dec->reason, 'decline in a wishy-washy way', 'got reason' );
+ok( $dec->declined, 'declined flag set' );
+
+# try() puts an eval { ... } wrapper around a methods
+eval { $dec->barf };
+is( $dec->reason, 'failed in a miserable way', 'barfed error' );
+ok( ! $dec->declined, 'declined flag cleared' );
+    
+
+
+#-----------------------------------------------------------------------
+# test try/catch
+#-----------------------------------------------------------------------
+
+package Danger::Mouse;
+use base 'Badger::Base';
+
+sub hurl {
+    shift->error("HURLING: ", @_);
+}
+
+sub missing {
+    shift->not_implemented;
+}
+
+package main;
+my $mouse = Danger::Mouse->new();
+ok( ! eval { $mouse->hurl('cheese') }, 'eval failed' );
+is( $@, 'danger.mouse error - HURLING: cheese', 'danger mouse error' );
+
+ok( ! $mouse->try( hurl => 'cheese' ), 'try failed' );
+is( $mouse->reason, 'danger.mouse error - HURLING: cheese', 'danger mouse error' );
+
+ok( ! $mouse->try('missing'), 'try missing' );
+like( $mouse->reason, qr/danger\.mouse error - missing\(\) is not implemented for Danger::Mouse/, 'danger mouse missing' );
+
+    
+    
+    
 __END__
 
 # Local Variables:

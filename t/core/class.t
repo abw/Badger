@@ -83,7 +83,7 @@ is( join(', ', $bob->class->all_vars('NAME')), 'Bob, Alice', 'Bob vars $NAME' );
 
 # merged list var
 is( join(', ', @{ $alice->class->list_vars('ALIASES') }), 'Ally, Ali', 'Alice ALIASES' );
-is( join(', ', @{ $bob->class->list_vars('ALIASES') }), 'Ally, Ali, Robert, Rob', 'Bob ALIASES' );
+is( join(', ', @{ $bob->class->list_vars('ALIASES') }), 'Robert, Rob, Ally, Ali', 'Bob ALIASES' );
 
 # merged hash var
 my $friends = $alice->class->hash_vars('FRIENDS');
@@ -273,7 +273,7 @@ use Badger::Class
         do_you_wear => "Do you wear %0?",
     };
 
-class->messages( goes_up_to => 'This %0 goes up to %1' );
+class->messages( goes_up_to => 'This <1> goes up to <2>' );
 
 package main;
 my $nigel = Nigel->new;
@@ -391,6 +391,7 @@ is( $t2->ding, 'Wrong', 'generated ding get method' );
 is( $t2->dong, 'Number', 'generated dong get method' );
 is( $t2->dang('Ding-A-Ling'), 'Ding-A-Ling', 'set dang' );
 is( $t2->dang, 'Ding-A-Ling', 'get dang' );
+
 
 __END__
 
