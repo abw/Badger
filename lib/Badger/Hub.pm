@@ -18,13 +18,8 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Prototype',
     utils     => 'UTILS',
-    constants => 'HASH ARRAY',
-    constant  => {
-        COMPONENTS => 'COMPONENTS',
-        DELEGATES  => 'DELEGATES',
-        COMP_CACHE => 'COMP_CACHE',
-        DELG_CACHE => 'DELG_CACHE',
-    },
+    constants => 'HASH ARRAY REFS PKG',
+    words     => 'COMPONENTS DELEGATES COMP_CACHE DELG_CACHE',
     messages => {
         no_module => 'No %s module defined.',
     };
@@ -102,13 +97,13 @@ sub delegate {
 sub generate_component_method {
     my ($self, $name, $comp) = @_;
     my $class = ref $self || $self;
-    no strict 'refs';
+    no strict REFS;
 
     $LOADED->{ $name } ||= UTILS->load_module($comp);
 
-    unless (defined &{"${class}::$name"}) {
+    unless (defined &{$class.PKG.$name}) {
         $class->debug("generating $name() in $class\n") if $DEBUG;
-        *{"${class}::$name"} = sub {
+        *{$class.PKG.$name} = sub {
             my $self = shift;
             my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
             $self = $self->prototype() unless ref $self;
@@ -127,15 +122,15 @@ sub generate_component_method {
 sub generate_delegate_method {
     my ($self, $name, $deleg) = @_;
     my $class = ref $self || $self;
-    no strict 'refs';
+    no strict REFS;
     
     # foo => bar is mapped to $self->bar->foo
     # foo => [bar, baz] is mapped to $self->bar->baz
     my ($m1, $m2) = ref $deleg eq ARRAY ? @$deleg : ($deleg, $name);
 
-    unless (defined &{"${class}::$name"}) {
+    unless (defined &{$class.PKG.$name}) {
         $class->debug("generating $name() in $class\n") if $DEBUG;
-        *{"${class}::$name"} = sub {
+        *{$class.PKG.$name} = sub {
             shift->$m1->$m2(@_);
         };
     }

@@ -20,20 +20,29 @@ use strict;
 use warnings;
 use Carp;
 use constant {              
-    ALL     => 'all',           # Alas, we can't pull these in from 
-    NONE    => 'none',          # Badger::Constants because it's a 
-    DEFAULT => 'default',       # subclass of Badger::Exporter which
-    IMPORT  => 'import',        # gives us a chicken-and-egg dependency
-    IMPORTS => 'imports',       # problem.
-    HOOKS   => 'hooks',         
-    ARRAY   => 'ARRAY',         
-    HASH    => 'HASH',      
-    CODE    => 'CODE',
+    ALL          => 'all',             # Alas, we can't pull these in from 
+    NONE         => 'none',            # Badger::Constants because it's a 
+    DEFAULT      => 'default',         # subclass of Badger::Exporter which
+    IMPORT       => 'import',          # gives us a chicken-and-egg dependency
+    IMPORTS      => 'imports',         # problem.  We could pull them into 
+    HOOKS        => 'hooks',           # Badger::Constants though because that's
+    ARRAY        => 'ARRAY',           # a subclass... hmmm....
+    HASH         => 'HASH',      
+    CODE         => 'CODE',
+    EXPORT_ALL   => 'EXPORT_ALL',
+    EXPORT_ANY   => 'EXPORT_ANY',
+    EXPORT_TAGS  => 'EXPORT_TAGS',
+    EXPORT_FAIL  => 'EXPORT_FAIL',
+    EXPORT_HOOKS => 'EXPORT_HOOKS',
+    ISA          => 'ISA',
+    REFS         => 'refs',
+    ONCE         => 'once',
+    PKG          => '::',
+    DELIMITER    => qr/(?:,\s*)|\s+/,  # match a comma or whitespace
 };
 
 our $VERSION   = 0.01;
 our $DEBUG     = 0 unless defined $DEBUG;
-our $DELIMITER = qr/(?:,\s*)|\s+/;
 our $HANDLERS  = {
     all   => \&export_all,
     any   => \&export_any,
@@ -41,20 +50,21 @@ our $HANDLERS  = {
     hooks => \&export_hooks,
     fail  => \&export_fail,
 };
-    
+
+
 
 #------------------------------------------------------------------------
-# exports(%exports)
+# exports(%data)
 #
-# Maps keys in \%exports to $HANDLERS and calls them, passing the 
-# corresponding value as an argument.  e.g.
-#   __PACKAGE__->exports( all => '$foo $bar', any => '$wam $bam' )
+# Ship exports out to $HANDLERS.
 #------------------------------------------------------------------------
-
+    
 sub exports {
     my $self = shift;
     my $data = @_ == 1 && ref $_[0] eq HASH ? shift : { @_ };
     my $handler;
+
+    # delegate each key in $data to a handler in $HANDLERS
     while (my ($key, $value) = each %$data) {
         $handler = $HANDLERS->{ $key } 
             || croak "Invalid exports key: $key\n";
@@ -73,9 +83,11 @@ sub export_all {
     my $self  = shift;
     my $class = ref $self || $self;
     my $tags  = @_ == 1 ? shift : [ @_ ];
-    $tags = [ split($DELIMITER, $tags) ] unless ref $tags eq ARRAY;
-    no strict 'refs';
-    my $export_all = ${"${class}::EXPORT_ALL"} ||= [ ];
+    $tags = [ split(DELIMITER, $tags) ] unless ref $tags eq ARRAY;
+
+    # add new symbols into $EXPORT_ALL list ref
+    no strict REFS;
+    my $export_all = ${$class.PKG.EXPORT_ALL} ||= [ ];
     push(@$export_all, @$tags);
 }
 
@@ -90,9 +102,11 @@ sub export_any {
     my $self  = shift;
     my $class = ref $self || $self;
     my $tags  = @_ == 1 ? shift : [ @_ ];
-    $tags = [ split($DELIMITER, $tags) ] unless ref $tags eq ARRAY;
-    no strict 'refs';
-    my $export_any = ${"${class}::EXPORT_ANY"} ||= [ ];
+    $tags = [ split(DELIMITER, $tags) ] unless ref $tags eq ARRAY;
+
+    # add new symbols into $EXPORT_ANY list ref
+    no strict REFS;
+    my $export_any = ${$class.PKG.EXPORT_ANY} ||= [ ];
     push(@$export_any, @$tags);
 }
 
@@ -110,15 +124,12 @@ sub export_tags {
     my @syms  = map { 
         ref $_ eq ARRAY ? @$_ :
         ref $_ eq HASH  ? %$_ :
-        split $DELIMITER
+        split DELIMITER
     } values %$tags;
 
-#    print STDERR __PACKAGE__, ' ', __LINE__, "  export_tags($class, ", join(', ', @syms), ")\n";
-    
-    no strict 'refs';
-
-    # add new tags into $EXPORT_TAGS hash
-    my $export_tags = ${"${class}::EXPORT_TAGS"} ||= { };
+    # add new tags into $EXPORT_TAGS hash ref
+    no strict REFS;
+    my $export_tags = ${$class.PKG.EXPORT_TAGS} ||= { };
     @$export_tags{ keys %$tags } = values %$tags;
 
     # also add any symbols (except those that reference other tagsets)
@@ -141,13 +152,14 @@ sub export_hooks {
     my $class = ref $self || $self;
     my $hooks = (@_ == 1) && (ref $_[0] eq HASH) ? shift : { @_ };
 
-    no strict 'refs';
-    my $table = ${"${class}::EXPORT_HOOKS"};
+    # add new export hooks into $EXPORT_HOOK hash ref
+    no strict REFS;
+    my $table = ${$class.PKG.EXPORT_HOOKS};
     if ($table) {
         @$table{ keys %$hooks } = values %$hooks;
     }
     else {
-        $table = ${"${class}::EXPORT_HOOKS"} = $hooks;
+        $table = ${$class.PKG.EXPORT_HOOKS} = $hooks;
     }
     return $table;
 }
@@ -162,10 +174,10 @@ sub export_hooks {
 sub export_fail {
     my $self  = shift;
     my $class = ref $self || $self;
-    no strict 'refs';
+    no strict REFS;
     return @_
-        ? (${"${class}::EXPORT_FAIL"} = shift)
-        :  ${"${class}::EXPORT_FAIL"};
+        ? (${$class.PKG.EXPORT_FAIL} = shift)
+        :  ${$class.PKG.EXPORT_FAIL};
 }
 
 
@@ -173,9 +185,7 @@ sub export_fail {
 # import(@imports)
 # import(\@imports)
 #
-# Method called when the module is loaded with use.  Merges all @EXPORT,
-# @EXPORT_OK, %EXPORT_TAGS and $EXPORT_HOOKS for all base classes, 
-# ensuring that all their relevant symbols get exported too.
+# Method called when the module is loaded with use. 
 #------------------------------------------------------------------------
 
 sub import {
@@ -194,20 +204,24 @@ sub import {
 # export(@imports)
 #
 # Class method to export the symbols to the caller.  This is where all
-# the heavy lifting happens.
+# the heavy lifting happens.   Merges all $EXPORT_ALL, $EXPORT_ANY,
+# $EXPORT_TAGS and $EXPORT_HOOKS for all base classes, ensuring that all
+# their relevant symbols get exported too.
 #-----------------------------------------------------------------------
 
 sub export {
     my $class   = shift;
     my $target  = shift;
-    my $imports = (@_ == 1) && ref $_[0] eq ARRAY ? shift : [ @_ ];
+    my $imports = @_ == 1 ? shift : [ @_ ];
     my (@export_all, @export_any, %symbol_pkg, %export_tags, %export_hooks, @export_fail);
     my ($pkg, $symbols, $symbol, $hook, %done, $next);
     my @pending = ($class);
     my @errors;
 
-#    local $DEBUG = 1;
-    no strict 'refs';
+    $imports = [ split(DELIMITER, $imports) ]
+        unless ref $imports eq ARRAY;
+
+    no strict REFS;
 
     # walk up the inheritance tree collecting values from the
     # @$EXPORT_ALL, @$EXPORT_ANY, %$EXPORT_TAGS and %$EXPORT_HOOKS
@@ -221,7 +235,7 @@ sub export {
         # iterate through any symbols in @$EXPORT_ALL adding
         # the symbol and relevant package (for any we haven't
         # already seen) to a lookup table
-        if ($symbols = ${$pkg.'::EXPORT_ALL'}) {
+        if ($symbols = ${$pkg.PKG.EXPORT_ALL}) {
             foreach $symbol (@$symbols) {
                 push(@export_all, $symbol); 
                 next if $symbol_pkg{ $symbol };
@@ -230,7 +244,7 @@ sub export {
         }
 
         # now do the same for @$EXPORT_ANY
-        if ($symbols = ${$pkg.'::EXPORT_ANY'}) {
+        if ($symbols = ${$pkg.PKG.EXPORT_ANY}) {
             foreach $symbol (@$symbols) {
                 next if $symbol_pkg{ $symbol };
                 $symbol_pkg{ $symbol } = $pkg;
@@ -238,7 +252,7 @@ sub export {
         }
 
         # and %$EXPORT_TAGS
-        if ($symbols = ${$pkg.'::EXPORT_TAGS'}) {
+        if ($symbols = ${$pkg.PKG.EXPORT_TAGS}) {
             foreach $symbol (keys %$symbols) {
                 next if $export_tags{ $symbol };
                 $export_tags{ $symbol } = $symbols->{ $symbol };
@@ -246,7 +260,7 @@ sub export {
         }
 
         # and %$EXPORT_HOOKS
-        if ($symbols = ${$pkg.'::EXPORT_HOOKS'}) {
+        if ($symbols = ${$pkg.PKG.EXPORT_HOOKS}) {
             foreach $symbol (keys %$symbols) {
                 next if $export_hooks{ $symbol };
                 $export_hooks{ $symbol } = $symbols->{ $symbol };
@@ -254,11 +268,14 @@ sub export {
         }
 
         # and $EXPORT_FAIL
-        if ($symbol = ${$pkg.'::EXPORT_FAIL'}) {
+        if ($symbol = ${$pkg.PKG.EXPORT_FAIL}) {
             push(@export_fail, $symbol);
         }
 
-        push(@pending, @{"$pkg\::ISA"});
+        # NOTE: this is a naive method resolution algorithm, but we
+        # can't use the fancy heritage() method in Badger::Class because
+        # of the Chicken-and-Egg dependency problem.
+        push(@pending, @{$pkg.PKG.ISA});
     }
 
     # default to export_all if list of exports not specified
@@ -290,7 +307,7 @@ sub export {
                 }
                 else {
                     # string of space-delimited symbols
-                    unshift(@$imports, split($DELIMITER, $symbols));
+                    unshift(@$imports, split(DELIMITER, $symbols));
                 }
             }
             elsif ($symbol eq DEFAULT) {
@@ -331,8 +348,8 @@ sub export {
             # and add a HOOKS token at the end to re-enable hooks
             $can_hook = 0;
             if ($next = shift @$imports) {
-                $next = [ split($DELIMITER, $next) ] 
-                    unless ref $next eq 'ARRAY';
+                $next = [ split(DELIMITER, $next) ] 
+                    unless ref $next eq ARRAY;
                 unshift(@$imports, @$next, HOOKS);
             }
             else {
@@ -368,14 +385,14 @@ sub export {
 
         if (ref $export_sym eq CODE) {
             # patch directly into the code ref
-            *{"${target}::${symbol}"} = $export_sym;
+            *{$target.PKG.$symbol} = $export_sym;
         }
         else {
             my $type = "&";
             $symbol     =~ s/^(\W)//;
             $export_sym =~ s/^(\W)// and $type = $1;
-            $export_sym = "${pkg}::${export_sym}";
-            *{"${target}::${symbol}"} =
+            $export_sym = $pkg.PKG.$export_sym;
+            *{$target.PKG.$symbol} =
                 $type eq '&' ? \&{$export_sym} :
                 $type eq '$' ? \${$export_sym} :
                 $type eq '@' ? \@{$export_sym} :
@@ -405,9 +422,9 @@ sub export {
 
 sub export_coderef {
     my ($self, $target, $symbol, $coderef) = @_;
-    no strict 'refs';
-    no warnings;
-    *{"${target}::$symbol"} = $coderef;
+    no strict REFS;
+    no warnings ONCE;
+    *{$target.PKG.$symbol} = $coderef;
 }
 
 sub _debug {
@@ -432,7 +449,7 @@ Defining a module subclassed from Badger::Exporter:
     our ($WIZ, $BANG, @BING, %BONG);
 
 Specifying the exports using the all-in-one C<exports()> method:
-    
+
     __PACKAGE__->exports(
         all  => '$WIZ $BANG',           # like Exporter's @EXPORT
         any  => '@BING %BONG',          # like @EXPORT_OK
@@ -450,7 +467,7 @@ Specifying the exports using the all-in-one C<exports()> method:
     );
 
 Or individual C<export_XXX()> methods:
-    
+
     # export all these symbols by default       # methods can take either
     __PACKAGE__->export_all(qw( $WIZ $BANG ));  # a list of symbols or a
     __PACKAGE__->export_all('$WIZ $BANG');      # space-delimited string
@@ -506,6 +523,9 @@ Using the module:
     # importing all symbols using the :all set
     use Badger::AnyModule ':all';
     
+    # specifying multiple symbols in a single string
+    use Badger::AnyModule ':set1 $WIZ @BING';
+    
     # triggering import hooks: prints "hello world\n";
     use Badger::AnyModule 
         hello => 'world';  
@@ -519,20 +539,19 @@ Using the module:
     use Badger::AnyModule 'badger';   
         # warns: Cannot export badger from Badger::AnyModule to main
     
-    # imports option disables any hooks
+    # imports indicates that all remaining arguments are symbols to
+    # import, bypassing any hooks
     use Badger::AnyModule 
         hello   => 'world'
         imports => qw( @BING %BONG );  
 
-    # import (singular) option unpacks strings and disables hooks
+    # import (singular) option indicates that the next item is an 
+    # import symbols (or multiple symbols in a single string) and
+    # disables hooks for that item only.
     use Badger::AnyModule 
         import => '@BING %BONG';  
 
 =head1 DESCRIPTION
-
-TODO: this module was originally written for the Template Toolkit v3. It's
-currently a cut-n-paste job with the names change. The docs may be incomplete
-or slightly inaccurate until I get a chance to sweep it.
 
 This module performs the same basic function as the C<Exporter> module in that
 it exports symbols from one package namespace to another.
@@ -544,7 +563,7 @@ then any subclasses derived from it will also have that same set of symbols
 
 It implements a number of methods that simplify the process of defining what
 symbols can be exported, and provides a convenient mechanism for handling
-special import flags.
+special import flags. 
 
 =head1 METHODS
 
@@ -597,19 +616,28 @@ This behaviour can be overridden by specifying an explicit list of
 imported symbols.
 
     use Badger::AnyModule '$BANG';          # $BANG only
-    use Badger::AnyModule qw($BANG @BONG);  # $BANG and @BONG
+    use Badger::AnyModule '$BANG @BONG';    # $BANG and @BONG
 
+If you specify a single string of items to export then it will be
+split on whitespace or a comma+whitespace combination of characters
+to extract multiple symbol names from the string.  The following
+three examples all do the same thing.  The last two are effectively
+identical in all but syntax.
+
+    use Badger::AnyModule '$BANG @BONG';    # single string
+    use Badger::AnyModule '$BANG' '@BONG';  # two strings
+    use Badger::AnyModule qw($BANG @BONG);  # same as above
+
+Note that symbol splitting occurs when you specify a single string.
+If you specify multiple strings then none are split.
+
+    # this doesn't work
+    use Badger::AnyModule '$WIZ' '$BANG $BONG';     # WRONG!
+    
 Specify an empty list of arguments if you don't want any symbols 
 imported.
 
     use Badger::AnyModule qw();             # imports nothing
-
-Note that you B<cannot> specify a string of symbols when importing a 
-module:
-
-    use Badger::AnyModule '$BANG @BONG';    # DOES NOT WORK!!!
-
-We may support this at some point in the future, but not now.
 
 =head2 export_any(@symbols)
 
@@ -625,6 +653,7 @@ reference to a list, as per L<export_all()>.
 The symbols specified as arguments are imported when the module is loaded.
 
     use Badger::AnyModule '$BANG';          # $BANG only
+    use Badger::AnyModule '$BANG @BONG';    # $BANG and @BONG
     use Badger::AnyModule qw($BANG @BONG);  # $BANG and @BONG
 
 =head2 export_tags(%tagsets)
@@ -654,7 +683,8 @@ space-delimited strings.
 To load a set of symbols, specify the tag name with a 'C<:>' prefix.
 
     use Badger::AnyModule ':set1';
-    use Badger::AnyModule qw(:set1 :set2);
+    use Badger::AnyModule ':set1 :set2';
+    use Badger::AnyModule qw(:set1 :set2);      
 
 The special 'C<:all>' set imports all symbols.
 
@@ -727,10 +757,10 @@ as usual.
 
 =head2 export_fail(\&handler)
 
-This method can be used to register a subroutine to handle any export failures.
-The arguments passed are as per L<export_hooks()>.  The method should return C<1>
-to indicate that the symbol was handled without error, or C<0> to indicate failure
-which is then reported in the usual way.
+This method can be used to register a subroutine to handle any export
+failures. The arguments passed are as per L<export_hooks()>. The method should
+return C<1> to indicate that the symbol was handled without error, or C<0> to
+indicate failure which is then reported in the usual way.
 
     __PACKAGE__->export_fail(
         sub {

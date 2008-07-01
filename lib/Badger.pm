@@ -39,6 +39,11 @@ sub hub {
     }
 }
 
+sub config {
+    my $self = shift;
+    return $self->hub->config;
+}
+
 1;
 
 __END__

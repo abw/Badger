@@ -1,8 +1,8 @@
 #============================================================= -*-perl-*-
 #
-# t/constants.t
+# t/core/constants.t
 #
-# Test the Badger::Constants.pm module.
+# Test the Badger::Constants module.
 #
 # Written by Andy Wardley <abw@wardley.org>
 #
@@ -13,17 +13,16 @@
 
 use strict;
 use warnings;
-
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Constants ':types';
 use Badger::Test 
     tests => 2,
+    debug => 'Badger::Constants',
     args  => \@ARGV;
+
 
 ok(1, 'loaded Badger::Constants' );
 is( HASH, Badger::Constants::HASH, 'HASH is ' . HASH );
-
-
 
 __END__
 

@@ -16,7 +16,7 @@ use warnings;
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Exporter;
 use Badger::Test 
-    tests => 60,
+    tests => 66,
     debug => 'Badger::Exporter',
     args  => \@ARGV;
 
@@ -192,6 +192,23 @@ is( $HELLO, 'world', '$HELLO is world' );
 is( $GOODBYE, 'see ya', '$GOODBYE is "see ya"' );
 is( $FOO[0], 30, '$FOO[0] is 30' );
 is( $BAR[0], 50, '$BAR[0] is 50' );
+
+
+#-----------------------------------------------------------------------
+# test single string split into multiple exports
+#-----------------------------------------------------------------------
+
+package test_base22;
+use My::Exporter::Subclass2 ':foo :bar :baz $HELLO';
+use Badger::Test;
+
+is( $FOO,        50, '$FOO is 50 from string import' );
+is( $BAR,         4, '$BAR is 4 from string import' );
+is( $BAZ,       999, '$BAZ is 999 from string import' );
+is( $BAZ[0],    987, '$BAZ[0] is 987 from string import' );
+is( $BAZ[1],    654, '$BAZ[1] is 654 from string import' );
+is( $HELLO, 'world', '$HELLO is world from string import' );
+
 
 
 #-----------------------------------------------------------------------
