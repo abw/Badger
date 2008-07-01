@@ -21,10 +21,9 @@ use Badger::Class
     base      => 'Badger::Prototype Badger::Exporter',
     utils     => 'UTILS',
     import    => 'class',
+    words     => 'CODECS CODEC_BASE',
     constants => 'HASH ARRAY DELIMITER',
     constant  => {
-        CODECS        => 'CODECS',
-        CODEC_BASE    => 'CODEC_BASE',
         CODEC_METHOD  => 'codec',
         ENCODE_METHOD => 'encode',
         DECODE_METHOD => 'decode',

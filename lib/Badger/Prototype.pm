@@ -14,17 +14,19 @@
 package Badger::Prototype;
 
 use Badger::Class
-    base    => 'Badger::Base',
-    version => 0.01,
-    debug   => 0;
+    base      => 'Badger::Base',
+    version   => 0.01,
+    debug     => 0,
+    constants => 'PKG REFS ONCE',
+    words     => 'PROTOTYPE';
 
 sub prototype {
     my $class = shift;
     return $class if ref $class;
-    no strict 'refs';
-    no warnings 'once';
-    undef ${"$class\::PROTOTYPE"} if @_;
-    return ${"$class\::PROTOTYPE"} ||= $class->new(@_);
+    no strict   REFS;
+    no warnings ONCE;
+    undef ${$class.PKG.PROTOTYPE} if @_;
+    return ${$class.PKG.PROTOTYPE} ||= $class->new(@_);
 }
 
 1;

@@ -6,7 +6,7 @@ use Badger::Class
     base      => 'Badger::Base',
     import    => 'CLASS class',
     constants => 'ARRAY DELIMITER PKG',
-    constant  => { DEBUG => 'DEBUG' },
+    words     => 'DEBUG',
     exports   => {
         all   => 'plan ok is isnt like unlike pass fail skip_all',
         hooks => {

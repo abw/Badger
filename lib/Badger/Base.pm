@@ -19,13 +19,9 @@ use Badger::Class
     constants => 'CODE HASH ARRAY BLANK SPACE PKG REFS ONCE',
     import    => 'class classes',
     utils     => 'UTILS blessed reftype',
+    words     => 'ID EXCEPTION THROWS ERROR DECLINED',
     constant  => { 
-        base_id    => 'Badger',      # stripped from class name to make id
-        ID         => 'ID',          # $ID can provide a short id for clas
-        EXCEPTION  => 'EXCEPTION',   # $EXCEPTION pkg var holds exception class 
-        THROWS     => 'THROWS',      # $THROWS pkg var hold exception type/code
-        ERROR      => 'ERROR',       # $ERROR stores most recent error message
-        DECLINED   => 'DECLINED',    # $DECLINED is a flag
+        base_id => 'Badger',      # stripped from class name to make id
     };
 
 use Badger::Exception;
