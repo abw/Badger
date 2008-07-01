@@ -60,6 +60,7 @@ sub init {
 sub skip_all ($;$) {
     my $self = shift->prototype;
     $self->test_msg( skip => shift || $self->{ reason } );
+    exit;
 }
     
 
@@ -309,3 +310,132 @@ sub DESTROY {
 1;
 
 __END__
+
+=head1 NAME
+
+Badger::Test::Manager - test manager module
+
+=head1 SYNOPSIS
+
+    use Badger::Test::Manager;
+
+    # object methods
+    my $manager = Badger::Test::Manager->new( plan => 7 );
+    $manager->ok($bool, 'This is a test');
+    $manager->pass('This is ok');
+    $manager->fail('This is not ok');
+    $manager->is($this, $this, 'This and that are equal');
+    $manager->isnt($this, $this, 'This and that are not equal');
+    $manager->like($this, qr/that/, 'This is matched by that');
+    $manager->unlike($this, qr/that/, 'This is not matched by that');
+
+    # class methods
+    Badger::Test::Manager->plan(7);
+    Badger::Test::Manager->ok($bool, 'This is a test');
+    Badger::Test::Manager->pass('This is ok');
+    Badger::Test::Manager->fail('This is not ok');
+    # ... plus is(), isnt(), like() unlike() methods, as above
+    
+=head1 DESCRIPTION
+
+This module implements a simple test manager for L<Badger::Test>.
+
+=head1 METHODS
+
+All methods can be called as class methods or object methods.  In the
+case of class methods, they are called against a prototype object
+returned by the L<prototype()|Badger::Prototype/protoype()> method
+inherited from L<Badger::Prototype>.
+
+=head2 plan($tests)
+
+How many tests you plan to run.  An error will be thrown if you try
+to call this method twice.
+
+=head2 result($flag,@args)
+
+Low-level method to generate a test result.
+
+=head2 ok($flag, $name)
+
+Report on the success or failure of a test:
+
+    $manager->ok(1, 'This is good');
+    $manager->ok(0, 'This is bad');
+
+=head2 is($this, $that, $name)
+
+Test if the first two arguments are equal.
+
+    $manager->is($this, $that, "This and that are equal");
+
+=head2 isnt($this, $that, $name)
+
+Test if the first two arguments are not equal.
+
+    $manager->isnt($this, $that, "This and that are equal");
+
+=head2 like($text, qr/regex/, $name)
+
+Test if the first argument is matched by the regex passed as the second
+argument.
+
+    $manager->like($this, qr/like that/i, "This and that are alike");
+
+=head2 unlike($text, qr/regex/, $name)
+
+Test if the first argument is not matched by the regex passed as the second
+argument.
+
+    $manager->unlike($this, qr/like that/i, "This and that are unalike");
+
+=head2 pass($name)
+
+Pass a test.
+
+    $manager->pass('Module Loaded');
+
+=head2 fail($name)
+
+Fail a test.
+
+    $manager->fail('Stonehenge crushed by a dwarf');
+
+=head2 skip_all($reason)
+
+Skip all tests.  This should be called instead of L<plan()>
+
+    $manager->skip_all("We don't have that piece of scenery any more");
+
+=head2 colour($flag)
+
+Method to enable or disable colour mode.
+
+=head2 color($flag)
+
+An alias for L<colour()>.
+
+=head1 AUTHOR
+
+Andy Wardley L<http://wardley.org/>
+
+=head1 COPYRIGHT
+
+Copyright (C) 1996-2008 Andy Wardley.  All Rights Reserved.
+
+This module is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+L<Badger::Test>
+
+=cut
+
+# Local Variables:
+# mode: perl
+# perl-indent-level: 4
+# indent-tabs-mode: nil
+# End:
+#
+# vim: expandtab shiftwidth=4:
