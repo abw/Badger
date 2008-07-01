@@ -15,9 +15,11 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use Badger::Filesystem::Directory;
-use Test::More tests => 48;
+use Badger::Test 
+    tests => 48,
+    debug => 'Badger::Filesystem::Directory',
+    args  => \@ARGV;
 
-our $DEBUG = $Badger::Filesystem::Directory::DEBUG = grep(/^-d/, @ARGV);
 our $DIR   = 'Badger::Filesystem::Directory';
 our $FS    = 'Badger::Filesystem';
 our $TDIR  = -d 't' ? $FS->join_dir(qw(t filesystem)) : $FS->directory;

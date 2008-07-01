@@ -15,9 +15,11 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use Badger::Filesystem::Path;
-use Test::More tests => 11;
+use Badger::Test 
+    tests => 11,
+    debug => 'Badger::Filesystem::Path',
+    args  => \@ARGV;
 
-our $DEBUG = $Badger::Filesystem::Path::DEBUG = grep(/^-d/, @ARGV);
 our $PATH  = 'Badger::Filesystem::Path';
 our $FS    =  $PATH->filesystem;
 our $CWD   = $FS->cwd;

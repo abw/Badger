@@ -15,7 +15,11 @@ use strict;
 use warnings;
 
 use lib qw( ./lib ../lib ../../lib );
-use Test::More tests => 17;
+use Badger::Test 
+    tests => 17,
+    debug => 'Badger::Prototype',
+    args  => \@ARGV;
+
 
 #------------------------------------------------------------------------
 # define a subclass

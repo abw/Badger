@@ -16,9 +16,10 @@ use warnings;
 
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Config;
-use Test::More tests => 3;
-
-$Badger::Config::DEBUG = grep(/^-d$/, @ARGV);
+use Badger::Test 
+    tests => 3,
+    debug => 'Badger::Config',
+    args  => \@ARGV;
 
 my $pkg = 'Badger::Config';
 

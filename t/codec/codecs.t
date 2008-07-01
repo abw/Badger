@@ -15,9 +15,12 @@ use strict;
 use warnings;
 use lib qw( ./t/codec/lib ./codec/lib ./lib ../lib ../../lib );
 use Badger::Codecs;
-use Test::More tests => 34;
+use Badger::Test 
+    tests => 34,
+    debug => 'Badger::Codecs',
+    args  => \@ARGV;
+
 use constant CODECS => 'Badger::Codecs';
-$Badger::Codecs::DEBUG = grep(/^-d/, @ARGV);
 
 my $hello = 'Hello World';
 my $data  = {
@@ -111,7 +114,7 @@ is( $codecs->decode( base64 => $codecs->encode( foo => $hello ) ),
 #-----------------------------------------------------------------------
 
 package Wibble;
-use Test::More;
+use Badger::Test;
 
 # importing a single codec
 use Badger::Codecs 
@@ -164,7 +167,7 @@ is( decode_storable(encode_storable($data))->{ message },
 #-----------------------------------------------------------------------
 
 package Somewhere::Else;        # avoid redefine warnings;
-use Test::More;
+use Badger::Test;
 
 use Badger::Codecs
     codec => 'storable+base64';
@@ -195,7 +198,7 @@ is( Badger::Codecs->decode(
 
 # multiple codecs with various options
 package Another::Place;
-use Test::More;
+use Badger::Test;
 
 use Badger::Codecs
     codecs => {

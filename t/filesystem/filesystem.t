@@ -15,10 +15,12 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use Badger::Filesystem qw( :types :dirs );
-use Test::More tests => 14;
+use Badger::Test 
+    tests => 14,
+    debug => 'Badger::Filesystem',
+    args  => \@ARGV;
 
-our $DEBUG = $Badger::Filesystem::DEBUG = grep(/^-d/, @ARGV);
-our $FS    = 'Badger::Filesystem';
+our $FS = 'Badger::Filesystem';
 
 my $fs = $FS->new;
 ok( $fs, 'created a new filesystem' );

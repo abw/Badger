@@ -15,7 +15,11 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Codec::Base64;
-use Test::More tests => 1;
+use Badger::Test 
+    tests => 1,
+    debug => 'Badger::Codec Badger::Codecs',
+    args  => \@ARGV;
+
 use constant Codec => 'Badger::Codec::Base64';
 
 my $input = '**&@£foobar';

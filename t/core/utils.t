@@ -17,9 +17,10 @@ use warnings;
 use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Utils qw( UTILS blessed );
 use Badger::Debug;
-use Test::More tests => 11;
-
-my $DEBUG = $Badger::Utils::DEBUG = grep(/^--?d(ebug)?/, @ARGV);
+use Badger::Test 
+    tests => 11,
+    debug => 'Badger::Utils',
+    args  => \@ARGV;
 
 is( UTILS, 'Badger::Utils', 'got UTILS defined' );
 ok( blessed bless([], 'Wibble'), 'got blessed' );

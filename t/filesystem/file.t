@@ -17,9 +17,11 @@ use warnings;
 use Badger::Filesystem;
 use Badger::Filesystem::File '@STAT_FIELDS';
 use Badger::Filesystem::Directory;
-use Test::More tests => 31;
+use Badger::Test 
+    tests => 31,
+    debug => 'Badger::Filesystem::File',
+    args  => \@ARGV;
 
-our $DEBUG = $Badger::Filesystem::File::DEBUG = grep(/^-d/, @ARGV);
 our $FILE  = 'Badger::Filesystem::File';
 our $FS    = 'Badger::Filesystem';
 our $cwd   = $FS->cwd;

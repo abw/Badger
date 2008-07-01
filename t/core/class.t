@@ -13,9 +13,10 @@
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
-use Test::More tests => 84;
-
-our $DEBUG= $Badger::Class::DEBUG = grep(/^-d/, @ARGV);
+use Badger::Test
+    tests => 84,
+    debug => 'Badger::Class',
+    args  => \@ARGV;
 
 
 #-----------------------------------------------------------------------
@@ -317,7 +318,7 @@ is( $top->id, 'class.top', 'top id' );
 #-----------------------------------------------------------------------
 
 package Test::Codec1;
-use Test::More;
+use Badger::Test;
 use Badger::Class codec => 'base64';
 
 my $enc = encode('Hello World');
@@ -391,6 +392,31 @@ is( $t2->ding, 'Wrong', 'generated ding get method' );
 is( $t2->dong, 'Number', 'generated dong get method' );
 is( $t2->dang('Ding-A-Ling'), 'Ding-A-Ling', 'set dang' );
 is( $t2->dang, 'Ding-A-Ling', 'get dang' );
+
+
+__END__
+#-----------------------------------------------------------------------
+# test CLASS
+#-----------------------------------------------------------------------
+
+package Test::Badger::Amp;
+use Badger::Class 
+    constant => { max_volume => 10 };
+
+sub volume { shift->max_volume }
+
+package Test::Badger::Amp::Louder;
+use Badger::Class 
+    base     => 'Test::Badger::Amp',
+    constant => { max_volume => 11 };
+    
+
+package main;
+is( Test::Badger::Amp->volume,         10, 'This amp goes up to 10' );
+is( Test::Badger::Amp::Louder->volume, 11, 'This amp goes up to 11' );
+
+__END__
+
 
 
 __END__

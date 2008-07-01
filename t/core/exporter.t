@@ -15,7 +15,10 @@ use strict;
 use warnings;
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Exporter;
-use Test::More tests  => 60;
+use Badger::Test 
+    tests => 60,
+    debug => 'Badger::Exporter',
+    args  => \@ARGV;
 
 
 #------------------------------------------------------------------------
@@ -24,7 +27,7 @@ use Test::More tests  => 60;
 
 package test_base1;
 use My::Exporter::Base1;
-use Test::More;
+use Badger::Test;
 
 is( $FOO, 1, '$FOO is 10' );
 is( $FOO[0], 10, '$FOO[0] is 10' );
@@ -48,7 +51,7 @@ is( foo(), 'this is foo', 'foo() sub is defined' );
 
 package test_base2;
 use My::Exporter::Base1 qw( $FOO $BAR );
-use Test::More;
+use Badger::Test;
 
 is( $FOO, 1, '$FOO is 10' );
 is( $BAR, 2, '$BAR is 10' );
@@ -65,7 +68,7 @@ is( $BAR, 2, '$BAR is 10' );
 #------------------------------------------------------------------------
 
 package test_base3;
-use Test::More;
+use Badger::Test;
 eval "use My::Exporter::Base1 qw( \$NONSUCH \$NOTEVER)";
 like( $@, qr/\$NONSUCH is not exported by My::Exporter::Base1/, '$NONSUCH error' );
 like( $@, qr/\$NOTEVER is not exported by My::Exporter::Base1/, '$NOTEVER error' );
@@ -77,7 +80,7 @@ like( $@, qr/\$NOTEVER is not exported by My::Exporter::Base1/, '$NOTEVER error'
 
 package test_base4;
 use My::Exporter::Base2;
-use Test::More;
+use Badger::Test;
 
 is( $HELLO, 'world', '$HELLO is world' );
 {
@@ -89,7 +92,7 @@ is( $HELLO, 'world', '$HELLO is world' );
 
 package test_base5;
 use My::Exporter::Base2 ':foo';
-use Test::More;
+use Badger::Test;
 
 is( $FOO, 3, '$FOO is 3' );
 {
@@ -106,7 +109,7 @@ is( $FOO, 3, '$FOO is 3' );
 
 package test_base10;
 use My::Exporter::Subclass1;
-use Test::More;
+use Badger::Test;
 
 is( $FOO, 50, '$FOO is 50' );
 is( $FOO[0], 10, '$FOO[0] is 10' );
@@ -128,7 +131,7 @@ is( $GOODBYE, 'see ya', '$GOODBYE is "see ya"' );
 
 package test_base11;
 use My::Exporter::Subclass1 qw( $FOO $BAR );
-use Test::More;
+use Badger::Test;
 
 is( $FOO, 50, '$FOO is 50' );   # from sub class
 is( $BAR, 2, '$BAR is 20' );    # from base class
@@ -146,7 +149,7 @@ is( $BAR, 2, '$BAR is 20' );    # from base class
 
 package test_base12;
 use My::Exporter::Subclass2 qw( :foo :bar :baz $HELLO );
-use Test::More;
+use Badger::Test;
 
 is( $FOO, 50, '$FOO is 50' );
 is( $BAR, 4, '$BAR is 4' );
@@ -162,7 +165,7 @@ is( $HELLO, 'world', '$HELLO is world' );
 
 package test_base20;
 use My::Exporter::Subclass2 qw( $FOO :default );
-use Test::More;
+use Badger::Test;
 
 is( $FOO, 50, '$FOO is 50' );
 is( $HELLO, 'world', '$HELLO is world' );
@@ -180,7 +183,7 @@ is( $GOODBYE, 'see ya', '$GOODBYE is "see ya"' );
 
 package test_base21;
 use My::Exporter::Subclass2 qw( :all );
-use Test::More;
+use Badger::Test;
 
 is( $FOO, 50, '$FOO is 50' );
 is( $BAR, 4, '$BAR is 4' );
@@ -197,7 +200,7 @@ is( $BAR[0], 50, '$BAR[0] is 50' );
 
 package test_base5q;
 use My::Exporter5;
-use Test::More;
+use Badger::Test;
 is( $ping, 'wiz', 'ping is wiz' );
 is( $pong, 'bang', 'ping is bang' );
 

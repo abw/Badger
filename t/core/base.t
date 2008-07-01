@@ -2,7 +2,8 @@
 #
 # t/base.t
 #
-# Test the Badger::Base module.
+# Test the Badger::Base module.  Run with -d for debugging info, 
+# and/or -c for colour output.
 #
 # Written by Andy Wardley <abw@wardley.org>
 #
@@ -16,11 +17,10 @@ use warnings;
 
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Base;
-use Test::More tests  => 95;
-
-# run with -d flag to enable debugging, e.g. perl base.t -d
-our $DEBUG = $Badger::Base::DEBUG = grep(/^-d/, @ARGV);
-#$Badger::Base::WARN_OUT_LOUD = $DEBUG;
+use Badger::Test 
+    tests => 95,
+    debug => 'Badger::Base',
+    args  => \@ARGV;
 
 my ($pkg, $obj);
 

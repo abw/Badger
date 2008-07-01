@@ -15,8 +15,10 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Codec;
-use Test::More tests => 1;
-$Badger::Codec::DEBUG = grep(/^-d/, @ARGV);
+use Badger::Test 
+    tests => 1,
+    debug => 'Badger::Codec',
+    args  => \@ARGV;
 
 ok(1, 'Loaded Badger::Codec' );
 

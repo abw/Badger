@@ -16,7 +16,9 @@ use warnings;
 
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Constants ':types';
-use Test::More tests => 2;
+use Badger::Test 
+    tests => 2,
+    args  => \@ARGV;
 
 ok(1, 'loaded Badger::Constants' );
 is( HASH, Badger::Constants::HASH, 'HASH is ' . HASH );

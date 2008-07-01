@@ -16,14 +16,16 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Codec::Storable;
 use constant Codec => 'Badger::Codec::Storable';
-use Test::More;
+use Badger::Test 
+    debug => 'Badger::Codec::Storable',
+    args  => \@ARGV;
 
 eval "require Storable";
 if ($@) {
-    plan skip_all => 'Storable module not installed';
+    skip_all('Storable module not installed');
 }
 else {
-    plan tests => 5;
+    plan(5);
 }
 
 my $data = {

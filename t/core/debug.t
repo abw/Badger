@@ -17,7 +17,9 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Debug;
 use Badger::Base;
-use Test::More tests  => 2;
+use Badger::Test 
+    tests => 2,
+    args  => \@ARGV;
 
 my $obj = Badger::Base->new();
 ok( $obj->debug("Hello World\n"), 'hello world' );
