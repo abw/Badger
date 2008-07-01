@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 84,
+    tests => 87,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -393,6 +393,18 @@ is( $t2->dong, 'Number', 'generated dong get method' );
 is( $t2->dang('Ding-A-Ling'), 'Ding-A-Ling', 'set dang' );
 is( $t2->dang, 'Ding-A-Ling', 'get dang' );
 
+
+#-----------------------------------------------------------------------
+# test words
+#-----------------------------------------------------------------------
+
+package Test::Words1;
+use Badger::Class words => 'Hubbins Tufnel Smalls';
+use Badger::Test;
+
+is( Hubbins, 'Hubbins', 'David St Hubbins' );
+is( Tufnel, 'Tufnel', 'Nigel Tufnel' );
+is( Smalls, 'Smalls', 'Derek Smalls' );
 
 __END__
 #-----------------------------------------------------------------------

@@ -16,7 +16,7 @@ package Badger::Class;
 use strict;
 use warnings;
 use base 'Badger::Exporter';
-use Badger::Constants qw( DELIMITER ARRAY HASH CODE );
+use Badger::Constants qw( DELIMITER ARRAY HASH CODE PKG REFS );
 use Badger::Utils 'load_module';
 use Carp;
 use constant {
@@ -33,8 +33,8 @@ our $VERSION    = 0.01;
 our $DEBUG      = 0 unless defined $DEBUG;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
-    base version debug constant constants exports throws messages utils
-    codec codecs methods get_methods set_methods
+    base version debug constant constants words exports throws messages 
+    utils codec codecs methods get_methods set_methods
 );
 
 
@@ -459,13 +459,30 @@ sub constant {
     
     
     while (my ($name, $value) = each %$constants) {
-        no strict 'refs';
+        no strict REFS;
         my $v = $value;     # new lexical variable to bind in closure
         _debug("Defining $pkg constant $name => $value\n") if $DEBUG;
         *{"${pkg}::$name"} = sub() { $value };
     }
 }
 
+
+sub words {
+    my $self  = shift;
+    my $words = @_ == 1 ? shift : [ @_ ];
+    my $pkg   = $self->{ name };
+
+    $words = [ split(DELIMITER, $words) ] 
+        unless ref $words eq ARRAY;
+        
+    foreach (@$words) {
+        no strict REFS;
+        my $word = $_;  # new lexical variable to bind in closure
+        _debug("Defining $pkg word $word\n") if $DEBUG;
+        *{$pkg.PKG.$word} = sub() { $word };
+    }
+}
+    
 
 #-----------------------------------------------------------------------
 # exports(%exports)

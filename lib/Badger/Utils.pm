@@ -15,7 +15,7 @@ package Badger::Utils;
 use strict;
 use warnings;
 use File::Path;
-use Scalar::Util qw(blessed reftype looks_like_number);
+use Scalar::Util qw(blessed reftype );
 use base qw( Badger::Exporter );
 use constant {
     UTILS  => 'Badger::Utils',
@@ -30,7 +30,7 @@ our $MESSAGES = {
 };
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed reftype looks_like_number load_module
+    UTILS blessed reftype load_module
 ));
 
 __PACKAGE__->export_hooks(

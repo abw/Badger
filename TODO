@@ -1,26 +1,55 @@
 Filesystem
 ----------
 
-* relative resolved against existing file/dir
-
-* file()/directory() in path/file/dir (i.e. subdir/file)
-
-* directory files/dirs/paths
-
 * exists() should check the type for file/dir
 
-* directory mkdir/rmdir  create/delete
-
-* directory children/files/directories/dirs
-
-* file read/write/text/lines/etc
-
-* virtual filesystems with a non-root root
+* directory files/directories/dirs
 
 * virtual filesystems composed across several real filesystems
 
+Badger::Storage
+---------------
+
+* unify parameter parsing and identity definition between filesystem and
+  database storage modules.
+
+* get/put which take data / return id
+
+* fetch/store which returns 
+
+* create/destroy   connect/disconnect  open/close
 
 Misc
 ----
 
 * Move Badger::Exception to Badger::Error and clean out
+
+
+
+=head3 Configuration Options
+
+The following configuration options are provided by default for 
+all objects derived from the Badger::Base module that inherit
+its C<new()> method and C<init()> methods.
+
+=head4 throws
+
+This option can be set to cause the object to throw as exceptions any
+and all errors raised by calls to the C<error($msg)> method.  A
+L<Badger::Exception> object is created (or an object of whatever class
+is defined in the C<$EXCEPTION> package variable) with its C<type>
+set to the value of the C<throws> parameter and C<info> field containing
+the error message passed to the C<error($msg)> method.
+
+    my $object = My::Badger::Forager->new( throws => 'hungry' );
+
+    $object->error('No nuts or berries found!');
+
+In the preceding example, the call to the C<error()> method 
+results in an exception object being throw via die with a C<type>
+of C<fruit> and C<info> set to C<No berries found>.
+
+    fruit error - No berries found!
+
+See the C<error()> and C<throw()> methods for further details.
+

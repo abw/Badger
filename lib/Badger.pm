@@ -1,14 +1,43 @@
 package Badger;
 
-use 5.6.1;
+use 5.8.0;
+use Badger::Hub;
 use Badger::Class
     debug   => 0,
     base    => 'Badger::Base',
-    utils   => 'UTILS';
+    utils   => 'UTILS',
+    import  => 'class',
+    words   => 'HUB';
 
-our $VERSION  = 0.01;
-our $PROTOTYPE;
+our $VERSION = 0.01;
+our $HUB     = 'Badger::Hub';
 our $AUTOLOAD;
+
+sub init {
+    my ($self, $config) = @_;
+    my $hub = $config->{ hub } || $self->class->any_var(HUB);
+    unless (ref $hub) {
+        UTILS->load_module($hub);
+        $hub = $hub->new($config);
+    }
+    $self->{ hub } = $hub;
+    return $self;
+}
+
+sub hub {
+    my $self = shift;
+
+    if (ref $self) {
+        return @_
+            ? ($self->{ hub } = shift)
+            :  $self->{ hub };
+    }
+    else {
+        return @_
+            ? $self->class->var(HUB => shift)
+            : $self->class->var(HUB)
+    }
+}
 
 1;
 
