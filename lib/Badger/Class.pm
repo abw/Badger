@@ -45,6 +45,11 @@ our @HOOKS      = qw(
 {
     # lookup table mapping package names to Badger::Class objects
     my $CLASSES = { };
+
+    # class/package name
+    sub CLASS {
+        shift || (caller())[0];
+    }
     
     # fetch/create a Badger::Class object for a package name
     sub class {
@@ -71,10 +76,10 @@ our @HOOKS      = qw(
 #-----------------------------------------------------------------------
 
 # any of these can be exported on demand (like @EXPORT_OK)    
-__PACKAGE__->export_any('class', 'classes');
+CLASS->export_any('CLASS', 'class', 'classes');
 
 # define custom hooks for load options
-__PACKAGE__->export_hooks({
+CLASS->export_hooks({
     map { ($_ => \&export_hook) } @HOOKS
 });
 
@@ -191,7 +196,7 @@ sub list_vars {
     my $vars = $self->all_vars($name);
     my (@merged, $list);
 
-    foreach $list (@$vars, @_) {
+    foreach $list (@_, @$vars) {
         next unless defined $list;
         if (ref $list eq 'ARRAY') {
             next unless @$list;
@@ -498,7 +503,7 @@ sub throws {
 # messages(\%messages)
 #
 # Method to define $MESSAGES package variable, or add to existing one,
-# which defines message formats for use with the T::Base message() method
+# which defines message formats for use with the B::Base message() method
 #-----------------------------------------------------------------------
 
 sub messages {
