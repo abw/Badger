@@ -31,10 +31,7 @@ ok( $path->is_relative, 'foo is relative' );
 ok( ! $path->is_absolute, 'foo is not absolute' );
 is( $path->absolute, $FS->join_dir($CWD, 'foo'), 'foo absolute is ' . $path->absolute );
 
-SKIP: {
-    skip('Non-standard file separators', 7)
-        unless $FS->rootdir eq '/' && $FS->separator eq '/';
-
+if ($FS->rootdir eq '/' && $FS->separator eq '/') {
     $path = $PATH->new('/foo');
     ok( $path, 'created a new file: /foo' );
     ok( ! $path->is_relative, '/foo is not relative' );
@@ -50,4 +47,7 @@ SKIP: {
     is( $path->relative('/bam'), '/bam', '/foo/bar/baz + /bam' );
     is( $path->relative('../../wam'), '/foo/wam', '/foo/bar/baz + ../../wam' );
 }
-    
+else {
+    skip_some(7, 'Non-standard file separators')
+}
+
