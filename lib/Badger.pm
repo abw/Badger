@@ -44,6 +44,8 @@ sub config {
     return $self->hub->config;
 }
 
+# TODO: AUTOLOAD method which polls hub to see what it supports
+
 1;
 
 __END__

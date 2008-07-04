@@ -286,6 +286,7 @@ sub throws {
               ||= $self->{ config } 
               &&  $self->{ config }->{ throws };
     }
+
     # fall back on looking for any package variable in class / base classes
     return $throws 
         || $self->class->any_var(THROWS)
