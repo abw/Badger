@@ -16,7 +16,7 @@ package Badger::Class;
 use strict;
 use warnings;
 use base 'Badger::Exporter';
-use Badger::Constants qw( DELIMITER ARRAY HASH CODE PKG REFS );
+use Badger::Constants 'DELIMITER ARRAY HASH CODE PKG REFS';
 use Badger::Utils 'load_module';
 use Carp;
 use constant {
@@ -651,15 +651,141 @@ __END__
 
 =head1 NAME
 
-Badger::Class - base class module for accessing class data
+Badger::Class - class metaprogramming module
 
 =head1 SYNOPSIS
 
-TODO
+    # build a badger-based module
+    package Your::Module;
+    
+    # import hooks allow you to define class properties up front
+    use Badger::Class
+        version     => 1.00,            # sets $VERSION
+        debug       => 0,               # sets $DEBUG
+        throws      => 'wobbler',       # sets $THROWS error type
+        base        => 'Badger::Base',  # define base class(es)
+        import      => 'class',         # class() gets metaclass object
+        utils       => 'blessed UTILS', # imports from Badger::Utils
+        codec       => 'storable',      # imports from Badger::Codecs
+        codecs      => 'base64 utf8'    # codecs do encode/decode
+        constants   => 'TRUE FALSE',    # imports from Badger::Constants
+        constant    => {                # define your own constants
+            pi      => 3.14,
+            e       => 2.718,
+        },
+        words       => 'yes no quit',   # define constant words
+        get_methods => 'foo bar',       # create accessors
+        set_methods => 'wiz bang',      # create mutators
+        methods     => {                # create/bind methods
+            wam     => sub { ... },
+            bam     => sub { ... },
+        },
+        exports     => {                # exports via Badger::Exporter
+            all     => '$X $Y wibble',  # like @EXPORTS
+            any     => '$P $Q pi e',    # like @EXPORT_OK
+            tags    => {                # like %EXPORT_TAGS
+                xy  => '$X $Y',         #   NOTE: 'X Y Z' is syntactic
+                pq  => '$P $Q',         #   sugar for ['X', 'Y', 'Z']
+            },
+            hooks   => {                # export hooks - this synopsis
+                one => sub { ... },     # shows the various hooks that
+                two => sub { ... },     # Badger::Class defines: base,
+            },                          # version, debug, etc.
+        },
+        messages    => {                # define messages, e.g. for 
+            missing => 'Not found: %s', # errors, warnings, prompts, etc.
+            have_u  => 'Have you %s my %s?',
+            volume  => 'This %s goes up to %s',
+        };                              # Phew!
 
+    # the rest of your module follows...
+    our $X = 10;
+    our $Y = 20;
+    sub whatever { ... }
+    # ...etc...
+    
+    # The import hooks above are shortcuts to Badger::Class methods which
+    # you can access via 'class', e.g.
+    class->base('Another::Base', 'And::Another');
+    class->get_methods('method1', 'method2');
+    class->exports( all => '$X $Y' );   # short for ['$X', '$Y']
+    class->methods(
+        wam => sub { ... }
+        bam => sub { ... }
+    );
+    
+    # methods for accessing class (package) variables with inheritance
+    class->var('X');                    # get $X in current class
+    class->var( X => 10 );              # set $X in current class
+    class->any_var('X');                # get $X in current or base classes
+    class->all_vars('X');               # all $X in current/base classes
+    # ...and more...
+    
+    # class() can access other classes, too
+    class('Another::Module')->var('X'); # $Another::Module::X
+    
+    # and you can call it as a $self method
+    sub wibble {
+        my $self  = shift;
+        my $class = $self->class;       # Badger::Class object
+        my $xvar  = $class->var('X');   # fetch $X
+        print $class;                   # auto-stringifies to class
+    }                                   # name, e.g. Your::Module
+                                        
 =head1 DESCRIPTION
 
-TODO
+L<Badger::Class> is a class metaprogramming module which you can use
+to simplify the process of building Perl Modules.
+
+In the simplest case, it provides an exportable C<class> subroutine
+which returns a L<Badger::Class> object for the current package (we
+use the term I<package> when we're talking specifically about Perl's
+symbol tables - but the term is generally synonymous with I<class>)
+
+    package Your::Module;
+    use Badger::Module 'class';
+
+You can also specify this using the C<import> parameter. 
+
+    use Badger::Class
+        import => 'class';
+
+(NOTE: the C<import> doesn't have to start on a new line - it can follow
+the C<use Badger::Class> on the same line if you prefer)
+
+The C<Badger::Class> object provides a number of methods for inspecting
+and manipulating the current class.  For example, there are methods
+providing access to class variables.
+
+    class->var( X => 10 );          # same as: $X = 10
+    class->var('X');                # same as: $X
+
+In this simple example, the effect is exactly the same as modifying the C<$X>
+I<package> variable directly. However, this method (and related methods)
+provides an abstraction of I<class> variables that works correctly with
+respect to subclassing. That is, accessing a I<class> variable in a subclass
+of L<Your::Module> will resolve to the I<package> variable in the subclass,
+rather than the base class I<$X> that you'll always get if you hard-code it.
+More on that later...
+
+Other C<Badger::Class> methods allow you to modify the class by adding 
+base classes, generating accessor/mutator methods, defining exportable
+items and so on.
+
+    class->base('Another::Class');  # add new base class
+    class->get_methods('foo bar');  # generate accessors
+    class->exports(                 # define exports
+        all => '$X $Y',
+    )
+
+These methods can also be accessed using import hooks, as shown in detail
+in the synposis.
+
+    use Badger::Class
+        import  => 'class',
+        version => 1.00,
+        base    => 'Badger::Class Another::Class';
+        # ...etc...
 
 =head1 METHODS
 
@@ -669,11 +795,19 @@ Constructor method for a C<Badger::Class> object.
 
 =head2 name()
 
+Returns the class (i.e. package) name.
+
 =head2 symbols()
 
-=head2 symbol()
+Returns a reference to the package symbol table for the class.
 
-=head2 scalar_ref()
+=head2 symbol($name)
+
+Returns a symbol table entry for a particular name.
+
+=head2 scalar_ref($name)
+
+Returns a reference to the scalar value for a name in a symbol table.
 
 =head2 array_ref()
 
@@ -754,7 +888,7 @@ subclass of (B, A). If we now create a subclass ABBA of (AB, BA) then the
 local precedence order of AB says that A should resolve before B, while the
 LPO of BA says that B should come before A. The C3 algorithm will
 intentionally fail at this point and throw an error warning about an
-inconsistent heterarchy. In constrast, this implementation will resolve A
+inconsistent heterarchy. In contrast, this implementation will resolve A
 before B becase the more specialised ABBA subclass defines AB before BA. AB is
 the winner that takes it all and BA is the loser standing small.
 
@@ -770,7 +904,8 @@ On the other hand, this kind of multiple inheritance ambiguity is something of
 an edge case anyway. Unless you're doing lots of MI in weird and wonderful
 ways, the chances are that it'll never affect you. So in the general case,
 this algorithm works the same as C3, but with the benefit of being a simpler
-and faster implementation.
+and faster implementation.  I'm inclined towards the belief that a 
+deterministic algorithm 
 
 =head1 CLASS CONFIGURATION METHODS
 
