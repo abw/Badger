@@ -22,19 +22,27 @@ use Badger::Class
     utils     => 'UTILS',
     import    => 'class',
     words     => 'CODECS CODEC_BASE',
-    constants => 'HASH ARRAY DELIMITER',
+    constants => 'HASH ARRAY DELIMITER PKG',
     constant  => {
         CODEC_METHOD  => 'codec',
         ENCODE_METHOD => 'encode',
         DECODE_METHOD => 'decode',
+        ENCODING      => 'Badger::Codec::Encoding',
     };
 
 our $CODEC_BASE = ['Badger::Codec'];
 our $CODECS     = {
     # any codecs with non-standard capitalisation can go here, but 
     # generally we grok the module name from the $CODEC_BASE, e.g.
-    #    url      => 'Badger::Codec::URL',
-    #    base64   => 'Badger::Codec::Base64',
+    url      => 'Badger::Codec::URL',
+    base64   => 'Badger::Codec::Base64',
+    encode   => 'Badger::Codec::Encode',
+    unicode  => 'Badger::Codec::Unicode',
+    storable => 'Badger::Codec::Storable',
+    map {
+        my $name = $_; $name =~ s/\W//g;
+        $_ => [ENCODING, ENCODING.PKG.$name],
+    } qw( utf8 UTF8 UTF16BE UTF16LE UTF32BE UTF32LE )
 };
 
 sub init {
@@ -65,19 +73,31 @@ sub codecs {
 }
 
 sub codec {
-    my $self   = shift->prototype;
-    my $type   = shift; 
-    return $self->chain($type) if $type =~ CHAINED;       # handle chains
+    my $self = shift->prototype;
+    my $type = shift;
+    
+    # quick turn-around if we're handling chains
+    return $self->chain($type) if $type =~ CHAINED;
+    
     my $config = @_ && ref $_[0] eq HASH ? shift : { @_ };
     my $codecs = $self->codecs;
-    my $codec  = $codecs->{ lc $type };
+
+    # massage $type to a canonical form
+    my $name  = lc $type;
+       $name  =~ s/\W//g;
+    my $codec = $codecs->{ $name };
     
     if (! defined $codec) {
         # we haven't got an entry in the $CODECS table so let's try 
         # autoloading some modules using the $CODEC_BASE
         $codec = $self->load_codec($type)
-             || return $self->error_msg( not_found => codec => $type );
-        $codec= $codec->new($config);
+            || return $self->error_msg( not_found => codec => $type );
+        $codec = $codec->new($config);
+    }
+    elsif (ref $codec eq ARRAY) {
+        # [$module, $class] pair
+        UTILS->load_module($codec->[0]);
+        $codec = $codec->[1]->new($config);
     }
     elsif (ref $codec) {
         # if we've already got a codec object we can re-use it 
@@ -92,7 +112,7 @@ sub codec {
     }
 
     # cache codec object and return
-    return ($codecs->{ lc $type } = $codec);
+    return ($codecs->{ $name } = $codec);
 }
 
 sub chain {
