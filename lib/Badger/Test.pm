@@ -8,11 +8,12 @@ use Badger::Class
     constants => 'ARRAY DELIMITER PKG',
     words     => 'DEBUG',
     exports   => {
-        all   => 'plan ok is isnt like unlike pass fail skip_all',
+        all   => 'plan ok is isnt like unlike pass fail 
+                  skip skip_some skip_rest skip_all',
         hooks => {
             debug    => \&_debug_hook,
             map { $_ => \&_export_hook }
-            qw( manager colour color args tests )
+            qw( manager summary colour color args tests )
         },
     };
 
@@ -57,6 +58,11 @@ sub colour {
     manager->colour(@_);
 }
 
+sub summary {
+    shift;
+    manager->summary(@_);
+}
+
 sub args {
     my $self = shift;
     my $args = @_ && ref $_[0] eq ARRAY ? shift : [ @_ ];
@@ -70,6 +76,9 @@ sub args {
         }
         elsif ($arg =~ /^-d|--debug/) {
             $self->debugging(1);
+        }
+        elsif ($arg =~ /^-s|--summary/) {
+            $self->summary(1);
         }
         else {
             last;
@@ -100,15 +109,18 @@ sub debugging {
 }
 
 class->methods(
-    plan     => sub ($;$)  { manager->plan(@_)     },
-    ok       => sub ($;$)  { manager->ok(@_)       },
-    is       => sub ($$;$) { manager->is(@_)       },
-    isnt     => sub ($$;$) { manager->isnt(@_)     },
-    like     => sub ($$;$) { manager->like(@_)     },
-    unlike   => sub ($$;$) { manager->unlike(@_)   },
-    pass     => sub (;$)   { manager->pass(@_)     },
-    fail     => sub (;$)   { manager->fail(@_)     },
-    skip_all => sub (;$)   { manager->skip_all(@_) },
+    plan      => sub ($;$)  { manager->plan(@_)      },
+    ok        => sub ($;$)  { manager->ok(@_)        },
+    is        => sub ($$;$) { manager->is(@_)        },
+    isnt      => sub ($$;$) { manager->isnt(@_)      },
+    like      => sub ($$;$) { manager->like(@_)      },
+    unlike    => sub ($$;$) { manager->unlike(@_)    },
+    pass      => sub (;$)   { manager->pass(@_)      },
+    fail      => sub (;$)   { manager->fail(@_)      },
+    skip      => sub (;$)   { manager->skip(@_)      },
+    skip_some => sub (;$$)  { manager->skip_some(@_) },
+    skip_rest => sub (;$)   { manager->skip_rest(@_) },
+    skip_all  => sub (;$)   { manager->skip_all(@_)  },
 );
 
 

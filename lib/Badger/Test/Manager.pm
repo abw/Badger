@@ -12,22 +12,27 @@ our $MESSAGES   = {
     no_plan     => "You haven't called plan() yet!\n",
     dup_plan    => "You called plan() twice!\n",
     plan        => "1..%s\n",
-    skip        => "1..0 # skipped: %s\n",
+    skip_all    => "1..0 # skipped: %s\n",
+    skip_one    => "ok %s # skipped: %s\n",
     name        => "test %s at %s line %s",
     ok          => "ok %s - %s\n",
     not_ok      => "not ok %s - %s\n%s",
-    not_eq      => "  expect: [%s]\n  result: [%s]\n",
-    not_ne      => "  unexpected match: [%s]\n",
-    not_like    => "  expect: /%s/\n  result: [%s]\n",
-    not_unlike  => "  expect: ! /%s/\n  result: [%s]\n",
+    not_eq      => "# expect: [%s]\n  result: [%s]\n",
+    not_ne      => "# unexpected match: [%s]\n",
+    not_like    => "# expect: /%s/\n  result: [%s]\n",
+    not_unlike  => "# expect: ! /%s/\n  result: [%s]\n",
     too_few     => "# Looks like you planned %s tests but only ran %s.\n",
     too_many    => "# Looks like you planned only %s tests but ran %s.\n",
+    pass        => "# PASS: All %d tests passed\n",
+    fail        => "# FAIL: %d tests failed\n",
+    mess        => "# FAIL: Inconsistent test results\n",
+    summary     => "#       %d/%d tests run, %d passed, %d failed, %d skipped\n",
 };
 our $SCHEME     = {
-    green       => 'ok',
-    red         => 'not_ok',
-    cyan        => 'plan skip too_few too_many',
-    yellow      => 'not_eq not_ne not_like not_unlike',
+    green       => 'ok pass',
+    red         => 'not_ok too_few too_many fail mess',
+    cyan        => 'skip_one skip_all',
+    yellow      => 'plan not_eq not_ne not_like not_unlike summary',
 };
 our $COLOURS    = {
     red         => 31,
@@ -52,17 +57,12 @@ sub init {
     $self->{ plan     } = $config->{ plan    } || 0;
     $self->{ count    } = $config->{ count   } || 1;
     $self->{ results  } = $config->{ results } || [ ];
+    $self->{ summary  } = $config->{ summary } || 0;
     $self->{ reason   } = $config->{ reason  } || $REASON;
     $self->{ colour   } = $config->{ colour  } || $config->{ color } || 0;
     return $self;
 }
 
-sub skip_all ($;$) {
-    my $self = shift->prototype;
-    $self->test_msg( skip => shift || $self->{ reason } );
-    exit;
-}
-    
 
 #------------------------------------------------------------------------
 # plan($n)
@@ -90,7 +90,11 @@ sub plan ($$;$) {
     my $results = $self->{ results };
     $tests += @$results;
     $self->test_msg( plan => $tests );
-    $self->{ plan } = $tests;
+    $self->{ plan    } = $tests;
+    $self->{ tested  } = 0;
+    $self->{ passed  } = 0;
+    $self->{ failed  } = 0;
+    $self->{ skipped } = 0;
 
     # now flush any cached test results
     while (@$results) {
@@ -99,29 +103,6 @@ sub plan ($$;$) {
     }
 }
 
-sub flush {
-    my $self    = shift->prototype;
-    my $results = shift || $self->{ results };
-    return unless @$results;
-    $self->{ plan } ||= @$results;
-    while (@$results) {
-        my $test = shift @$results;
-        $self->result(@$test);
-    }
-}
-
-sub result {
-    my $self = shift->prototype;
-    my $ok   = shift;
-
-    return $self->error('no_plan')
-        unless $self->{ plan };
-    
-    return $ok
-        ? $self->test_msg(     ok => @_ )
-        : $self->test_msg( not_ok => @_ );
-}
-    
 sub ok ($$;$$) {
     my $self = shift->prototype;
     my ($ok, $name, $detail) = @_;
@@ -137,8 +118,18 @@ sub ok ($$;$$) {
         push(@{ $self->{ results } }, [ $ok, $self->{ count }, $name, $detail ]);
     }
 
-    $self->{ count }++;
+    $self->{ count  }++;
+    $self->{ tested }++;
+
     return $ok;
+}
+
+sub pass ($;$) {
+    shift->ok(1, @_);
+}
+
+sub fail ($;$) {
+    shift->ok(0, @_);
 }
 
 sub is ($$$;$) {
@@ -227,12 +218,61 @@ sub unlike ($$$;$) {
     }
 }
 
-sub pass ($;$) {
-    shift->ok(1, @_);
+sub skip ($;$) {
+    my $self = shift->prototype;
+    my $msg  = shift || $self->test_name;
+
+    return $self->error_msg('no_plan')
+        unless $self->{ plan };
+
+    $self->{ tested  }++;
+    $self->{ skipped }++;
+    return $self->test_msg( skip_one => $self->{ count }++, $msg );
 }
 
-sub fail ($;$) {
-    shift->ok(0, @_);
+sub skip_some {
+    my ($self, $n, $msg) = @_;
+    $n = int $n;
+    return unless $n > 0;
+    while ($n--) {
+        $self->skip($msg);
+    }
+}
+
+sub skip_rest {
+    my ($self, $msg) = @_;
+    my $plan = $self->{ plan };
+    while ($self->{ tested } < $plan) {
+        $self->skip($msg);
+    }
+}
+
+sub skip_all ($;$) {
+    my $self = shift->prototype;
+    $self->test_msg( skip_all => shift || $self->{ reason } );
+    exit;
+}
+
+sub result {
+    my $self = shift->prototype;
+    my $ok   = shift;
+
+    return $self->error_msg('no_plan')
+        unless $self->{ plan };
+    
+    if ($ok) {
+        $self->{ passed }++;
+        return $self->test_msg( ok => @_ );
+    }
+    else {
+        $self->{ failed }++;
+        return $self->test_msg( not_ok => @_ );
+    }
+}
+
+sub test_msg {
+    my $self = shift;
+    print $self->message(@_);
 }
 
 sub test_name ($) {
@@ -241,18 +281,22 @@ sub test_name ($) {
     $self->message( name => $self->{ count }, $file, $line );
 }
 
+sub flush {
+    my $self    = shift->prototype;
+    my $results = shift || $self->{ results };
+    return unless @$results;
+    $self->{ plan } ||= @$results;
+    while (@$results) {
+        my $test = shift @$results;
+        $self->result(@$test);
+    }
+}
 
-#sub skip_rest {
-#    my $msg = shift || '';
-#    ok( 1, "skipping test...$msg" )
-#        while $COUNT <= $EXPECT;
-#    exit();
-#}
-
-
-sub test_msg {
-    my $self = shift;
-    print $self->message(@_);
+sub summary {
+    my $self = shift->prototype;
+    return @_
+        ? ($self->{ summary } = shift)
+        :  $self->{ summary };
 }
 
 sub colour {
@@ -291,15 +335,32 @@ sub finish {
     my $self = shift->prototype;
     $self->flush;           # output any cached results
 
-    my $ran  = $self->{ count } - 1;
-    my $plan = $self->{ plan };
-    
+    my ($plan, $ran, $pass, $fail, $skip) 
+        = @$self{ qw( plan tested passed failed skipped ) };
+
+    # mandatory warnings about too many/too few
     if ($ran < $plan) {
         $self->test_msg( too_few => $plan, $ran );
     }
     elsif ($ran > $plan) {
         $self->test_msg( too_many => $plan, $ran );
     }
+
+    # optional summary follows for those who want it
+    return unless $self->{ summary };
+    
+    my $good = $pass + $skip;
+    
+    if ($fail) {
+        $self->test_msg( fail => $fail );
+    }
+    elsif ($good == $plan) {
+        $self->test_msg( pass => $plan );
+    }
+    else {
+        $self->test_msg('mess');
+    }
+    $self->test_msg( summary => $ran, $plan, $pass, $fail, $skip );
 }
 
 sub DESTROY {
