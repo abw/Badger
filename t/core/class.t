@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 87,
+    tests => 88,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -253,7 +253,11 @@ use Badger::Class
     debug   => 0,
     throws  => 'food';
 
+my $test = $THROWS;    # should be defined
+
 package main;
+
+is( $Chucker::THROWS,      'food',  "Initially food" );
 is( Chucker->throws,       'food',  'Chucker throws food' );
 is( $Chucker::THROWS,      'food',  "It's very bad behaviour" );
 is( Chucker->throws('egg'), 'egg',  'Chucky Egg' );
