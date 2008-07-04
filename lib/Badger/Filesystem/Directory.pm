@@ -36,7 +36,7 @@ sub init {
     if ($path = $config->{ path }) {
         $path = $self->{ path } = $fs->join_dir($path);
         @$self{@VDN_FIELDS} = $fs->split_path($path);
-        $self->debug("** path: $self->{ path }  vol: $self->{ volume }  dir: $self->{ directory }  name: $self->{ name }\n") if $DEBUG;
+        $self->debug("path: $self->{ path }  vol: $self->{ volume }  dir: $self->{ directory }  name: $self->{ name }\n") if $DEBUG;
     }
     elsif ($self->{ name } = $config->{ name }) {
         @$self{@VD_FIELDS} = ($vol, $dir) = map { defined($_) ? $_ : '' } @$config{@VD_FIELDS};

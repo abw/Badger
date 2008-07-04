@@ -50,7 +50,7 @@ use Cwd 'getcwd';
 class->methods(
     map {
         my $name = $_;      # fresh copy of lexical for binding in closure
-        $_ => sub {
+        $name => sub {
             $_[0]->prototype->{ $name };
         }
     }
@@ -91,7 +91,7 @@ sub init {
     $self->{ updir   } = $config->{ updir   } || UPDIR;
     $self->{ curdir  } = $config->{ curdir  } || CURDIR;
 
-    # this is an ugly hack, but the File::Spec modules hard-code the path
+    # this is an ugly hack, but the File::Spec modules hard-codes the path
     # separator in the catdir() method so we have to make this round-trip
     # to determine the path separator in a cross-platform manner
     my $sep = FILESPEC->catdir(('badger') x 2);
