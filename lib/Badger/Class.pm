@@ -16,7 +16,7 @@ package Badger::Class;
 use strict;
 use warnings;
 use base 'Badger::Exporter';
-use Badger::Constants 'DELIMITER ARRAY HASH CODE PKG REFS';
+use Badger::Constants 'DELIMITER ARRAY HASH CODE PKG REFS ONCE';
 use Badger::Utils 'load_module';
 use Carp;
 use constant {
@@ -24,6 +24,12 @@ use constant {
     EXPORTER  => 'Badger::Exporter',
     CODECS    => 'Badger::Codecs',
     UTILS     => 'Badger::Utils',
+    LOADED    => 'BADGER_LOADED',
+    MESSAGES  => 'MESSAGES',
+    VERSION   => 'VERSION',
+    THROWS    => 'THROWS',
+    DEBUG     => 'DEBUG',
+    ISA       => 'ISA',
 };
 use overload 
     '""' => 'name',
@@ -71,6 +77,7 @@ our @HOOKS      = qw(
 
 }
 
+
 #-----------------------------------------------------------------------
 # Define exportable items and export hook (see Badger::Exporter)
 #-----------------------------------------------------------------------
@@ -80,7 +87,8 @@ CLASS->export_any('CLASS', 'class', 'classes');
 
 # define custom hooks for load options
 CLASS->export_hooks({
-    map { ($_ => \&export_hook) } @HOOKS
+    map { $_ => \&export_hook } 
+    @HOOKS
 });
 
 sub export_hook {
@@ -89,17 +97,17 @@ sub export_hook {
         unless @$symbols;
     # make sure we forward the $class to class() so this module can 
     # be subclassed (e.g. Badger::Web::Class)
-#   _debug("HOOK: $target / $class / $key / $symbols->[0]\n");
     class($target, $class)->$key(shift @$symbols);
 }
     
 sub export {
     my ($class, $package, @args) = @_;
-    no strict 'refs';
-    no warnings 'once';
-    ${"${package}::BADGER_LOADED"} ||= 1;
+    no strict   REFS;
+    no warnings ONCE;
+    ${$package.PKG.LOADED} ||= 1;
     $class->SUPER::export($package, @args);
 }
+
 
 #-----------------------------------------------------------------------
 # constructor method
@@ -117,8 +125,7 @@ sub new {
 
 
 #-----------------------------------------------------------------------
-# Object methods to access name, symbol table and various symbols in
-# the symbol table
+# methods to access symbol table 
 #-----------------------------------------------------------------------
 
 sub name       {    $_[0]->{ name    } }
@@ -133,23 +140,29 @@ sub scalar     { ${ scalar_ref(@_) || return } }
 sub array      { @{ array_ref(@_)  || return } }
 sub hash       { %{ hash_ref(@_)   || return } }
 
+
+#-----------------------------------------------------------------------
+# methods for accessing class variables that DTRT in subclasses
+#-----------------------------------------------------------------------
+
 sub var {
     my $self = shift;
     my $name = shift;
-    no strict 'refs';
-    no warnings 'once';
-    
+    no strict   REFS;
+    no warnings ONCE;
+
+#    _debug("Looking for $self->{ name }", PKG, $name, "  args: ", scalar(@_), " => ", join(', ', @_), "\n");
     return @_
-        ? (${$self->{ name } . '::' . $name} = shift)
-        :  ${$self->{ name } . '::' . $name};
+        ? (${ $self->{name}.PKG.$name } = shift)
+        :  ${ $self->{name}.PKG.$name };
 }
 
 sub var_default {
     my ($self, $name, $default) = @_;
-    no strict 'refs';
-    no warnings 'once';
+    no strict   REFS;
+    no warnings ONCE;
 
-    return ${$self->{ name } .'::' . $name} 
+    return ${ $self->{name}.PKG.$name } 
         ||= $default;
 }
 
@@ -157,48 +170,42 @@ sub any_var {
     my $self = shift;
     my $name = shift;
     my $pkg = $self->{ name };
-    no strict 'refs';
+    no strict REFS;
 
-    if (@_) {
-        # we got two arguments (or possibly more): name => value
-        _debug("setting $name in $pkg to $_[0]\n") if $DEBUG;
-        return (${"${pkg}::$name"} = shift);
+    foreach my $pkg ($self->heritage) {
+        _debug("looking for $name in $pkg\n") if $DEBUG;
+        return ${ $pkg.PKG.$name } if defined ${ $pkg.PKG.$name };
     }
-    else {
-        foreach my $pkg ($self->heritage) {
-            _debug("looking for $name in $pkg\n") if $DEBUG;
-            return ${"${pkg}::$name"} if defined ${"${pkg}::$name"};
-        }
-    }
+
     return undef;
 }
 
 sub all_vars {
-    my $self  = shift;
-    my $name  = uc shift;           # all package vars are UPPER CASE
-    my $pkg = $self->{ name };
+    my ($self, $name) = @_;
+    my $pkg  = $self->{ name };
     my ($value, @values);
-    no strict 'refs';
+    no strict   REFS;
+    no warnings ONCE;
 
     foreach my $pkg ($self->heritage) {
         _debug("looking for $name in $pkg\n") if $DEBUG;
-        no warnings 'once';
         push(@values, $value)
-            if defined ($value = ${"${pkg}::${name}"});
+            if defined ($value = ${ $pkg.PKG.$name });
         _debug("got: $value\n") if $DEBUG && $value;
     }
+    
     return wantarray ? @values : \@values;
 }
 
 sub list_vars {
-    my $self = shift;
-    my $name = uc shift;           # all package vars are UPPER CASE
+    my $self = shift;               # must remove these from @_ here
+    my $name = shift;
     my $vars = $self->all_vars($name);
     my (@merged, $list);
-
-    foreach $list (@_, @$vars) {
+    
+    foreach $list (@_, @$vars) {    # use whatever is left in @_ here
         next unless defined $list;
-        if (ref $list eq 'ARRAY') {
+        if (ref $list eq ARRAY) {
             next unless @$list;
             push(@merged, @$list);
         }
@@ -207,25 +214,30 @@ sub list_vars {
         }
     }
 
-    return \@merged;
+#    return \@merged;
 
-    # this causes problems when doing foo( something_that_calls_list_vars() )
-    # because list_vars assumed list context when we actually want a scalar ref
-    #    return wantarray ? @merged : \@merged;
+    # NOTE TO SELF: this causes problems when doing something like 
+    # foo( something_that_calls_list_vars() ) because list_vars assumed 
+    # list context when we actually want a scalar ref.  Must find where 
+    # this is and fix it.
+    return wantarray ? @merged : \@merged;
+
 }
 
 sub hash_vars {
-    my $self = shift;
-    my $name = uc shift;           # all package vars are UPPER CASE
+    my $self = shift;               # must remove these from @_ here
+    my $name = shift;
     my $vars = $self->all_vars($name);
     my (%merged, $hash);
 
     # reverse the package vars so we get base classes first, followed by subclass,
     # then we add any additional arguments on as well in the order specified
-    foreach $hash ( reverse(@$vars), @_ ) {
+    foreach $hash ( reverse(@$vars), @_ ) { 
         next unless defined $hash;
-        return $self->{name}->error("Invalid $name configuration option (not a hash ref): $hash")
-            unless ref $hash eq HASH;
+        unless (ref $hash eq HASH) {
+            warn "Ignoring $name configuration option (not a hash ref): $hash\n";
+            next;
+        }
         @merged{ keys %$hash } = values %$hash;
     }
     
@@ -251,13 +263,15 @@ sub hash_value {
 
 sub parents {
     my $self    = shift;
+    my $pkg     = $self->{ name };
     my $parents = $self->{ parents } ||= do {
+        no strict REFS;
+
         # make sure the module is loaded before we go looking at its @ISA
-        autoload($self->{ name });
-#        $LOADED->{ $self->{ name } } ||= UTILS->load_module($self->{ name });
+        _autoload($pkg);
         [ 
-            map { class($_) }                   # parents are immediate 
-            $self->array('ISA')                 # superclasses defined in @ISA
+            map { class($_) }               # parents are immediate 
+            @{ $pkg.PKG.ISA }               # superclasses defined in @ISA
         ];
     };
     
@@ -294,84 +308,41 @@ sub base {
     $bases = [ $bases ] unless ref $bases eq 'ARRAY';
     $bases = [ map { split DELIMITER } @$bases ];
     my @load;
+    
+    # add each of $bases to @ISA and autoload it
     while (my $base = shift @$bases) {
-        no strict 'refs';
+        no strict REFS;
         next if $pkg->isa($base);
         _debug("Adding $pkg base class $base\n") if $DEBUG;
-        push @{"${pkg}::ISA"}, $base;
-        autoload($base);
+        push @{ $pkg.PKG.ISA }, $base;
+        _autoload($base);
     }
 }
-
-
-#-----------------------------------------------------------------------
-# autoload($module)
-#
-# Helper subroutine to autoload a module.  Could probably be merged
-# with similar method(s) in T::Utils.
-#-----------------------------------------------------------------------
-
-sub autoload {
-    no strict 'refs';
-    my $class = shift;
-    my $v;
-    if ( defined ${"${class}::BADGER_LOADED"} 
-      || defined ${"${class}::VERSION"}
-      || @{"${class}::ISA"}) {
-        _debug("$class already defines version ", ${"${class}::VERSION"}, "\n") if $DEBUG;
-    }
-    else {
-        _debug("autoloading $class\n") if $DEBUG;
-        $v = ${"${class}::VERSION"} ||= 0;
-        local $SIG{__DIE__};
-        eval "require $class";
-        die $@ if $@;
-        ${"${class}::BADGER_LOADED"} ||= 1;
-#        die $@
-#            if $@ && $@ !~ /^Can't locate .*? at \(eval /;
-#        die sprintf("Module '%s' is empty in %s at %s line %s\n", $class, caller(2))
-#            unless *{"$class\::"};
-    }
-    return $class;
-}
-
-
-#-----------------------------------------------------------------------
-# version($n)
-#
-# Method to define $VERSION and version() for a class.
-#-----------------------------------------------------------------------
 
 sub version {
     my ($self, $version) = @_;
     my $pkg = $self->{ name };
     no strict 'refs';
     _debug("Defining $pkg version $version\n") if $DEBUG;
-    *{"${pkg}::VERSION"} = \$version
-        unless defined ${"${pkg}::VERSION"}
-                    && ${"${pkg}::VERSION"};
-    *{"${pkg}::version"} = sub() { $version }
-        unless defined *{"${pkg}::version"};
+
+    # define $VERSION and version()
+    *{ $pkg.PKG.VERSION } = \$version
+        unless defined ${ $pkg.PKG.VERSION }
+                    && ${ $pkg.PKG.VERSION };
+    *{ $pkg.PKG.'version'} = sub() { $version }
+        unless defined *{ $pkg.PKG.'version' };
 }
-
-
-#-----------------------------------------------------------------------
-# debug($n)
-#
-# Method to define a $DEBUG variable set to $n and a debugging() method
-# used to enable/disable debugging.
-#-----------------------------------------------------------------------
 
 sub debug {
     my ($self, $debug) = @_;
     my $pkg = $self->{ name };
-    no strict 'refs';
+    no strict REFS;
 
     # define a new debugging() method in the target class (if one doesn't
     # already exist) which calls the debugging() method on it's class object
-    unless (defined *{"${pkg}::debugging"}) {
+    unless (defined *{ $pkg.PKG.'debugging' }) {
         _debug("Defining $pkg debugging() method\n") if $DEBUG;
-        *{"${pkg}::debugging"} = sub { 
+        *{ $pkg.PKG.'debugging' } = sub { 
             class(shift)->debugging(@_) 
         };
     }
@@ -379,28 +350,21 @@ sub debug {
     # On this one occasion, we won't force the $DEBUG value to be set
     # to $debug if it's already been pre-defined to a value.  This 
     # emulates the idiom: our $DEBUG = $debug unless defined $DEBUG;
-    # so that we can set $DEBUG flags *before* loading a module (or
-    # rather, before TT auto-loads it on demand)
-    unless (defined ${"${pkg}::DEBUG"}) {
+    # so that we can set $DEBUG flags *before* loading a module (which
+    # might happen on demand)
+    unless (defined ${ $pkg.PKG.DEBUG }) {
         _debug("debug() Setting $pkg \$DEBUG to $debug\n") if $DEBUG;
-        *{"${pkg}::DEBUG"} = \$debug
+        *{ $pkg.PKG.DEBUG } = \$debug
     }
 }
-
-
-#-----------------------------------------------------------------------
-# debugging($flag)
-#
-# Class method to enable/disable debugging by switching the $DEBUG flag.
-#-----------------------------------------------------------------------
 
 sub debugging {
     my $self = shift;
     my $pkg = $self->{ name };
-    no strict 'refs';
+    no strict REFS;
 
     # return current $DEBUG value when called without args
-    return ${"${pkg}::DEBUG"} || 0
+    return ${ $pkg.PKG.DEBUG } || 0
         unless @_;
     
     # set new debug value when called with an argument
@@ -411,40 +375,26 @@ sub debugging {
 
     _debug("debugging() Setting $pkg debug to $debug\n") if $DEBUG;
     
-    if (defined ${"${pkg}::DEBUG"}) {
+    if (defined ${ $pkg.PKG.DEBUG }) {
         # update existing variable
-        ${"${pkg}::DEBUG"} = $debug;
+        ${ $pkg.PKG.DEBUG } = $debug;
     }
     else {
         # define new variable, poking it into the symbol table using
         # *{...} rather than ${...} so that it's visible at compile time,
         # thus preventing any "Variable $DEBUG not defined errors
-        *{"${pkg}::DEBUG"} = \$debug;
+        *{ $pkg.PKG.DEBUG } = \$debug;
     }
     return $debug;
 }
-
-
-#-----------------------------------------------------------------------
-# constants(\@constants)
-#
-# Method to export constants from Badger::Constants.
-#-----------------------------------------------------------------------
 
 sub constants {
     my $self = shift;
     my $constants = @_ == 1 ? shift : { @_ };
     $constants = [ split(DELIMITER, $constants) ] 
-        unless ref $constants eq 'ARRAY';
+        unless ref $constants eq ARRAY;
     CONSTANTS->export($self->{ name }, @$constants);
 }
-
-
-#-----------------------------------------------------------------------
-# constant(\%constants)
-#
-# Method to generate constant methods, just like constant.pm
-#-----------------------------------------------------------------------
 
 sub constant {
     my $self = shift;
@@ -462,10 +412,9 @@ sub constant {
         no strict REFS;
         my $v = $value;     # new lexical variable to bind in closure
         _debug("Defining $pkg constant $name => $value\n") if $DEBUG;
-        *{"${pkg}::$name"} = sub() { $value };
+        *{ $pkg.PKG.$name } = sub() { $value };
     }
 }
-
 
 sub words {
     my $self  = shift;
@@ -479,18 +428,10 @@ sub words {
         no strict REFS;
         my $word = $_;  # new lexical variable to bind in closure
         _debug("Defining $pkg word $word\n") if $DEBUG;
-        *{$pkg.PKG.$word} = sub() { $word };
+        *{ $pkg.PKG.$word } = sub() { $word };
     }
 }
     
-
-#-----------------------------------------------------------------------
-# exports(%exports)
-#
-# Method to define exports for the class.  Adds T::Exporter to base 
-# classes (if not already in there) and calls the exports() methods.
-#-----------------------------------------------------------------------
-
 sub exports {
     my $self = shift;
     my $pkg  = $self->{ name };
@@ -498,57 +439,35 @@ sub exports {
     $pkg->exports(@_);
 }
 
-
-#-----------------------------------------------------------------------
-# throws($throws)
-#
-# Method to define $THROWS package variable which defined the exception
-# type throw by a module via the T::Base throw() method.
-#-----------------------------------------------------------------------
-
 sub throws {
     my ($self, $throws) = @_;
-    my $pkg = $self->{ name };
-    no strict 'refs';
-    _debug("Defining $pkg throws $throws\n") if $DEBUG;
-    no warnings;
-    ${"${pkg}::THROWS"} = $throws;
+    no strict   REFS;
+    no warnings ONCE;
+    _debug("defining $self THROWS $throws\n") if $DEBUG;
+    *{ $self->{name}.PKG.THROWS } = \$throws;
 }
-
-
-#-----------------------------------------------------------------------
-# messages(\%messages)
-#
-# Method to define $MESSAGES package variable, or add to existing one,
-# which defines message formats for use with the B::Base message() method
-#-----------------------------------------------------------------------
 
 sub messages {
     my $self = shift;
     my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
     my $pkg = $self->{ name };
-    no strict 'refs';
-    no warnings;
+    no strict   REFS;
+    no warnings ONCE;
+    
     # if there aren't any existing $MESSAGES then we can store
     # $messages in it and be done, otherwise we have to merge.
-    my $messages = ${"${pkg}::MESSAGES"};
+    my $messages = ${ $pkg.PKG.MESSAGES };
+    
     if ($messages) {
         _debug("merging $pkg messages: ", join(', ', keys %$args), "\n") if $DEBUG;
         @$messages{ keys %$args } = values %$args;
     }
     else {
         _debug("adding $pkg messages: ", join(', ', keys %$args), "\n") if $DEBUG;
-        ${"${pkg}::MESSAGES"} = $messages = $args;
+        ${ $pkg.PKG.MESSAGES } = $messages = $args;
     }
     return $messages;
 }
-
-
-#-----------------------------------------------------------------------
-# utils(@symbols)
-#
-# Method to import symbols from Badger::Utils
-#-----------------------------------------------------------------------
 
 sub utils {
     my $self = shift;
@@ -557,58 +476,45 @@ sub utils {
     $syms = [ split(DELIMITER, $syms) ] 
         unless ref $syms eq ARRAY;
 
-#    _debug("utils for $pkg from ", ref $self, "\n");
-    $self->load_utils;
+    # call UTILS as a class method so that subclasses of Badger::Class
+    # (like Badger::Web::Class) can define their own UTILS to replace
+    # the default set (like Badger::Web::Utils).
+    my $utils = $self->UTILS;
+
+    _autoload($utils);
     
-    # ...when we would rather use the constant alias
-    $self->UTILS->export($self->{ name }, @$syms);
+    $utils->export($self->{ name }, @$syms);
 }
 
-sub load_utils {
-    # ick! we have to use the real module name if we want to use 'require'...
-    require Badger::Utils;
-}    
-
-#-----------------------------------------------------------------------
-# codec($name)
-# codecs($names)
-#
-# Method to export codec(s) from Badger::Codecs.
-#-----------------------------------------------------------------------
-
 sub codec {
-    my $self = shift;
-    require Badger::Codecs;   # more ick! why bother with CODECS?
-    CODECS->export_codec($self->{ name }, shift);
+    my $self   = shift;
+    my $codecs = $self->CODECS;
+    _autoload($codecs);
+    $codecs->export_codec($self->{ name }, shift);
 }
 
 sub codecs {
     my $self = shift;
-    require Badger::Codecs;   # more ick! why bother with CODECS?
-    CODECS->export_codecs($self->{ name }, shift);
+    my $codecs = $self->CODECS;
+    _autoload($codecs);
+    $codecs->export_codecs($self->{ name }, shift);
 }
-
-
-#-----------------------------------------------------------------------
-# method($name, $code)
-#
-# Method to define a method.
-#-----------------------------------------------------------------------
 
 sub method {
     my ($self, $name, $code) = @_;
-    no strict 'refs';
+    no strict REFS;
     _debug("defining method: $self\::$name => $code\n") if $DEBUG;
-    *{$self->{ name } . '::' . $name} = $code;
+    *{ $self->{name}.PKG.$name } = $code;
 }
 
 sub methods {
     my $self = shift;
     my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
-    no strict 'refs';
+    no strict REFS;
+
     while (my ($name, $code) = each %$args) {
         _debug("defining method: $self\::$name => $code\n") if $DEBUG;
-        *{$self->{ name } . '::' . $name} 
+        *{ $self->{name}.PKG.$name } 
             = ref $code eq CODE ? $code : sub { $code };
     }
 }
@@ -617,10 +523,11 @@ sub get_methods {
     my ($self, $names) = @_;
     $names = [ $names ] unless ref $names eq ARRAY;
     $names = [ map { split DELIMITER } @$names ];
-    no strict 'refs';
+    no strict REFS;
+
     foreach (@$names) {
-        my $name = $_;
-        *{$self->{ name } . '::' . $name} = sub {
+        my $name = $_;      # new lexically scoped var for closure
+        *{ $self->{name}.PKG.$name } = sub {
             $_[0]->{ $name };
         };
     }
@@ -630,10 +537,14 @@ sub set_methods {
     my ($self, $names) = @_;
     $names = [ $names ] unless ref $names eq ARRAY;
     $names = [ map { split DELIMITER } @$names ];
-    no strict 'refs';
+    no strict REFS;
+    
     foreach (@$names) {
         my $name = $_;
-        *{$self->{ name } . '::' . $name} = sub {
+        *{ $self->{name}.PKG.$name } = sub {
+            # You wouldn't ever want to write a real subroutine like this.
+            # But that's OK, because we're here to do it for you.  You get
+            # the efficiency without having to ever look at code like this:
             @_ == 2 
                 ? ($_[0]->{ $name } = $_[1])
                 :  $_[0]->{ $name };
@@ -641,6 +552,38 @@ sub set_methods {
     }
 }
 
+
+
+#-----------------------------------------------------------------------
+# autoload($module)
+#
+# Helper subroutine to autoload a module.  Could probably be merged
+# with similar method(s) in T::Utils.
+#-----------------------------------------------------------------------
+
+sub _autoload {
+    my $class = shift;
+    my $v;
+    no strict REFS;
+    
+    unless ( $LOADED->{ $class }
+          || defined ${ $class.PKG.LOADED  } 
+          || defined ${ $class.PKG.VERSION }
+          || @{ $class.PKG.ISA }) {
+
+        _debug("autoloading $class\n") if $DEBUG;
+        $v = ${ $class.PKG.VERSION } ||= 0;
+        local $SIG{__DIE__};
+        eval "require $class";
+        die $@ if $@;
+        ${ $class.PKG.LOADED } ||= 1;
+#        die $@
+#            if $@ && $@ !~ /^Can't locate .*? at \(eval /;
+#        die sprintf("Module '%s' is empty in %s at %s line %s\n", $class, caller(2))
+#            unless *{"$class\::"};
+    }
+    return $class;
+}
 
 sub _debug {
     print STDERR @_;
