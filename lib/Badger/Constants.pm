@@ -37,14 +37,14 @@ use constant {
     DEFAULT         => 'default',
     
     # misc constants used internally
-    BLANK           => '',
-    SPACE           => ' ',
     LAST            => -1,                  # last item in a list
     CRLF            => "\015\012",          # unambiguous CR+LF sequence
-    DELIMITER       => qr/(?:,\s*)|\s+/,    # match a comma or whitespace
     PKG             => '::',                
     REFS            => 'refs',
     ONCE            => 'once',
+    BLANK           => '',
+    SPACE           => ' ',
+    DELIMITER       => qr/(?:,\s*)|\s+/,    # match a comma or whitespace
 
 };
 
