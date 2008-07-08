@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 88,
+    tests => 103,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -35,6 +35,7 @@ our $ALIASES = ['Ally', 'Ali'];
 our $FRIENDS = {
     sue => 'Susan',
 };
+our $TWO = '22 Acacia Avenue';
 
 sub new {
     my ($class, %self) = @_;
@@ -52,6 +53,7 @@ our $ALIASES = ['Robert', 'Rob'];
 our $FRIENDS = {
     jim => 'Jim',
 };
+our $ONE = '2 Minutes to Midnight';
 
 package main;
 
@@ -79,8 +81,18 @@ is( $alice->class->var('GIRLS_NAME'), 'Alice', 'Alice var $GIRLS_NAME' );
 is( $bob->class->var('NAME'), 'Bob', 'Bob var $NAME' );
 is( $bob->class->var('BOYS_NAME'), 'Bob', 'Bob var $BOYS_NAME' );
 
-is( join(', ', $alice->class->all_vars('NAME')), 'Alice', 'Alice vars $NAME' );
-is( join(', ', $bob->class->all_vars('NAME')), 'Bob, Alice', 'Bob vars $NAME' );
+is( join(', ', $alice->class->any_var('NAME')), 'Alice', 'Alice any_var $NAME' );
+is( join(', ', $bob->class->any_var('NAME')), 'Bob', 'Bob any_var $NAME' );
+
+is( join(', ', $alice->class->any_var_in('ONE', 'TWO')), '22 Acacia Avenue', 'Alice is Charlotte' );
+is( join(', ', $alice->class->any_var_in('ONE TWO')), '22 Acacia Avenue', 'She lives at 22 Acacia Avenue' );
+is( join(', ', $alice->class->any_var_in(['ONE', 'TWO'])), '22 Acacia Avenue', "That's the place where we all go" );
+is( join(', ', $bob->class->any_var_in('ONE', 'TWO')), '2 Minutes to Midnight', "Bob says it's 2 minutes to midnight" );
+is( join(', ', $bob->class->any_var_in('ONE TWO')), '2 Minutes to Midnight', "The hand that threatens doom" );
+is( join(', ', $bob->class->any_var_in(['ONE', 'TWO'])), '2 Minutes to Midnight', "Kill the unborn in the womb" );
+
+is( join(', ', $alice->class->all_vars('NAME')), 'Alice', 'Alice all_vars $NAME' );
+is( join(', ', $bob->class->all_vars('NAME')), 'Bob, Alice', 'Bob all_vars $NAME' );
 
 # merged list var
 is( join(', ', @{ $alice->class->list_vars('ALIASES') }), 'Ally, Ali', 'Alice ALIASES' );
@@ -409,6 +421,78 @@ use Badger::Test;
 is( Hubbins, 'Hubbins', 'David St Hubbins' );
 is( Tufnel, 'Tufnel', 'Nigel Tufnel' );
 is( Smalls, 'Smalls', 'Derek Smalls' );
+
+
+#-----------------------------------------------------------------------
+# test class construction
+#-----------------------------------------------------------------------
+
+package Test::Amp::Construction;
+use Badger::Class 'class';
+use Badger::Test;
+
+my $amp1 = class('Guitar::Amplifier')
+    ->base('Badger::Base')
+    ->constant( max_volume => 10 )
+    ->method( about => sub { "This amp goes up to " . shift->max_volume } )
+    ->instance;
+
+is( $amp1->about, 'This amp goes up to 10', $amp1->about );
+
+my $amp2 = class('Nigels::Guitar::Amplifier')
+    ->base('Guitar::Amplifier')
+    ->constant( max_volume => 11 )
+    ->instance;
+
+is( $amp2->about, 'This amp goes up to 11', $amp2->about );
+    
+
+
+
+#-----------------------------------------------------------------------
+# test loaded()
+#
+# Like a river we will flow, on towards the sea we go, when all you do
+# can only bring you sadness, out on the sea of madneeeeeeeessssss...
+#-----------------------------------------------------------------------
+
+# define this before
+package Wasted::Years;
+use base 'Badger::Base';
+
+package main;
+use Badger::Class 'class';
+
+# both Wasted::Years and Heaven::Can::Wait should be deemed loaded by
+# virtue of the fact that they define base classes which affects @ISA
+ok( class('Wasted::Years')->loaded, 'Wasted Years is loaded' );
+ok( ! class('Sea::Of::Madness')->loaded, 'Sea of Madness is not loaded' );
+ok( class('Heaven::Can::Wait')->loaded, 'Heaven Can Wait is loaded' );
+
+# define this after
+package Heaven::Can::Wait;
+use base 'Badger::Base';
+
+
+
+
+#-----------------------------------------------------------------------
+# subclass Badger::Class
+#-----------------------------------------------------------------------
+
+package Test::My::Class;
+
+use My::Class
+    version   => 11,
+    constants => 'black none';
+    
+sub colour {
+    black 
+}
+
+package main;
+is( Test::My::Class->colour, 'black', 'How much more black could this be?' );
+is( Test::My::Class->none, 'none', 'None, none more black' );
 
 __END__
 #-----------------------------------------------------------------------
