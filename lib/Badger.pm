@@ -39,6 +39,10 @@ sub hub {
     }
 }
 
+sub codec {
+    shift->hub->codec(@_);
+}
+
 sub config {
     my $self = shift;
     return $self->hub->config;
