@@ -29,6 +29,7 @@ sub AUTOLOAD {
     my ($self, @args) = @_;
     my ($name) = ($AUTOLOAD =~ /([^:]+)$/ );
     return if $name eq 'DESTROY';
+    $self = $self->prototype unless ref $self;
 
     # very simple for now
     return exists $self->{ $name }
