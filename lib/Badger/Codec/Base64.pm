@@ -77,7 +77,7 @@ Encodes the data referenced by the first argument using C<encode_base64()>.
 
 Decodes the encoded data passed as the first argument using C<decode_base64()>.
 
-    $url = Badger::Codec::URL->decode($encoded);
+    $decoded = Badger::Codec::Base64->decode($encoded);
 
 =head2 encoder()
 
