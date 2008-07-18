@@ -30,6 +30,7 @@ ok( $dir, 'created a new directory' );
 is( $dir->name, 'example', 'got example name' );
 ok( ! $dir->volume, 'got (no) file volume' );
 ok( ! $dir->dir, 'got (no) file directory' );
+#print "dir: ", $dir->dir, "\n";
 
 is( $DIR->new(name => 'example')->name,
     'example', 'got dir using name param' );
@@ -105,7 +106,7 @@ my @kids = $cwd->children;
 ok( scalar(@kids), 'got some kids' );
 
 foreach my $kid (@kids) {
-    printf(" * %-4s %s\n", $kid->type, $kid->path) if $DEBUG;
+    printf(" * %-12s  %-20s   %s\n", $kid->type, $kid->name, $kid->path) if $DEBUG;
 }
 
 #print "got ", scalar(@files), " files:\n  ", join("\n  ", @files), "\n";
