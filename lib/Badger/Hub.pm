@@ -18,6 +18,7 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Prototype',
     utils     => 'UTILS',
+    import    => 'class',
     constants => 'HASH ARRAY REFS PKG',
     words     => 'COMPONENTS DELEGATES COMP_CACHE DELG_CACHE',
     messages => {
@@ -47,6 +48,7 @@ sub init {
     # value in the $CONFIG package variable, which in this case is Badger::Config,
     # but could be re-defined by a subclass to be something else.
     my $config = delete($args->{ config }) || $self->class->any_var('CONFIG');
+    class($config)->load unless ref $config;
     $config = $config->new($args) unless blessed $config;
     $self->{ config } = $config;
     $self->debug("hub config: $self->{ config }\n") if $DEBUG;
