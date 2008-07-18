@@ -391,10 +391,13 @@ sub debug {
     # emulates the idiom: our $DEBUG = $debug unless defined $DEBUG;
     # so that we can set $DEBUG flags *before* loading a module (which
     # might happen on demand)
-    unless (defined ${ $pkg.PKG.DEBUG }) {
-        _debug("debug() Setting $pkg \$DEBUG to $debug\n") if $DEBUG;
-        *{ $pkg.PKG.DEBUG } = \$debug
-    }
+
+
+    $debug = ${ $pkg.PKG.DEBUG }
+        if defined ${ $pkg.PKG.DEBUG };
+        
+    _debug("debug() Setting $pkg \$DEBUG to $debug\n") if $DEBUG;
+    *{ $pkg.PKG.DEBUG } = \$debug;
 
     return $self;
 }
