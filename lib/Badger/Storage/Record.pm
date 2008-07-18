@@ -16,7 +16,7 @@ use Badger::Class
     version     => 0.01,
     debug       => 0,
     base        => 'Badger::Base',
-    get_methods => 'table';
+    get_methods => 'table id';
 
 our $AUTOLOAD;
 
@@ -26,6 +26,8 @@ sub init {
         || return $self->error_msg( missing => 'table reference' );
     $self->{ data  } = $config->{ data }
         || return $self->error_msg( missing => 'record data' );
+    $self->{ id } = $config->{ id }
+        || return $self->error_msg( missing => 'record id' );
     return $self;
 }
 

@@ -32,21 +32,25 @@ sub init {
     my ($self, $config) = @_;
     $self->SUPER::init($config);
 
+#    $self->debug("using config: ", $self->dump_hash($config), "\n");
+
     my $hub = $self->hub;
     my $dir = $config->{ directory }
            || $config->{ dir }
            || return $self->error_msg( missing => 'directory' );
-    
+
     # upgrade $dir to Badger::Filesystem::Directory object if necessary
     $dir = $hub->filesystem->directory($dir) unless ref $dir;
     $self->{ directory } = $dir;
-    
+
     # install a codec
     my $codec = $config->{ codec } || $self->class->any_var(CODEC);
     $codec = $hub->codec($codec) unless ref $codec;
     $self->{ codec   } = $codec;
     $self->{ encoder } = $codec->encoder;
     $self->{ decoder } = $codec->decoder;
+
+    $self->debug("using codec: ", $codec, "\n");
     
     return $self;
 }
@@ -54,7 +58,7 @@ sub init {
 sub record_id {
     my $self = shift;
     my $name = shift || return $self->error_msg( missing => 'record' );
-    $name =~ s/\W+/_/g;
+#    $name =~ s/\W+/_/g;
     $name;
 }
 
@@ -71,7 +75,7 @@ sub create_record {
     my $data = @_ && ref $_[0] eq HASH ? shift : { @_ };
     $file->write( $self->encode($data) );
     $self->debug("created new filesystem record for $id in ", $file->definitive, "\n") if $DEBUG;
-    $self->record_object( file => $file, data => $data );
+    $self->record_object( file => $file, data => $data, id => $id );
 }
 
 sub fetch_record {
@@ -82,7 +86,7 @@ sub fetch_record {
     return $self->error_msg( non_existing => file => $file ) unless $file->exists;
     my $data = $file->read;
     $self->debug("fetched filesystem record for $id in $file\n") if $DEBUG;
-    $self->record_object( file => $file, data => $self->decode($data) );
+    $self->record_object( file => $file, data => $self->decode($data), id => $id );
 }
 
 sub delete_record {
@@ -103,7 +107,19 @@ sub decode {
     $self->{ decoder }->(@_);
 }
 
+sub index {
+    my $self  = shift;
+    my @names = map { $_->name } $self->{ directory }->files;
+    return wantarray ? @names : \@names;
+}
 
+sub fetch_all {
+    my $self    = shift;
+    my @records = map { 
+        $self->fetch_record($_) || return $self->error($self->reason)
+    } $self->index;
+    return wantarray ? @records : \@records;
+}    
 
 1;
 

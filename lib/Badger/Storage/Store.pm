@@ -44,10 +44,11 @@ sub init {
 
 sub table {
     my $self = shift;
-    my $name  = $self->table_id(shift);
+    my $name = $self->table_id(shift);
+    my $args = @_ && ref $_[0] eq 'HASH' ? shift : { @_ };
     return $self->{ tables }->{ $name } 
-       ||= $self->try( open_table => $name )
-       ||  $self->create_table($name);      # TODO: this should be optional
+       ||= $self->open_table($name, $args)
+       ||  $self->create_table($name, $args);      # TODO: this should be optional
 }
 
 sub table_id {

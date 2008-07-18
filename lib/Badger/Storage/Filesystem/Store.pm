@@ -41,6 +41,7 @@ sub init {
     # create a virtual filesystem
     $self->{ filesystem } = $self->{ hub }->filesystem( root => $dir );
     
+#    $self->debug("virtual f/s root: $self->{ filesystem } / ", $self->{ filesystem }->root, "\n");
     return $self;
 }
 
@@ -67,12 +68,17 @@ sub create_table {
 }
 
 sub open_table {
+#    local $DEBUG = 1;
     my $self = shift;
     my $id   = $self->table_id(shift);
     my $dir  = $self->{ filesystem }->directory($id);
+    my $args = @_ && ref $_[0] eq 'HASH' ? shift : { @_ };
+    $self->debug("open_table($id, ", $self->dump_data_inline($args), ")\n") if $DEBUG;
     return $self->error_msg( non_existing => directory => $dir ) unless $dir->exists;
     $self->debug("opening filesystem table for $id in $dir\n") if $DEBUG;
-    $self->table_object( directory => $dir );
+    $args->{ directory } = $dir;
+    my $t = $self->table_object($args);
+    return $t;
 }
 
 sub delete_table {
