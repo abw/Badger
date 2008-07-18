@@ -18,13 +18,14 @@ use Badger::Class
     base        => 'Badger::Filesystem::Path',
     constants   => 'ARRAY',
     constant    => {
-        is_dir  => 1,
-        type    => 'Directory',
+        is_directory => 1,
+        type         => 'Directory',
     };
 
 use Badger::Filesystem::Path ':fields';
 
-*is_directory = \&is_dir;
+*dir    = \&directory;
+*is_dir = \&is_directory;
 
 sub init {
     my ($self, $config) = @_;
@@ -34,13 +35,14 @@ sub init {
     $self->debug("init(", $self->dump_data_inline($config), ")\n") if $DEBUG;
     
     if ($path = $config->{ path }) {
-        $path = $self->{ path } = $fs->join_dir($path);
+        $path = $self->{ path } = $fs->join_directory($path);
         @$self{@VDN_FIELDS} = $fs->split_path($path);
         $self->debug("path: $self->{ path }  vol: $self->{ volume }  dir: $self->{ directory }  name: $self->{ name }\n") if $DEBUG;
     }
     elsif ($self->{ name } = $config->{ name }) {
         @$self{@VD_FIELDS} = ($vol, $dir) = map { defined($_) ? $_ : '' } @$config{@VD_FIELDS};
         $self->{ path } = $fs->join_path($vol, $dir, $self->{ name });
+        $self->debug("name: $self->{ name }  vol: $self->{ volume }  dir: $self->{ directory }  name: $self->{ name }  path: $self->{ path }\n") if $DEBUG;
     }
     else {
         $self->error_msg( missing => 'path or name' );
@@ -56,7 +58,7 @@ sub directory {
     my $self = shift;
     return @_
         ? $self->filesystem->directory( $self->relative(@_) )
-        : $self;
+        : $self->{ directory };
 }
 
 sub file {
@@ -88,7 +90,14 @@ sub read {
 
 sub children {
     my $self = shift;
+    $self->debug("asking for $self->{ path } children\n") if $DEBUG;
     return $self->filesystem->directory_children($self->{ path }, @_);
+}
+
+sub files {
+    my $self  = shift;
+    my @files = grep { $_->is_file } $self->children;
+    return wantarray ? @files : \@files;
 }
 
 1;

@@ -80,7 +80,7 @@ sub new {
     else {
         $args = { @_ };
     }
-
+    
     # allow short aliases for various configuration options, including
     # those of directory/file subclasses to make life easy for them.
     $args->{ filesystem } ||= $args->{ fs  } if $args->{ fs  };
@@ -98,7 +98,7 @@ sub init {
     my ($self, $config) = @_;
     my $path = $config->{ path } || return $self->error_msg( missing => 'path' );
     my $fs   = $self->filesystem;
-    $path = $self->{ path } = $fs->join_dir($path);
+    $path = $self->{ path } = $fs->join_directory($path);
     return $self;
 }
 
@@ -115,7 +115,7 @@ sub parent {
     my $skip   = shift || 0;
     my $parent = $self->{ parent } 
         ||=  $self->{ directory }
-            ? $self->filesystem->dir($self->{ directory })
+            ? $self->filesystem->directory($self->{ directory })
             : $self->filesystem->cwd;
 
     return 
@@ -153,7 +153,7 @@ sub absolute {
 sub relative {
     my $self = shift;
     my $fs   = $self->filesystem;
-    my $path = $fs->join_dir(@_);
+    my $path = $fs->join_directory(@_);
     # If the path isn't already absolute then we merge it onto our 
     # directory or path if directory is undefined.  By calling the 
     # base() method, we allow the file subclass to return its
@@ -161,7 +161,7 @@ sub relative {
 #    $self->debug("relative path: $path   is_absolute?\n");
     return $fs->is_absolute($path)
          ? $path
-         : $fs->collapse_dir( $fs->join_dir($self->base, $path) );
+         : $fs->collapse_directory( $fs->join_directory($self->base, $path) );
 }
 
 sub base {
@@ -172,7 +172,7 @@ sub base {
 sub collapse {
     my $self = shift->absolute;
     my $fs   = $self->filesystem;
-    $self->{ directory } = $fs->collapse_dir($self->{ directory });
+    $self->{ directory } = $fs->collapse_directory($self->{ directory });
     $self->{ path      } = $fs->join_path(@$self{@VDN_FIELDS});
     return $self;
 }
