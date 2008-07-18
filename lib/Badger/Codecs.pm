@@ -35,6 +35,8 @@ our $CODECS     = {
     # any codecs with non-standard capitalisation can go here, but 
     # generally we grok the module name from the $CODEC_BASE, e.g.
     url      => 'Badger::Codec::URL',
+    yaml     => 'Badger::Codec::YAML',
+    json     => 'Badger::Codec::JSON',
     base64   => 'Badger::Codec::Base64',
     encode   => 'Badger::Codec::Encode',
     unicode  => 'Badger::Codec::Unicode',
@@ -570,4 +572,4 @@ Copyright (C) 2005-2008 Andy Wardley. All rights reserved.
 # End:
 #
 # vim: expandtab shiftwidth=4:
-
+# TextMate: makes me smile
