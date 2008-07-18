@@ -34,6 +34,7 @@ our $SCHEME     = {
     cyan        => 'skip_one skip_all',
     yellow      => 'plan not_eq not_ne not_like not_unlike summary',
 };
+our $DEBUG_COL  = 'yellow';
 our $COLOURS    = {
     red         => 31,
     green       => 32,
@@ -310,6 +311,11 @@ sub colour {
             $MESSAGES->{ $_ } = ANSI_escape_lines($code, $MESSAGES->{ $_ })
                 for split(/\s+/, $SCHEME->{ $col });
         }
+        # hack to make debug messages come out in colour
+        $Badger::Base::DEBUG_FORMAT = ANSI_escape_lines( 
+            $COLOURS->{ $DEBUG_COL }, 
+            $Badger::Base::DEBUG_FORMAT 
+        );
     }
 
     return $self->{ colour };
