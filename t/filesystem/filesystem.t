@@ -15,13 +15,13 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use File::Spec;
-use Badger::Filesystem qw( :types :dirs );
+use Badger::Filesystem qw( FS :types :dirs );
 use Badger::Test 
-    tests => 28,
+    tests => 37,
     debug => 'Badger::Filesystem',
     args  => \@ARGV;
 
-our $FS = 'Badger::Filesystem';
+our $TDIR = -d 't' ? FS->join_dir(qw(t filesystem)) : FS->directory;
 
 
 #-----------------------------------------------------------------------
@@ -30,15 +30,20 @@ our $FS = 'Badger::Filesystem';
 
 my $path = Path('/foo/bar');
 ok( $path, 'created path using constructor sub' );
+is( $path, '/foo/bar', 'matched path' );
+is( Path('foo', 'bar'), File::Spec->catdir('foo', 'bar'), 'path with separates' );
 
 my $file = File('/foo/bar');
 ok( $file, 'created file using constructor sub' );
+is( File('foo', 'bar'), File::Spec->catdir('foo', 'bar'), 'file with separates' );
 
 my $dir = Dir('/foo/bar');
 ok( $dir, 'created dir using constructor sub' );
+is( Dir('foo', 'bar'), File::Spec->catdir('foo', 'bar'), 'dir with separates' );
 
 $dir = Directory('/foo/bar');
 ok( $dir, 'created directory using constructor sub' );
+is( Directory('foo', 'bar'), File::Spec->catdir('foo', 'bar'), 'directory with separates' );
 
 
 #-----------------------------------------------------------------------
@@ -59,10 +64,27 @@ ok( $dir, 'created directory using constructor class' );
 
 
 #-----------------------------------------------------------------------
+# and also via the BFS alias for Badger::Filesystem
+#-----------------------------------------------------------------------
+
+$path = FS->path('/foo/bar');
+ok( $path, 'created path using FS class' );
+
+$file = FS->file('/foo/bar');
+ok( $file, 'created file using FS class' );
+
+$dir = FS->dir('/foo/bar');
+ok( $dir, 'created dir using FS class' );
+
+$dir = FS->directory->new('/foo/bar');
+ok( $dir, 'created directory using FS class' );
+
+
+#-----------------------------------------------------------------------
 # basic constructor test
 #-----------------------------------------------------------------------
 
-my $fs = $FS->new;
+my $fs = FS->new;
 ok( $fs, 'created a new filesystem' );
 
 is( $fs->rootdir, ROOTDIR, 'root is ' . ROOTDIR );
@@ -113,7 +135,7 @@ is( $file1->filesystem, $fs,
 # test a virtual root directory
 #-----------------------------------------------------------------------
 
-$fs = $FS->new(
+$fs = FS->new(
     root      => '/path/to/my/web/pages', 
     rootdir   => '/',
     separator => '/',

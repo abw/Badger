@@ -14,11 +14,11 @@
 use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
-use Badger::Filesystem;
+use Badger::Filesystem 'FS';
 use Badger::Filesystem::File '@STAT_FIELDS';
 use Badger::Filesystem::Directory;
 use Badger::Test 
-    tests => 31,
+    tests => 37,
     debug => 'Badger::Filesystem::File',
     args  => \@ARGV;
 
@@ -26,6 +26,12 @@ our $FILE  = 'Badger::Filesystem::File';
 our $FS    = 'Badger::Filesystem';
 our $cwd   = $FS->cwd;
 our @tdir  = -d 't' ? qw( t filesystem ) : ($FS->curdir);
+our $TDIR  = -d 't' ? FS->dir(qw(t filesystem)) : FS->directory;
+
+
+#-----------------------------------------------------------------------
+# basic file inspection
+#-----------------------------------------------------------------------
 
 my $file = $FILE->new('file.t');
 ok( $file, 'created a new file' );
@@ -53,6 +59,25 @@ is( $FILE->new(name => 'file.t')->name,     'file.t', 'got file using name param
 is( $FILE->new(path => 'file.t')->name,     'file.t', 'got file using path param' );
 is( $FILE->new({ name => 'file.t' })->name, 'file.t', 'got file using name param hash' );
 is( $FILE->new({ path => 'file.t' })->name, 'file.t', 'got file using path param hash' );
+
+
+#-----------------------------------------------------------------------
+# create a file, delete it, touch it
+#-----------------------------------------------------------------------
+
+my $file3 = $TDIR->file('testfiles', 'newfile');
+ok( $file3, 'got newfile' );
+if ($file3->exists) {
+    ok( $file3->delete, 'deleted file' );
+}
+else {
+    pass('no existing file');
+}
+ok( ! $file3->exists, 'newfile does not exist' );
+ok( $file3->create, 'created file' );
+ok( $file3->exists, 'newfile now exists' );
+ok( $file3->touch, 'touched newfile' );
+
 
 
 __END__
