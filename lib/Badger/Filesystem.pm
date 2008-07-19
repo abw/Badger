@@ -21,16 +21,20 @@ use Badger::Class
     import    => 'class',
     constants => 'HASH ARRAY TRUE',
     constant  => {
+        # Note: DIR should be DIRECTORY to be consistent with other uses but
+        # I can't bring myself to break that lovely pattern down the left
         NO_FILENAME => 1,
         FILESPEC    => 'File::Spec',
         ROOTDIR     =>  File::Spec->rootdir,
         CURDIR      =>  File::Spec->curdir,
         UPDIR       =>  File::Spec->updir,
-        DIRECTORY   => 'Badger::Filesystem::Directory',
         PATH        => 'Badger::Filesystem::Path',
         FILE        => 'Badger::Filesystem::File',
+        DIR         => 'Badger::Filesystem::Directory',
+        FS          => 'Badger::Filesystem',
     },
     exports   => {
+        any   => 'FS PATH FILE DIR DIRECTORY',
         tags  => { 
             types   => 'Path File Dir Directory',
             dirs    => 'ROOTDIR UPDIR CURDIR',
@@ -46,15 +50,17 @@ use Badger::Filesystem::Directory;
 
 
 #-----------------------------------------------------------------------
-# aliases
+# aliases - the only reason we've "reversed" DIRECTORY -> DIR (all the 
+# others alias dir -> directory) is so we don't mess up the lovely 
+# indenting in the 'constant' declaration above.  Yeah I know, I'm silly.
 #-----------------------------------------------------------------------
 
-*DIR          = \&DIRECTORY;              # constant class name
+*DIRECTORY    = \&DIR;                    # constant class name
 *Dir          = \&Directory;              # constructor sub
-*dir          = \&directory;              # object methods
-*split_dir    = \&split_directory;
-*join_dir     = \&join_directory;
-*collapse_dir = \&collapse_directory;
+*dir          = \&directory;              # object method
+*split_dir    = \&split_directory;        # ...because typing 'directory' 
+*join_dir     = \&join_directory;         #    gets tedious quickly
+*collapse_dir = \&collapse_directory;     
 *create_dir   = \&create_directory;
 *delete_dir   = \&delete_directory;
 *open_dir     = \&open_directory;
@@ -62,15 +68,16 @@ use Badger::Filesystem::Directory;
 *dir_children = \&directory_children;
 *mkdir        = \&create_directory;
 *rmdir        = \&delete_directory;
+*touch        = \&touch_file;
 
 
 #-----------------------------------------------------------------------
 # factory subroutines
 #-----------------------------------------------------------------------
 
-sub Path      { return @_ ?       PATH->new(@_) : PATH      }
-sub File      { return @_ ?       FILE->new(@_) : FILE      }
-sub Directory { return @_ ?  DIRECTORY->new(@_) : DIRECTORY }
+sub Path      { return @_ ?  FS->path(@_) : PATH }
+sub File      { return @_ ?  FS->file(@_) : FILE }
+sub Directory { return @_ ?  FS->dir(@_)  : DIR  }
 
 
 #-----------------------------------------------------------------------
@@ -441,7 +448,7 @@ Badger::Filesystem - filesystem functionality
 
 =head1 SYNOPSIS
 
-    # using Path/File/Dir subroutines
+    # using Path/File/Dir constructor subroutines
     use Badger::Filesystem 'Path File Dir';
     
     # use native OS-specific paths:
@@ -456,7 +463,7 @@ Badger::Filesystem - filesystem functionality
     $dir  = Dir('path', 'to', 'directory');
     $dir  = Directory('path', 'to', 'directory');
 
-    # using class methods
+    # calling class methods
     use Badger::Filesystem;
     
     # we'll just show native paths from now on for brevity
@@ -464,15 +471,22 @@ Badger::Filesystem - filesystem functionality
     $file = Badger::Filesystem->file('/path/to/file');
     $dir  = Badger::Filesystem->dir('/path/to/directory');
 
-    # using object methods
-    my $fsys = Badger::Filsystem->new;
+    # 'FS' is an alias for 'Badger::Filesystem' 4 lzy ppl lk me
+    use Badger::Filesystem 'FS'
     
-    $path = $fsys->path('/path/to/file/or/dir');
-    $file = $fsys->file('/path/to/file');
-    $dir  = $fsys->dir('/path/to/directory');
+    $path = FS->path('/path/to/file/or/dir');
+    $file = FS->file('/path/to/file');
+    $dir  = FS->dir('/path/to/directory');
+
+    # calling object methods
+    my $fs = Badger::Filsystem->new;
+    
+    $path = $fs->path('/path/to/file/or/dir');
+    $file = $fs->file('/path/to/file');
+    $dir  = $fs->dir('/path/to/directory');
 
     # filesystem options
-    my $fsys = Badger::Filsystem->new(
+    my $fs = Badger::Filsystem->new(
         root      => '/path/to/my/web/site',
         separator => '/',     # path separator
         rootdir   => '/',     # root directory
@@ -480,37 +494,104 @@ Badger::Filesystem - filesystem functionality
         updir     => '..',    # parent directory
     );
     
-    $path = $fsys->path('/index.html');   # relative to f/s root
+    $path = $fs->path('/index.html');     # relative to f/s root
     print $path->absolute;                # /index.html
     print $path->definitive;              # /path/to/my/web/site/index.html
+
+=head1 INTRODUCTION
+
+This is the documentation for the C<Badger::Filesystem> module. You probably
+don't need to read it.  If you're looking for an easy way to access and 
+manipulate files and directories, then all you need to know to get started
+is this:
+
+    use Badger::Filesystem 'File Dir';
+    
+    my $file = File('/path/to/file');       # Badger::Filesystem::File
+    my $dir  = Dir('/path/to/directory');   # Badger::Filesystem::Directory
+
+The L<File()> and L<Dir()> subroutines are used to create
+L<Badger::Filesystem::File> and L<Badger::Filesystem::Directory> objects. You
+should read the documentation for those modules first as they cover pretty
+much everything you need to know about working with files and directories for
+simple day-to-day tasks.
+
+If you want to do something a little more involved than inspecting, reading
+and writing files, or if you want to find out more about the filesystem
+functionality hidden behind the file and directory objects, then read on!
 
 =head1 DESCRIPTION
 
 The C<Badger::Filesystem> module defines an object class for accessing and
-manipulating files and directories in a file system.  It provides a number
-of methods that encapsulate the behaviours of various other filesystem
-related modules, including L<File::Spec>, L<File::Path> and L<Cwd>.  For
-example:
+manipulating files and directories in a file system. It provides a number of
+methods that encapsulate the behaviours of various other filesystem related
+modules, including L<File::Spec>, L<File::Path>, L<IO::File>, L<IO::Dir> and
+L<Cwd>. For example:
 
     # path manipulation
     my $dir  = Badger::Filesystem->join_dir('foo', 'bar', 'baz');
     my @dirs = Badger::Filesystem->split_dir('foo/bar/baz');
-
+    
     # path inspection
     Badger::Filesystem->is_relative('foo/bar/baz');     # true
     Badger::Filesystem->is_absolute('foo/bar/baz');     # false
+    
+    # file manipulation
+    Badger::Filesystem->write_file('/path/to/file', 'Hello World');
+    Badger::Filesystem->delete_file('/path/to/file')
+    
+    # directory manipulation
+    Badger::Filesystem->cwd;
+    Badger::Filesystem->mkdir('/path/to/dir')
 
-    # path conversion (relative to cwd)
-    Badger::Filesystem->relative('/foo/bar/baz');       # true
-    Badger::Filesystem->absolute('foo/bar/baz');     # false
+If you get tired of writing C<Badger::Filesystem> over and over again,
+you can import the C<FS> symbol which is an alias to it (or you can define
+your own alias of course).
 
-It defines the L<Path()>, L<File()> and L<Directory()> subroutines to easily
-create L<Badger::Filesystem::Path>, L<Badger::Filesystem::File> and
-L<Badger::Filesystem::Directory> objects, respectively. The L<Dir> subroutine
-is provided as an alias for L<Directory>.
+    use Badger::Filesystem 'FS';
+    
+    FS->is_relative('foo/bar/baz');     # true
+    FS->is_absolute('foo/bar/baz');     # false
+
+The C<Badger::Filesystem> module also defines methods that create objects to
+represent files (L<Badger::Filesystem::File>), directories
+(L<Badger::Filesystem::Directory>), and generic paths
+(L<Badger::Filesystem::Path>) that may refer to a file, directory, or a
+resource that doesn't physically exist (e.g. a URI).
+
+These are very similar (although not identical) to the corresponding
+L<Path::Class> modules which you may already be familiar with. The main
+difference between them is that C<Badger> files, directories and paths are
+I<flyweight> objects that call back to the C<Badger::Filesystem> to perform
+any filesystem operations. This gives us a more control over restricting
+certain filesystem operations (e.g. writing files) and more flexibility in
+what we define a filesystem to be (e.g. allowing virtually mounted and/or
+composite file systems - more on that later).
+
+    use Badger::Filesystem 'FS';
+    
+    # file manipulation - via Badger::Filesystem::File object
+    my $file = FS->file('/path/to/file');
+    print $file->size;                  # metadata
+    print $file->modified;              # more metadata
+    my $text = $file->read;             # read file content
+    $file->write("New content");        # write file content
+
+    # directory manipulation - via Badger::Filesystem::Directory object
+    my $dir = FS->directory('/path/to/dir');
+    print $dir->mode;                   # metadata
+    print $dir->modified;               # more metadata
+    my @entries = $dir->read;           # read directory entries
+    my $file = $dir->file('foo');       # fetch a file
+    my $sub  = $dir->dir('bar');        # fetch a sub-directory
+
+The module also defines the L<Path()>, L<File()> and L<Directory()>
+subroutines to easily create L<Badger::Filesystem::Path>,
+L<Badger::Filesystem::File> and L<Badger::Filesystem::Directory> objects,
+respectively. The L<Dir> subroutine is provided as an alias for L<Directory>.
 
     use Badger::Filesystem 'Path File Dir';
-
+    
     my $path = Path('/any/generic/path');
     my $file = File('/path/to/file');
     my $dir  = Dir('/path/to/dir');
@@ -525,26 +606,54 @@ equivalent to those shown below.
     my $file = Badger::Filesystem->file('/path/to/file');
     my $dir  = Badger::Filesystem->dir('/path/to/dir');
 
+The constructor subroutines and the corresponding methods behind them accept a
+list (or reference to a list) of path components as well as a single path
+string. This allows you to specify paths in an operating system agnostic
+manner.
+
+    # these all do the same thing (assuming you're on a Unix-like system)
+    File('/path/to/file');          
+    File('path', 'to', 'file');
+    File(['path', 'to', 'file']);
+    
+    # these too
+    Badger::Filesystem->file('/path/to/file');
+    Badger::Filesystem->file('path', 'to', 'file');
+    Badger::Filesystem->file(['path', 'to', 'file']);
+
+The above examples assume a Unix-like filesystem using C</> as the path
+separator. On a windows machine, for example, you would need to specify paths
+using backslashes to satisfy their brain-dead file system. However, specifying
+a list of separate path components remains portable.
+
+    # if you're stuck on windows :-(
+    File('\path\to\file');                  # OS specific
+    File('path', 'to', 'file');             # OS agnostic
+
+If you're using Perl on a windows machine then you should probably consider
+getting a new machine. Try a nice shiny Mac, or an Ubuntu box. Go on, you know
+you deserve better.  
+
 You can also create a C<Badger::Filesystem> object and call object methods
 against it.
 
     use Badger::Filesystem;
-
-    my $fsys = Badger::Filesystem->new;
-    my $file = $fsys->file('/path/to/file');
-    my $dir  = $fsys->dir('/path/to/dir');
+    
+    my $fs   = Badger::Filesystem->new;
+    my $file = $fs->file('/path/to/file');
+    my $dir  = $fs->dir('/path/to/dir');
 
 Creating an object allows you to define additional configuration parameters
 for the filesystem.  At present, the only configuration item of interest is
 C<root> which allows you to define a virtual root directory for a filesystem.
 
-    my $fsys = Badger::Filesystem->new( root => '/my/web/site' );
+    my $fs = Badger::Filesystem->new( root => '/my/web/site' );
 
 This allows you to work with "absolute" paths that really aren't absolute at
 all. This is particular useful when dealing with "absolute" and "relative"
 paths in a web site.
 
-    my $home = $fsys->file('index.html');      # /my/web/site/index.html
+    my $home = $fs->file('index.html');        # /my/web/site/index.html
     print $home->relative;                     # index.html
     print $home->absolute;                     # /index.html
     print $home->definitive;                   # /my/web/site/index.html
@@ -581,6 +690,11 @@ your path in a platform-agnostic way.
     my $file = File('path', 'to, 'file');
     my $dir  = Dir('path', 'to', 'dir');
 
+A reference to a list works equally well.
+
+    my $file = File(['path', 'to, 'file']);
+    my $dir  = Dir(\@paths);
+
 If you don't provide any arguments then the subroutines return the class name
 associated with the object. For example, the L<File()> subroutine returns
 L<Badger::Filesystem::File>. This allows you to use them as virtual classes,
@@ -595,9 +709,35 @@ The above examples are functionally identical to:
     my $file = Badger::Filesystem::File->new('path/to/file');
     my $dir  = Badger::Filesystem::Directory->new('path/to/dir');
 
+A summary of the constructor subroutines follows.
+
+=head2 Path(@path)
+
+Creates a new L<Badger::Filesystem::Path> object.  You can specify the 
+path as a single string or list of path components.
+
+    $path = Path('/path/to/something');
+    $path = Path('path', 'to', 'something');
+
+=head2 File(@path)
+
+Creates a new L<Badger::Filesystem::File> object.  You can specify the 
+path as a single string or list of path components.
+
+    $file = File('/path/to/file');
+    $file = File('path', 'to', 'file');
+
+=head2 Dir(@path) / Directory(@path)
+
+Creates a new L<Badger::Filesystem::Directory> object.  You can specify the 
+path as a single string or list of path components.
+
+    $dir = Dir('/path/to/dir');
+    $dir = Dir('path', 'to', 'dir');
+
 =head1 CONSTRUCTOR METHODS
 
-=head2 new()
+=head2 new(%config)
 
 This is a constructor method to create a new C<Badger::Filesystem> object.
 
@@ -617,29 +757,24 @@ However, you might want to create a filesystem object to pass to some other
 method or object to work with.  In that case, the C<Badger::Filesystem> 
 methods work equally well being called as object or class methods.
 
-=head3 Configuration Options
-
 The other reason you might want to create a filesystem object is to provide
-configuration options.  There is only one interesting option at present.
+configuration options. There is only one interesting option at present -
+C<root>.  This allows you to define a virtual root for the filesystem.  
 
-=head4 root
-
-This allows you to define a virtual root for the filesystem.  
-
-    my $fsys = Badger::Filesystem->new( root => '/my/web/site' );
+    my $fs = Badger::Filesystem->new( root => '/my/web/site' );
 
 A filesystem object with a virtual root directory works in a similar way
 to the C<chroot> command.  Any absolute paths specified for this file 
 system are then assumed to be relative to the virtual root.  For example,
 we can create an object to represent a file in our virtual file system.
 
-    my $home = $fsys->file('index.html');
+    my $home = $fs->file('index.html');
 
 This file as a relative path of C<index.html>.
 
     print $home->relative;                     # index.html
 
-The absolute path is </index.html>.
+The absolute path is C</index.html>.
 
     print $home->absolute;                     # /index.html
 
@@ -661,24 +796,42 @@ method.
     $home->append($more_text);                  # append file
     # ...etc...
 
-=head2 path()
+=head2 path(@path)
 
 Creates a new L<Badger::Filesystem::Path> object. This is typically used for
 manipulating paths that don't relate to a specific file or directory in a real
 filesystem.
 
-=head2 file()
+    # single path (platform specific)
+    my $path = $fs->path('/path/to/something');
+    
+    # list or list ref of path components (platform agnostic)
+    my $path = $fs->path('path', 'to', 'something');
+    my $path = $fs->path(['path', 'to', 'something']);
+
+=head2 file(@path)
 
 Creates a new L<Badger::Filesystem::File> object to represent a file in a 
 filesystem.
 
-=head2 dir($path) / directory($path)
+    # single file path (platform specific)
+    my $file = $fs->file('/path/to/file');
+    
+    # list or list ref of file path components (platform agnostic)
+    my $file = $fs->file('path', 'to', 'file');
+    my $file = $fs->file(['path', 'to', 'file']);
+
+=head2 dir(@path) / directory(@path)
 
 Creates a new L<Badger::Filesystem::Directory> object to represent a file in a
 filesystem.  L<dir()> is an alias for L<directory()> to save on typing.
 
-    my $dir = $fs->dir('/path/to/directory');           # native path
-    my $dir = $fs->dir('path', 'to', 'directory');      # generic path
+    # single directory path (platform specific)
+    my $dir = $fs->dir('/path/to/directory');
+
+    # list or list ref of directory path components (platform agnostic)
+    my $dir = $fs->dir('path', 'to', 'directory');
+    my $dir = $fs->dir(['path', 'to', 'directory']);
 
 If you don't specify a directory path explicitly then it will default to 
 the current working directory, as returned by L<cwd()>.
@@ -686,31 +839,6 @@ the current working directory, as returned by L<cwd()>.
     my $cwd = $fs->dir;
 
 =head1 PATH MANIPULATION METHODS
-
-=head2 join_path($volume, $dir, $file)
-
-Combines a filesystem volume (where applicable), directory name and file
-name into a single path.  This is a wrapper around the 
-L<catpath()|File::Spec/catpath()> and L<canonpath()|File::Spec/canonpath()> 
-functions.
-
-    my $path = $fs−>join_path($volume, $directory, $file);
-
-=head2 join_dir(@dirs) / join_directory(@dirs)
-
-Combines multiple directory names into a single path.  This is a wrapper
-around the L<catdir()|File::Spec/catdir()> function in L<File::Spec>.
-
-    my $dir = $fs−>join_dir('path', 'to', 'my', 'dir');
-
-The final element can also be a file name.
-
-    my $dir = $fs−>join_dir('path', 'to', 'my', 'file');
-
-NOTE: The names of C<join_path()> and C<join_dir()> are slightly confusing
-because C<join_dir()> is really joining a path (i.e. dir or file).  They're
-chosen to mimic C<catpath()> and C<catdir()> in L<File::Spec>, but I might
-rename them at some point in the near future.
 
 =head2 split_path($path)
 
@@ -720,12 +848,32 @@ in L<File::Spec>.
 
     ($vol, $dir, $file) = $fs->split_path($path);
 
+=head2 join_path($volume, $dir, $file)
+
+Combines a filesystem volume (where applicable), directory name and file
+name into a single path.  This is a wrapper around the 
+L<catpath()|File::Spec/catpath()> and L<canonpath()|File::Spec/canonpath()> 
+functions in L<File::Spec>.
+
+    my $path = $fs−>join_path($volume, $directory, $file);
+
 =head2 split_dir($dir) / split_directory($dir)
 
 Splits a directory path into individual directory names.  This is a wrapper
 around the L<splitdir()|File::Spec/splitdir()> function in L<File::Spec>.
 
     @dirs = $fs->split_dir($dir);
+
+=head2 join_dir(@dirs) / join_directory(@dirs)
+
+Combines multiple directory names into a single path.  This is a wrapper
+around the L<catdir()|File::Spec/catdir()> function in L<File::Spec>.
+
+    my $dir = $fs−>join_dir('path', 'to', 'my', 'dir');
+
+The final element can also be a file name.   TODO: is that portable?
+
+    my $dir = $fs−>join_dir('path', 'to', 'my', 'file');
 
 =head2 collapse_dir($dir) / collapse_directory($dir)
 
@@ -740,19 +888,16 @@ The reduction is purely syntactic. No attempt is made to verify that the
 directories exist, or to intelligently resolve parent directory where symbolic
 links are involved.
 
+Note that this may not work portably across all operating systems.  If you're
+using a Unix-based filesystem (including Mac OSX) or MS Windows then you 
+should be OK.  If you're using an old MacOS machine (pre-OSX), VMS, or 
+something made out of clockwork, then be warned that this method is untested
+on those platforms.
+
 C<collapse_dir()> is a direct alias of C<collapse_directory()> to save on 
 typing.
 
 =head1 PATH INSPECTION METHODS
-
-=head2 is_relative($path)
-
-Returns true if the path specified is relative. That is, if it does not start
-with a C</>, or whatever the corresponding token for the root directory is for
-your file system.
-
-    $fs->is_relative('/foo');               # false
-    $fs->is_relative('foo');                # true
 
 =head2 is_absolute($path)
 
@@ -763,23 +908,43 @@ for your file system.
     $fs->is_absolute('/foo');               # true
     $fs->is_absolute('foo');                # false
 
+=head2 is_relative($path)
+
+Returns true if the path specified is relative. That is, if it does not start
+with a C</>, or whatever the corresponding token for the root directory is for
+your file system.
+
+    $fs->is_relative('/foo');               # false
+    $fs->is_relative('foo');                # true
+
 =head1 PATH CONVERSION METHODS
 
-=head2 absolute($path)
+=head2 absolute($path, $base)
 
 Converts a relative path to an absolute one.  The path passed as an argument
-is assumed to be relative to the current working directory.
+is assumed to be relative to the current working directory unless you 
+explicitly provide a C<$base> parameter.
 
-    $fs->cwd;                               # /foo/bar
-    $fs->absolute('wam/bam');               # /foo/bar/wam/bam
+    $fs->cwd;                               # /foo/bar  (for example)
+    $fs->absolute('baz');                   # /foo/bar/baz
+    $fs->absolute('baz', '/wam/bam');       # /wam/bam/baz
 
-=head2 relative($path)
+Note how potentially confusing that last example is. The base path is the
+I<second> argument which ends up in front of the I<first> argument.  It's
+an unfortunately consequence of the way the parameters are ordered (the 
+optional parameter must come after the mandatory one) and can't be avoided.
 
-Converts an absolute path to one that is relative to the current working
-directory.
+=head2 relative($path, $base)
 
-    $fs->cwd;                               # /foo/bar
+Converts an absolute path to a relative one.  It is assumed to be relative
+to the current working direct unless you explicitly provide a C<$base>
+parameter.
+
+    $fs->cwd;                               # /foo/bar  (for example)
     $fs->relative('/foo/bar/wam/bam');      # wam/bam
+    $fs->relative('/baz/wam/bam', '/baz');  # wam/bam
+
+Again note that last example where 
 
 =head2 definitive($path)
 
@@ -790,9 +955,9 @@ a definitive path is identical to an absolute one.
 
 However, if you're using a filesystem with a virtual root directory, then 
 a I<definitive> path I<will> include the virtual root directory, whereas a 
-an I<absolute> path will I<not> include it.
+an I<absolute> path will I<not>.
 
-    my $fs= Badger::Filesystem->new( root => '/my/vfs' );
+    my $fs = Badger::Filesystem->new( root => '/my/vfs' );
     $fs->absolute('/foo/bar');              # /foo/bar
     $fs->definitive('/foo/bar');            # /my/vfs/foo/bar
 
@@ -823,7 +988,7 @@ Creates a file if it doesn't exists, or updates the timestamp if it does.
 
 Deletes a file.
 
-    $fs->delete_file('/path/to/file');
+    $fs->delete_file('/path/to/file');      # Careful with that axe, Eugene!
 
 =head2 open_file($path, $mode, $perms)
 
@@ -843,7 +1008,7 @@ or a single text string (in scalar context).
     my $text  = $fs->read_file('/path/to/file');
     my @lines = $fs->read_file('/path/to/file');
 
-=head2 write_file($path, $content)
+=head2 write_file($path, @content)
 
 When called with a single C<$path> argument, this method opens the specified 
 file for writing and returns an L<IO::File> object.
@@ -852,13 +1017,13 @@ file for writing and returns an L<IO::File> object.
     $fh->print("Hello World!\n");
     $fh->close;
 
-If any additional C<$content> argument(s) are passed then they will be 
+If any additional C<@content> argument(s) are passed then they will be 
 written to the file.  The file is then closed and a true value returned 
 to indicate success.  Errors are thrown as exceptions.
 
     $fs->write_file('/path/to/file', "Hello World\n", "Regards, Badger\n");
 
-=head2 append_file($path)
+=head2 append_file($path, @content)
 
 This method is similar to L<write_file()>, but opens the file for appending
 instead of overwriting.  When called with a single C<$path> argument, it opens 
@@ -868,7 +1033,7 @@ the file for appending and returns an L<IO::File> object.
     $fh->print("Hello World!\n");
     $fh->close;
 
-If any additional C<$content> argument(s) are passed then they will be 
+If any additional C<@content> argument(s) are passed then they will be 
 appended to the file.  The file is then closed and a true value returned 
 to indicate success.  Errors are thrown as exceptions.
 
@@ -882,21 +1047,25 @@ Creates the directory specified by C<$path>. Errors are thrown as exceptions.
 
     $fs->create_dir('/path/to/directory');
 
-Additional arguments can be specified as per the L<File::Path> C<mkpath()> 
-method.  NOTE: this may be subject to change.  Better to use C<File::Path>
-directly for now if you're relying on this.
+Additional arguments can be specified as per the L<File::Path> C<mkpath()>
+method. NOTE: this is subject to change. Better to use C<File::Path> directly
+for now if you're relying on this.
 
-=head2 open_dir(@path) / open_directory(@path)
+=head2 open_dir($path) / open_directory($path)
 
 Returns an L<IO::Dir> handle opened for reading a directory or throws
 an error if the open failed.
 
     my $dh = $fs->open_dir('/path/to/directory');
+    while (defined ($path = $dh->read)) {
+        print " - $path\n";
+    }
 
 =head2 read_dir($dir, $all) / read_directory($dir, $all)
 
 Returns a list (in list context) or a reference to a list (in scalar context)
-containing the entries in the directory. 
+containing the entries in the directory. These are simple text strings
+containing the names of the files and/or sub-directories in the directory.
 
     my @paths = $fs->read_dir('/path/to/directory');
 
@@ -907,6 +1076,8 @@ optional second argument to include these items.
     my @paths = $fs->read_dir('/path/to/directory', 1);
 
 =head2 dir_children($dir, $all) / directory_children($dir, $all)
+
+NOTE: this method is likely to be renamed and/or refactored RSN
 
 Returns a list (in list context) or a reference to a list (in scalar
 context) of objects to represent the contents of a directory.  As per
@@ -930,6 +1101,27 @@ instead.
 =head1 AUTHOR
 
 Andy Wardley E<lt>abw@wardley.orgE<gt>
+
+=head1 ACKNOWLEDGEMENTS
+
+The L<Badger::Filesystem> module is a wrapper around a number of Perl modules 
+written by some most excellent people.  May the collective gratitude of the
+Perl community shine forth upon them.
+
+L<File::Spec> by Ken Williams, Kenneth Albanowski, Andy Dougherty, Andreas
+Koenig, Tim Bunce, Charles Bailey, Ilya Zakharevich, Paul Schinder, Thomas
+Wegner, Shigio Yamaguchi, Barrie Slaymaker.
+
+L<File::Path> by Tim Bunce and Charles Bailey.
+
+L<Cwd> by Ken Williams and the Perl 5 Porters. 
+
+L<IO::File> and L<IO::Dir> by Graham Barr.
+
+It was also inspired by, and draws heavily on the ideas and code in
+L<Path::Class> by Ken Williams. There's also more than a passing influence
+from the L<Template::Plugin::File> and L<Template::Plugin::Directory>
+modules which were based on code originally by Michael Stevens.
 
 =head1 COPYRIGHT
 
