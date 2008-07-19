@@ -59,6 +59,16 @@ sub file {
         : $self;
 }
 
+sub create {
+    my $self = shift;
+    $self->filesystem->create_file($self->{ path }, @_);
+}
+
+sub touch {
+    my $self = shift;
+    $self->filesystem->touch_file($self->{ path });
+}
+
 sub open {
     my $self = shift;
     $self->filesystem->open_file($self->{ path }, @_);
