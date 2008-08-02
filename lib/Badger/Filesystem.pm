@@ -1102,10 +1102,14 @@ instead.
 
 Andy Wardley E<lt>abw@wardley.orgE<gt>
 
+=head1 COPYRIGHT
+
+Copyright (C) 2005-2008 Andy Wardley. All rights reserved.
+
 =head1 ACKNOWLEDGEMENTS
 
-The L<Badger::Filesystem> module is a wrapper around a number of Perl modules 
-written by some most excellent people.  May the collective gratitude of the
+The C<Badger::Filesystem> modules are built around a number of Perl modules
+written by some most excellent people. May the collective gratitude of the
 Perl community shine forth upon them.
 
 L<File::Spec> by Ken Williams, Kenneth Albanowski, Andy Dougherty, Andreas
@@ -1120,12 +1124,13 @@ L<IO::File> and L<IO::Dir> by Graham Barr.
 
 It was also inspired by, and draws heavily on the ideas and code in
 L<Path::Class> by Ken Williams. There's also more than a passing influence
-from the L<Template::Plugin::File> and L<Template::Plugin::Directory>
+from the C<Template::Plugin::File> and C<Template::Plugin::Directory>
 modules which were based on code originally by Michael Stevens.
 
-=head1 COPYRIGHT
+=head1 SEE ALSO
 
-Copyright (C) 2005-2008 Andy Wardley. All rights reserved.
+L<Badger::Filesystem::Path>, L<Badger::Filesystem::Directory>,
+L<Badger::Filesystem::File>
 
 =cut
 
