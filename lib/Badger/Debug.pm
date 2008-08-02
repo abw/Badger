@@ -3,7 +3,7 @@
 # Badger::Debug
 #
 # DESCRIPTION
-#   Base class mixin module implementing functionality for debugging.
+#   Mixin module implementing functionality for debugging.
 #
 # AUTHOR
 #   Andy Wardley   <abw@wardley.org>
@@ -17,44 +17,64 @@ use Badger::Class
     version => 0.01,
     debug   => 0,
     exports => {
-        all => [qw( 
-            dump_hash dump_list dump_text dump_data 
-            dump_data_inline debug_caller 
+        any => [qw( 
+            debug debug_caller
+            dump_data dump_data_inline
+            dump_hash dump_list dump_text 
         )],
         hooks => {
             color  => \&enable_colour,
             colour => \&enable_colour,
         },
-    },
-    constant => {
-        COLOURS => {
-            bold    =>  1,
-            dark    =>  2,
-            black   => 30,
-            red     => 31,
-            green   => 32,
-            yellow  => 33,
-            blue    => 34,
-            magenta => 35,
-            cyan    => 36, 
-            white   => 37,
-        },
     };
 
+use Badger::Rainbow 
+    ANSI => 'bold red yellow green cyan';
+    
 our $PAD       = '    ';
 our $TEXTLEN   = 32;
 our $MAX_DEPTH = 2;    # prevent runaways in debug/dump
+our $FORMAT    = "[<class> line <line>] <msg>"  
+    unless defined $FORMAT;
 
-BEGIN {
-    my $c = COLOURS;
-    no strict 'refs';
-    
-    # define subroutines: bold, dark, black, red, green, yellow, etc.
-    while (my ($col, $n) = each %$c) {
-        my $name = __PACKAGE__ . '::' . $col;
-        *{$name} = sub(@) { ANSI_escape_lines($n, @_) }
-            unless defined &{$name};
-    }
+
+#-----------------------------------------------------------------------
+# debug($message, $more_messages, ...)
+#
+# Print debugging message.
+#-----------------------------------------------------------------------
+
+sub debug {
+    my $self   = shift;
+    my $msg    = join('', @_),
+    my $class  = ref $self || $self;
+    my $format = $FORMAT;
+    my ($pkg, $file, $line) = caller();
+    $class .= " ($pkg)" unless $class eq $pkg;
+    my $data = {
+        msg   => $msg,
+        class => $class,
+        file  => $file,
+        line  => $line,
+    };
+    $format =~ s/<(\w+)>/defined $data->{ $1 } ? $data->{ $1 } : "<$1 undef>"/eg;
+    print STDERR $format;
+}
+
+
+#-----------------------------------------------------------------------
+# debug_caller()
+#
+# Print debugging information about the caller.
+#-----------------------------------------------------------------------
+
+sub debug_caller {
+    my $self = shift;
+    my ($pkg, $file, $line, $sub) = caller(1);
+    my $msg = "$sub called from ";
+    ($pkg, undef, undef, $sub) = caller(2);
+    $msg .= "$sub in $file at line $line\n";
+    $self->debug($msg);
 }
 
 
@@ -102,7 +122,6 @@ sub dump_data {
         return $self->dump_text($$data);
     }
     else {
-#       print STDERR "can't dump data: $data\n";
         return $data;
     }
 }
@@ -112,7 +131,6 @@ sub dump_data_inline {
     my $text = shift->dump_data(@_);
     $text =~ s/\n/ /g;
     return $text;
-#    goto \&dump_data;
 }
 
 
@@ -175,27 +193,6 @@ sub dump_text {
 }
 
 
-#-----------------------------------------------------------------------
-# ANSI_escape_text($attr, $text)
-#
-# Adds ANSI escape codes to each line of text to colour output.
-#-----------------------------------------------------------------------
-
-sub ANSI_escape_lines {
-    my $attr = shift;
-    my $text = join('', @_);
-    return join("\n", 
-        map {
-            # look for an existing escape start sequence and add new 
-            # attribute to it, otherwise add escape start/end sequences
-            s/ \e \[ ([1-9][\d;]*) m/\e[$1;${attr}m/gx 
-                ? $_
-                : "\e[${attr}m" . $_ . "\e[0m";
-        }
-        split(/\n/, $text, -1)   # -1 prevents it from ignoring trailing fields
-    );
-}
-
 
 #-----------------------------------------------------------------------
 # enable_colour()
@@ -214,7 +211,7 @@ sub enable_colour {
     print bold green "Enabling debug in $symbol from $target\n";
 
     # colour the debug format
-    $Badger::Base::DEBUG_FORMAT 
+    $FORMAT 
          = cyan('[<class> line <line>]')
          . yellow(' <msg>');
 
@@ -223,21 +220,6 @@ sub enable_colour {
         = bold red $Badger::Exception::FORMAT;
 }
 
-
-#-----------------------------------------------------------------------
-# debug_caller()
-#
-# Print debugging information about the caller.
-#-----------------------------------------------------------------------
-
-sub debug_caller {
-    my $self = shift;
-    my ($pkg, $file, $line, $sub) = caller(1);
-    my $msg = "$sub called from ";
-    ($pkg, undef, undef, $sub) = caller(2);
-    $msg .= "$sub in $file at line $line\n";
-    $self->debug($msg);
-}
 
 
 1;
@@ -251,7 +233,7 @@ Badger::Debug - base class mixin module implement debugging methods
 =head1 SYNOPSIS
 
     package Badger::Whatever;
-    use Badger::Debug;
+    use Badger::Debug 'debug';
 
     sub some_method {
         my $self = shift;
