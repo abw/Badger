@@ -20,13 +20,13 @@ use Badger::Class
     base      => 'Badger::Exporter',
     constants => 'DELIMITER ARRAY REFS PKG',
     exports   => {
-        any   => 'ANSI_escape',
+        any   => 'ANSI_escape ANSI_colours',
         hooks => {
             ANSI => \&_export_ANSI_colours,
         },
     },
     constant => {
-        ANSI_COLOURS => {
+        ANSI_colours => {
             bold    =>  1,
             dark    =>  2,
             black   => 30,
@@ -43,7 +43,7 @@ use Badger::Class
 
 sub _export_ANSI_colours {
     my ($class, $target, $symbol, $more_symbols) = @_;
-    my $ansi = ANSI_COLOURS;
+    my $ansi = ANSI_colours;
     my $cols = shift(@$more_symbols)
         || croak "You didn't specify any ANSI colours to import";
 
