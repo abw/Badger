@@ -14,6 +14,7 @@
 use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
+use Badger::Filesystem ':types';
 use Badger::Filesystem::Path;
 use Badger::Test 
     tests => 11,
@@ -50,4 +51,29 @@ if ($FS->rootdir eq '/' && $FS->separator eq '/') {
 else {
     skip_some(7, 'Non-standard file separators')
 }
+
+#-----------------------------------------------------------------------
+# base()
+#-----------------------------------------------------------------------
+
+is( Path('/foo/bar')->base, '/foo/bar', 'path base' );
+is( Directory('/foo/bar')->base, '/foo/bar', 'dir base' );
+is( File('/foo/bar')->base, '/foo', 'file base' );
+
+
+#-----------------------------------------------------------------------
+# parent()
+#-----------------------------------------------------------------------
+
+is( Path('/foo/bar')->parent, '/foo', 'path parent' );
+is( Directory('/foo/bar/baz')->parent, '/foo/bar', 'dir parent' );
+is( File('/foo/bar/baz/bam')->parent, '/foo/bar/baz', 'file parent' );
+
+is( Path('/foo/bar/baz/bam')->parent, '/foo/bar/baz', 'path parent none' );
+is( Path('/foo/bar/baz/bam')->parent(0), '/foo/bar/baz', 'path parent zero' );
+is( Path('/foo/bar/baz/bam')->parent(1), '/foo/bar', 'path parent one' );
+is( Path('/foo/bar/baz/bam')->parent(2), '/foo', 'path parent two' );
+is( Path('/foo/bar/baz/bam')->parent(3), '/', 'path parent three' );
+is( Path('/foo/bar/baz/bam')->parent(4), '/', 'path parent four' );
+is( Path('/foo/bar/baz/bam')->parent(5), '/', 'path parent five' );
 
