@@ -16,21 +16,20 @@ package Badger::Base;
 use Badger::Class
     version   => 0.01,
     debug     => 0,
-    constants => 'CODE HASH ARRAY BLANK SPACE PKG REFS ONCE',
+    constants => 'CODE HASH ARRAY BLANK SPACE PKG REFS ONCE WARN NONE',
     import    => 'class classes',
     utils     => 'UTILS blessed reftype',
-    words     => 'ID EXCEPTION THROWS ERROR DECLINED',
+    words     => 'ID EXCEPTION THROWS ERROR DECLINED before after',
     constant  => { 
         base_id => 'Badger',      # stripped from class name to make id
     };
 
-use Badger::Exception;
-use Badger::Debug;
+use Badger::Exception;              # TODO: autoload
+use Badger::Debug 'debug';
 
-our $EXCEPTION     = 'Badger::Exception'            unless defined $EXCEPTION;
-our $DEBUG_FORMAT  = "[<class> line <line>] <msg>"  unless defined $DEBUG_FORMAT;
-our $ON_WARN       = 'warn';
-our $MESSAGES      = { 
+our $EXCEPTION = 'Badger::Exception' unless defined $EXCEPTION;
+our $ON_WARN   = WARN;
+our $MESSAGES  = { 
     not_found       => '%s not found: %s',
     not_found_in    => '%s not found in %s',
     not_implemented => '%s is not implemented %s',
@@ -42,6 +41,7 @@ our $MESSAGES      = {
     missing         => 'No %s specified',
     todo            => '%s is TODO %s',
 };
+
 
 sub new {
     my $class = shift;
@@ -68,7 +68,7 @@ sub init {
     return $self;
 }
 
-sub id { 
+sub OLD_id { 
     my $self = shift;
     my $pkg  = ref $self || $self;
     no strict   REFS;
@@ -91,7 +91,6 @@ sub id {
 
 sub warn {
     my $self  = shift;
-    $self->debug("warn(", join(', ', @_), ")\n") if $DEBUG;
     return unless @_;
 
     my $message  = join(BLANK, @_);
@@ -178,30 +177,6 @@ sub reason {
     return $type eq HASH
          ? $self->{ ERROR }
          : ${ $class.PKG.ERROR };
-}
-
-sub message {
-    my $self   = shift;
-    my $name   = shift 
-        || $self->fatal("message() called without format name");
-    my $format = $self->class->hash_value( MESSAGES => $name )
-        || $self->fatal("message() called with invalid message type: $name");
-    UTILS->xprintf($format, @_);
-}
-
-sub warn_msg {
-    my $self = shift;
-    $self->warn($self->message(@_));
-}
-
-sub error_msg {
-    my $self = shift;
-    $self->error($self->message(@_));
-}
-
-sub decline_msg {
-    my $self = shift;
-    $self->decline($self->message(@_));
 }
 
 sub throw {
@@ -291,7 +266,7 @@ sub throws {
     # fall back on looking for any package variable in class / base classes
     return $throws 
         || $self->class->any_var(THROWS)
-        || $self->id;
+        || $self->class->id;
 }
 
 sub exception {
@@ -332,24 +307,57 @@ sub fatal {
     Carp::confess("Fatal badger error: ", @_);
 }
 
-# TODO: move this to badger::Debug and mixin
 
-sub debug {
+#-----------------------------------------------------------------------
+# messages
+#-----------------------------------------------------------------------
+
+sub message {
     my $self   = shift;
-    my $msg    = join('', @_),
-    my $class  = ref $self || $self;
-    my $format = $DEBUG_FORMAT;     #  $self->pkgvar('DEBUG_FORMAT');
-    my ($pkg, $file, $line) = caller();
-    $class .= " ($pkg)" unless $class eq $pkg;
-    my $data = {
-        msg   => $msg,
-        class => $class,
-        file  => $file,
-        line  => $line,
-    };
-    $format =~ s/<(\w+)>/defined $data->{ $1 } ? $data->{ $1 } : "<$1 undef>"/eg;
-    print $format;
+    my $name   = shift 
+        || $self->fatal("message() called without format name");
+    my $format = $self->class->hash_value( MESSAGES => $name )
+        || $self->fatal("message() called with invalid message type: $name");
+    UTILS->xprintf($format, @_);
 }
+
+sub warn_msg {
+    my $self = shift;
+    # explicitly quantify local message() method in case a subclass decides
+    # to re-implement the message() method to do something else
+    $self->warn( $self->Badger::Base::message(@_) );
+}
+
+sub error_msg {
+    my $self = shift;
+    $self->error( $self->Badger::Base::message(@_) );
+}
+
+sub decline_msg {
+    my $self = shift;
+    $self->decline( $self->Badger::Base::message(@_) );
+}
+
+
+#-----------------------------------------------------------------------
+# generate not_implemented() and todo() methods
+#-----------------------------------------------------------------------
+
+class->methods(
+    map {
+        my $name = $_;
+        $name => sub {
+            my $self = shift;
+            my $ref  = ref $self || $self;
+            my ($pkg, $file, $line, $sub) = caller(0);
+            $sub = (caller(1))[3];   # subroutine the caller was called from
+            $sub =~ s/(.*):://;
+            my $msg  = @_ ? join(BLANK, SPACE, @_) : BLANK;
+            return $self->error_msg( $name => "$sub()$msg", "for $ref in $file at line $line" );
+        };
+    }
+    qw( not_implemented todo )
+);
 
 
 #-----------------------------------------------------------------------
@@ -384,34 +392,28 @@ class->methods(
                     unless ref $list eq ARRAY;
             }
 
-            # add to the list any extra handlers passed as args
-            push(@$list, @_);
+            # Add to the list any extra handlers passed as args.  First
+            # argument can be 'before' or 'after' to add remaining args
+            # to start or end of list, otherwise the entire list is replaced.
+            if (@_) {
+                if ($_[0] eq before) {
+                    shift;
+                    unshift(@$list, @_);
+                }
+                elsif ($_[0] eq after) {
+                    shift;
+                    push(@$list, @_);
+                }
+                else {
+                    @$list = @_;
+                }
+            }
+            # push(@$list, @_);
 
             return $list;
         }
     }
     qw( on_warn on_error )
-);
-
-
-#-----------------------------------------------------------------------
-# generate not_implemented() and todo() methods
-#-----------------------------------------------------------------------
-
-class->methods(
-    map {
-        my $name = $_;
-        $name => sub {
-            my $self = shift;
-            my $ref  = ref $self || $self;
-            my ($pkg, $file, $line, $sub) = caller(0);
-            $sub = (caller(1))[3];   # subroutine the caller was called from
-            $sub =~ s/(.*):://;
-            my $msg  = @_ ? join(BLANK, SPACE, @_) : BLANK;
-            return $self->error_msg( $name => "$sub()$msg", "for $ref in $file at line $line" );
-        };
-    }
-    qw( not_implemented todo )
 );
 
 
@@ -428,11 +430,11 @@ sub _dispatch_handlers {
         my $handler = $_;        # don't alias list items
         $self->debug("dispatch handler: $handler\n") if $DEBUG;
         if (! ref $handler) {
-            if ($handler eq 'warn') {
+            if ($handler eq WARN) {                 # 'warn'
                 CORE::warn @args;
             }
-            elsif ($handler eq '0') {
-                last;       # bail out on 0
+            elsif ($handler eq NONE) {              # 0 - bail out
+                last;
             }
             else {
                 $handler = $self->can($handler)
@@ -451,6 +453,7 @@ sub _dispatch_handlers {
         # false value
         last if ! @args || @args == 1 && ! $args[0];
     }
+    $self->debug("returning ", join(', ', @args), "\n") if $DEBUG;
     return @args;
 }
     
@@ -656,10 +659,10 @@ in your module.
 
 =head2 on_warn($handler, $another_handler, ...)
 
-This method allows you to install a callback handler which is called whenever
-a warning is raised via the L<warn()> method. Multiple handlers can be
-installed and will be called in turn whenever an error occurs.  The warning
-message is passed as an argument to the handlers.
+This method allows you to install one or more callback handlers which are
+called whenever a warning is raised via the L<warn()> method. Multiple
+handlers can be installed and will be called in turn whenever an error occurs.
+The warning message is passed as an argument to the handlers.
 
     my $log = My::Fave::Log::Tool->new(%log_config);
     
@@ -673,24 +676,20 @@ The value returned from the callback is forwarded to the next handler (if
 there is one). If a callback returns a false value or an empty list then the
 remaining handlers will not be called.
 
-Be warned that new handlers are added to the end of any existing handlers
-list.  Also note that the default list contains the C<warn> item so any
-handlers you add will be invoked I<after> the default warning is raised.
-So if you're trying to replace the default warning handler or inject a
-handler before it then this isn't particularly helpful.
+The default behaviour of the C<on_warn()> method is to replace any existing
+warning handlers with the new one(s) specified.  You can prefix the 
+handler(s) with C<'before'> or C<'after'> to add them to the existing list of 
+handlers. e.g.
 
-However, the L<on_warn()> method returns a reference to the list, so you can
-monkey about with it directly if you want the handler to go somewhere else.
+    $object->on_warn( before => \&one, \&two );
+    $object->on_warn( after  => \&one, \&two );
 
-    # empty any existing handlers and replace with another one
+The L<on_warn()> method returns a reference to the list, so you can also
+monkey about with it directly if you want the handler(s) to go somewhere else.
+
     my $handlers = $object->on_warn;
-    @$handlers = (\&my_handler);
-
-NOTE: adding handlers to the end of the list is probably not the right thing
-to do.  I'm considering changing this method to work slightly differently - 
-possibly replacing the handler list instead of augmenting it.  Either way,
-the most reliable way to define C<on_warn> or C<on_error> handlers is as
-constructor arguments.
+    shift(@$handlers, \&one);       # add before existing handlers
+    puush(@$handlers, \&two);       # add after existing handlers
 
 You can also specify a method name as a warning handler. For example, if you
 want to automatically upgrade all warnings to errors for a particular object,
@@ -699,7 +698,17 @@ you can write this:
     $object->on_warn('error');      # calls $object->error() on warnings
 
 You can also specify C<'warn'> as a handler which will call Perl's C<warn()>
-function.  This is the default value.
+function.  This is the default value.  To explicitly disable any handlers,
+you can use a value of C<0>.
+
+    $object->on_warn('warn');       # raise warning - the default action
+    $object->on_warn(0);            # no warnings
+
+These values can be imported from L<Badger::Constants> as the C<WARN> and 
+C<NONE> constants.
+
+    $object->on_warn(WARN);         # raise warning - the default action
+    $object->on_warn(NONE);         # no warnings
 
 The L<on_warn()> method works equally well as a class method. In this case it
 sets the C<$ON_WARN> package variable for the class. This acts as the
@@ -883,7 +892,7 @@ L<decline_msg()>).
     $forager->forage('nuts and berries')
         || die $forager->reason;
 
-=head2 message($type, @args) 
+=head2 message($type, @args)
 
 This method generates a message using a pre-defined format. Message formats
 should be defined in a C<$MESSAGE> package variable in the object's package or
