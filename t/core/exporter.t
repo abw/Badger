@@ -16,10 +16,9 @@ use warnings;
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Exporter;
 use Badger::Test 
-    tests => 66,
+    tests => 74,
     debug => 'Badger::Exporter',
     args  => \@ARGV;
-
 
 #------------------------------------------------------------------------
 # test default import args
@@ -44,6 +43,7 @@ is( foo(), 'this is foo', 'foo() sub is defined' );
     ok( ! defined $BAR[0], '$BAR[0] is not defined' );
     ok( ! defined $BAR{twenty}, '$BAR{twenty} is not defined' );
 }
+
 
 #------------------------------------------------------------------------
 # test specific import args
@@ -226,6 +226,7 @@ is( $pong, 'bang', 'ping is bang' );
 # test hashes of export tags which map an alias name to a symbol
 #-----------------------------------------------------------------------
 
+
 package main;
 use My::Exporter6 qw(:methods);
 
@@ -250,6 +251,24 @@ package main;
 use My::Exporter9 foo => 10, foo => 20, 'bar', foo => 30;
 
 is( $My::Exporter8::BUFFER, "[foo:10][foo:20][bar][foo:30]", 'foo bar import fail hooks' );
+
+
+#-----------------------------------------------------------------------
+# test exporter which uses explicit package symbols and code refs
+#-----------------------------------------------------------------------
+
+package main;
+use My::Exporter::Explicit ':math :science';
+
+is( E, 2.718, 'imported E' );
+is( PI, 3.141, 'imported PI' );
+is( PHI, 1.618, 'imported PHI' );
+is( $ANSWER, 42, 'got the answer (42)' );
+is( physics, "E=mc^2", 'got physics' );
+is( biology, "evolution", 'got biology' );
+is( chemistry, "2 H2O -> 2 H2 + O2", 'got chemistry' );
+pass("I can do science, me");
+
 
 
 1;

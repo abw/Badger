@@ -18,8 +18,9 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Base;
 use Badger::Test 
-    tests => 95,
-    debug => 'Badger::Base',
+    tests => 96,
+#    debug => 'Badger::Base',
+    debug => 'Badger::Exporter',
     args  => \@ARGV;
 
 my ($pkg, $obj);
@@ -30,8 +31,8 @@ my ($pkg, $obj);
 #-----------------------------------------------------------------------
 
 use Badger;
-is( Badger->id, 'badger', 'Badger id' );
-is( Badger::Base->id, 'base', 'Badger::Base id' );
+is( Badger->class->id, 'badger', 'Badger id' );
+is( Badger::Base->class->id, 'base', 'Badger::Base id' );
 
 
 #------------------------------------------------------------------------
@@ -42,7 +43,7 @@ is( Badger::Base->id, 'base', 'Badger::Base id' );
 $pkg = 'Badger::Base';
 $obj = $pkg->new() || die $pkg->error();
 ok( $obj, 'created a base class object' );
-is( $obj->id, 'base', 'base type' );
+is( $obj->class->id, 'base', 'base type' );
 
 
 #------------------------------------------------------------------------
@@ -78,7 +79,7 @@ $obj->warn("Be excellent to each other\n");
 is( $warning, "WARN[Be excellent to each other]", 'got warning from custom handler' );
 
 my $extra;
-$obj->on_warn( sub {
+$obj->on_warn( after => sub {
     my $msg = shift;
     chomp $msg;
     $extra = "EXTRA[$msg]";
@@ -89,6 +90,7 @@ $obj->warn("Totally bogus, dude\n");
 is( $warning, "WARN[Totally bogus, dude]", 'got totally bogus warning' );
 is( $extra, "EXTRA[Totally bogus, dude]", 'got totally bogus extra warning' );
 
+pass( '** TODO ** - test on_warn before/after/replace modes' );
 
 #------------------------------------------------------------------------
 # test the $ON_WARN pkg var works
@@ -108,6 +110,7 @@ like( $@, qr/Invalid on_warn method: totally_bogus/, 'detected bogus warn handle
 
 
 package Badger::Test::Warning2;
+
 use base 'Badger::Base';
 
 our $ON_WARN  = 'most_excellent';
@@ -137,6 +140,7 @@ $wpkg = 'Badger::Test::Warning2';
 $obj = $wpkg->new;
 $obj->warn("I believe our adventure through time has taken a most serious turn.");
 is( $obj->{ excellent }, "I believe our adventure through time has taken a most serious turn.", 'adventure through time');
+
 is( $goodness, 'this is good', 'warning chain was broken by the most excellent handler' );
 
 $obj->warn_msg( totally => 'bogus' );
@@ -563,15 +567,16 @@ like( $@, qr/Fatal badger error: sun exploded/, 'fatal error' );
 
 package Your::Badger::Module;
 use base 'Badger::Base';
-our $ID = 'YBM';
+our $THROWS = 'YBM';
 
 package main;
 eval { Your::Badger::Module->error('Fail!') };
 is( $@, 'YBM error - Fail!', 'YBM Fail!' );
 
-Your::Badger::Module->id('BadgerMod');
+Your::Badger::Module->throws('BadgerMod');
 eval { Your::Badger::Module->error('Fail!') };
 is( $@, 'BadgerMod error - Fail!', 'BadgerMod Fail!' );
+
     
 __END__
 

@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 103,
+    tests => 105,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -61,7 +61,7 @@ package main;
 my $alice = Alice->new();
 ok( $alice, 'Alice is alive' );
 is( $alice->class, 'Alice', "Alice's class is Alice" );
-is( $alice->version, 2.718, "Alice's version is 2.718" );
+is( $alice->VERSION, 2.718, "Alice's version is 2.718" );
 is( $Alice::VERSION, 2.718, "Alice's VERSION is 2.718" );
 
 # derived methods
@@ -71,7 +71,7 @@ is( $bob->class, 'Bob', "Bob's class is Bob" );
 is( $bob->class->parents->[0], 'Alice', "Bob's parent is Alice" );
 is( join(', ', $bob->class->heritage), 'Bob, Alice', "Bob's heritage is Bob, Alice" );
 is( join(', ', $bob->classes), 'Bob, Alice', "Bob's classes are Bob, Alice" );
-is( $bob->version, 3.142, "Bob has version of 3.142" );
+is( $bob->VERSION, 3.142, "Bob has version of 3.142" );
 
 # base vars
 is( $alice->class->var('NAME'), 'Alice', 'Alice var $NAME' );
@@ -121,7 +121,7 @@ class->base('Alice');
 package main;
 my $chas = Charlie->new();
 ok( $chas, 'Created Charlie' );
-is( $chas->version, 2.718, 'Charlie inherits version from Alice' );
+is( $chas->VERSION, 2.718, 'Charlie inherits version from Alice' );
 
 package David;
 use Badger::Class 'class', base => 'Charlie';
@@ -131,7 +131,7 @@ class->constant( volume => 11 );
 package main;
 my $dave = David->new();
 ok( $dave, 'Created David' );
-is( $dave->version, 42, "David's version is at level 42" );
+is( $dave->VERSION, 42, "David's version is at level 42" );
 is( $dave->volume, 11, "David's volume goes up to 11" );  # should be Nigel!
 
 
@@ -325,9 +325,9 @@ is( $mid->middle, 'in the middle', 'mid is in the middle' );
 is( $top->middle, 'in the middle', 'top is in the middle' );
 is( $top->top, 'on the top', 'op on the top' );
 
-is( $bot->id, 'class.bottom', 'bot id' );
-is( $mid->id, 'class.middle', 'mid id' );
-is( $top->id, 'class.top', 'top id' );
+is( $bot->class->id, 'class.bottom', 'bot id' );
+is( $mid->class->id, 'class.middle', 'mid id' );
+is( $top->class->id, 'class.top', 'top id' );
 
 #-----------------------------------------------------------------------
 # test codec/codecs
@@ -490,7 +490,10 @@ sub colour {
     black 
 }
 
+main::is( $VERSION, 11, 'inside version 11' );
+
 package main;
+is( $Test::My::Class::VERSION, 11, 'outside version 11' );
 is( Test::My::Class->colour, 'black', 'How much more black could this be?' );
 is( Test::My::Class->none, 'none', 'None, none more black' );
 
