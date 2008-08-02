@@ -22,14 +22,17 @@ use Carp;
 use constant {
     CONSTANTS => 'Badger::Constants',
     EXPORTER  => 'Badger::Exporter',
+    MIXIN     => 'Badger::Mixin',
     CODECS    => 'Badger::Codecs',
     UTILS     => 'Badger::Utils',
     LOADED    => 'BADGER_LOADED',
     MESSAGES  => 'MESSAGES',
     VERSION   => 'VERSION',
+    MIXINS    => 'MIXINS',
     THROWS    => 'THROWS',
     DEBUG     => 'DEBUG',
     ISA       => 'ISA',
+    base_id   => 'Badger',
 };
 use overload 
     '""' => 'name',
@@ -39,8 +42,8 @@ our $VERSION    = 0.01;
 our $DEBUG      = 0 unless defined $DEBUG;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
-    base version debug constant constants words exports throws messages 
-    utils codec codecs methods get_methods set_methods
+    base uber mixin mixins version debug constant constants words exports 
+    throws messages utils codec codecs methods get_methods set_methods
 );
 
 
@@ -57,33 +60,54 @@ our @HOOKS      = qw(
         my $class = @_ ? shift : (caller())[0];
         ref $class || $class;
     }
-    
-    # fetch/create a Badger::Class object for a package name
-    sub class {
-        my $class = @_ ? shift : (caller())[0];
-        my $bless = shift || __PACKAGE__;       # allow for subclassing
-        $class = ref $class || $class;
-        return $CLASSES->{ $class } || $bless->new($class);
+
+    # Sorry if this messes with your head.  We want class() and classes()
+    # methods that create Badger::Class objects.  However, we also want 
+    # Badger::Class to be subclassable (e.g. Template::Class), where class()
+    # and classes() return the subclass objects (e.g. Template::Class).  So
+    # we have an UBER() class method whose job it is to create the class()
+    # and classes() methods for the relevant class or subclass
+    sub UBER {
+        my $pkg = shift || __PACKAGE__;
+
+        # The class() subroutine is used to fetch/create a Badger::Class 
+        # object for a package name.  We create it via a generator so that
+        # subclasses can define their own custom class() method which blesses 
+        # the class objects into their own class (e.g. Template::Class rather 
+        # than Badger::Class)
+        my $class_sub = sub {
+            my $class = @_ ? shift : (caller())[0];
+            my $bless = shift || $pkg;
+            $class = ref $class || $class;
+            return $CLASSES->{ $class } || $bless->new($class);
+        };
+
+        # The classes() method returns a list of Badger::Class objects for 
+        # each class in the inheritance chain, starting with the object 
+        # itself, followed by each base class, their base classes, and so on. 
+        # As with class(), we use a generator to create a closure for the 
+        # subroutine to allow the the class object name to be parameterised.
+        my $classes_sub = sub {
+            my $class = shift || (caller())[0];
+            $class_sub->($class)->heritage;
+        };
+
+        no strict 'refs';
+        *{ $pkg.PKG.'class'   } = $class_sub;
+        *{ $pkg.PKG.'classes' } = $classes_sub;
+
+        $pkg->export_any('CLASS', 'class', 'classes');
     }
 
-    # return a list of Badger::Class objects for each class in the
-    # inheritance chain, starting with the object itself, followed by
-    # each base class, their base classes, and so on.  The order of
-    # base classes is determined by the heritage() method which implements
-    # a simplified version of the C3 method resolution algorithm.
-    sub classes {
-        my $class = shift || (caller())[0];
-        class($class)->heritage;
-    }
+    # call the UBER method to generate class() and classes() for this module
+    __PACKAGE__->UBER;
+
 }
 
 
 #-----------------------------------------------------------------------
 # Define exportable items and export hook (see Badger::Exporter)
 #-----------------------------------------------------------------------
-
-# any of these can be exported on demand (like @EXPORT_OK)    
-CLASS->export_any('CLASS', 'class', 'classes');
 
 # define custom hooks for load options
 CLASS->export_hooks({
@@ -121,6 +145,23 @@ sub new {
         name    => $package,
         symbols => \%{"${package}::"},
     }, $class;
+}
+
+sub id { 
+    my $self = shift;
+    return @_ 
+        ? $self->{ id } = shift
+        : $self->{ id } ||= do {
+            my $pkg  = $self->{ name };
+            my $base = $self->base_id;          # base to remove, e.g. Badger
+            if ($base eq $pkg) {
+                $pkg = $1 if  $pkg =~ /(\w+)$/; # Badger - Badger --> Badger
+            } else {                              
+                $pkg =~ s/^${base}:://;         # Badger::X::Y - Badger --> X::Y
+            }
+            $pkg =~ s/::/./g;                   # X::Y --> X.Y
+            lc $pkg;                            # X.Y --> x.y
+        };
 }
 
 
@@ -339,14 +380,15 @@ sub heritage {
 #-----------------------------------------------------------------------
 
 sub base {
-    my ($self, $bases) = @_;
-    my $pkg = $self->{ name };
-    $bases = [ $bases ] unless ref $bases eq 'ARRAY';
-    $bases = [ map { split DELIMITER } @$bases ];
-    my @load;
+    my $self  = shift;
+    my $bases = @_ == 1 ? shift : [ @_ ];
+    my $pkg   = $self->{ name };
+
+    $bases = [ split(DELIMITER, $bases) ] 
+        unless ref $bases eq ARRAY;
     
     # add each of $bases to @ISA and autoload it
-    while (my $base = shift @$bases) {
+    foreach my $base (@$bases) {
         no strict REFS;
         next if $pkg->isa($base);
         _debug("Adding $pkg base class $base\n") if $DEBUG;
@@ -356,6 +398,51 @@ sub base {
     return $self;
 }
 
+sub uber {
+    my ($self, $base) = @_;
+    my $pkg = $self->{ name };
+    $self->base($base);
+    $pkg->UBER;
+    return $self;
+}
+
+sub mixin {
+    my $self   = shift;
+    my $mixins = @_ == 1 ? shift : [ @_ ];
+
+    $mixins = [ split(DELIMITER, $mixins) ] 
+        unless ref $mixins eq ARRAY;
+
+    foreach my $name (@$mixins) {
+#        $name = $target . $name if $name =~ /^::/;
+#        $self->debug("mixing $name into $self\n") if $DEBUG;
+        _autoload($name)->mixin($self->{ name });
+    }
+
+    return $self;
+}
+
+sub mixins {
+    my $self = shift;
+    $self->base(MIXIN);
+    $self->{ name }->mixins(@_);
+    return $self;
+
+    my $syms   = @_ == 1 ? shift : [ @_ ];
+    my $mixins = $self->var_default(MIXINS, [ ]);
+    
+    $syms = [ split(DELIMITER, $syms) ] 
+        unless ref $syms eq ARRAY;
+
+#    $mixins->{ $_ } 
+    push(@$mixins, @$syms);
+
+    $self->debug("$self MIXINS are: ", $self->dump_data_inline($mixins), "\n") if $DEBUG;
+    
+    $self->exports( any => $syms );
+
+}
+    
 sub version {
     my ($self, $version) = @_;
     my $pkg = $self->{ name };
@@ -366,7 +453,7 @@ sub version {
     *{ $pkg.PKG.VERSION } = \$version
         unless defined ${ $pkg.PKG.VERSION }
                     && ${ $pkg.PKG.VERSION };
-    *{ $pkg.PKG.'version'} = sub() { $version }
+    *{ $pkg.PKG.VERSION} = sub() { $version }
         unless defined *{ $pkg.PKG.'version' };
 
     return $self;
@@ -435,6 +522,7 @@ sub debugging {
 sub constants {
     my $self = shift;
     my $constants = @_ == 1 ? shift : { @_ };
+
     $constants = [ split(DELIMITER, $constants) ] 
         unless ref $constants eq ARRAY;
 
@@ -527,12 +615,10 @@ sub utils {
     my $self = shift;
     my $syms = @_ == 1 ? shift : { @_ };
     my $pkg  = $self->{ name };
+
     $syms = [ split(DELIMITER, $syms) ] 
         unless ref $syms eq ARRAY;
 
-    # call UTILS as a class method so that subclasses of Badger::Class
-    # (like Badger::Web::Class) can define their own UTILS to replace
-    # the default set (like Badger::Web::Utils).
     _autoload($self->UTILS)->export(
         $self->{ name }, @$syms
     );
@@ -543,16 +629,22 @@ sub utils {
 sub codec {
     my $self   = shift;
     my $codecs = $self->CODECS;
-    _autoload($codecs);
-    $codecs->export_codec($self->{ name }, shift);
+
+    _autoload($codecs)->export_codec(
+        $self->{ name }, shift
+    );
+
     return $self;
 }
 
 sub codecs {
     my $self = shift;
     my $codecs = $self->CODECS;
-    _autoload($codecs);
-    $codecs->export_codecs($self->{ name }, shift);
+
+    _autoload($codecs)->export_codecs(
+        $self->{ name }, shift
+    );
+
     return $self;
 }
 
@@ -662,7 +754,7 @@ sub _autoload {
         _debug("autoloading $class\n") if $DEBUG;
         $v = ${ $class.PKG.VERSION } ||= 0;
         local $SIG{__DIE__};
-        eval "require $class";
+        eval "use $class";
         die $@ if $@;
         ${ $class.PKG.LOADED } ||= 1;
 #        die $@
@@ -1330,6 +1422,80 @@ resolve its own methods).
 
 Method to add one or more base classes to the C<@ISA> inheritance list.
 Effectively does the same thing as C<base.pm>.
+
+=head2 version($n)
+
+Method to define the version number for a class.  This has the effect
+of setting C<$VERSION> in the target class.  It also defines a C<VERSION>
+method which returns the version number.
+
+    package Badger::Example;
+    use Badger::Class 'class';
+    class->version(3.14);
+    
+    package main;
+    print $Badger::Example::VERSION;        # 3.14
+    print Badger::Example->VERSION;         # 3.14
+
+=head2 debug()
+
+TODO
+
+=head2 debugging()
+
+TODO
+
+=head2 constants
+
+TODO
+
+=head2 constant
+
+TODO
+
+=head2 words
+
+TODO
+
+=head2 exports
+
+TODO
+
+=head2 throws
+
+TODO
+
+=head2 messages
+
+TODO
+
+=head2 utils
+
+TODO
+
+=head2 codecs
+
+TODO
+
+=head2 codec
+
+TODO
+
+=head2 method
+
+TODO
+
+=head2 methods
+
+TODO
+
+=head2 get_methods
+
+TODO
+
+=head2 set_methods
+
+TODO
 
 =head1 TODO
 
