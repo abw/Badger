@@ -16,7 +16,7 @@ use strict;
 use warnings;
 use File::Path;
 use Scalar::Util qw(blessed reftype );
-use base qw( Badger::Exporter );
+use base 'Badger::Exporter';
 use constant {
     UTILS  => 'Badger::Utils',
 };
@@ -37,7 +37,7 @@ __PACKAGE__->export_hooks(
     md5_hex => sub {
         my ($class, $target, $symbol, $more_symbols) = @_;
         require Digest::MD5;
-        $class->export_coderef($target, $symbol, \&Digest::MD5::md5_hex);
+        $class->export_symbol($target, $symbol, \&Digest::MD5::md5_hex);
         return 1;
     }
 );
