@@ -6,6 +6,9 @@ use Badger::Class
     base        => 'Badger::Prototype',
     import      => 'class';
 
+use Badger::Rainbow 
+    'ANSI_colours ANSI_escape';
+
 our $ESCAPES    = qr/\e\[(.*?)m/;      # remove ANSI escapes
 our $REASON     = 'No reason given';
 our $MESSAGES   = {
@@ -33,16 +36,6 @@ our $SCHEME     = {
     red         => 'not_ok too_few too_many fail mess',
     cyan        => 'skip_one skip_all',
     yellow      => 'plan not_eq not_ne not_like not_unlike summary',
-};
-our $DEBUG_COL  = 'yellow';
-our $COLOURS    = {
-    red         => 31,
-    green       => 32,
-    yellow      => 33,
-    blue        => 34,
-    magenta     => 35,
-    cyan        => 36, 
-    white       => 37,
 };
 
 # Sorry, English and American/Spanish only, no couleur, colori, farbe, etc.
@@ -302,39 +295,20 @@ sub summary {
 
 sub colour {
     my $self = shift->prototype;
+    my $ansi = ANSI_colours;
 
     # enable colour mode by inserting ANSI escapes into $MESSAGES
     if (@_ && ($self->{ colour } = shift)) {
         foreach my $col (keys %$SCHEME) {
-            my $code = $COLOURS->{ $col }
+            my $code = $ansi->{ $col }
                 || $self->error("Invalid colour name in \$SCHEME: $col\n");
-            $MESSAGES->{ $_ } = ANSI_escape_lines($code, $MESSAGES->{ $_ })
+            $MESSAGES->{ $_ } = ANSI_escape($code, $MESSAGES->{ $_ })
                 for split(/\s+/, $SCHEME->{ $col });
         }
-        # hack to make debug messages come out in colour
-        $Badger::Base::DEBUG_FORMAT = ANSI_escape_lines( 
-            $COLOURS->{ $DEBUG_COL }, 
-            $Badger::Base::DEBUG_FORMAT 
-        );
+        Badger::Debug->enable_colour;
     }
 
     return $self->{ colour };
-}
-
-sub ANSI_escape_lines {
-    my $attr = shift;
-    my $text = join('', @_);
-
-    return join("\n", 
-        map {
-            # look for an existing escape start sequence and add new 
-            # attribute to it, otherwise add escape start/end sequences
-            s/ \e \[ ([1-9][\d;]*) m/\e[$1;${attr}m/gx 
-                ? $_
-                : "\e[${attr}m" . $_ . "\e[0m";
-        }
-        split(/\n/, $text, -1)   # -1 prevents it from ignoring trailing fields
-    );
 }
 
 sub finish {
