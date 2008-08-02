@@ -42,6 +42,7 @@ use constant {
     PKG             => '::',                
     REFS            => 'refs',
     ONCE            => 'once',
+    WARN            => 'warn',
     BLANK           => '',
     SPACE           => ' ',
     DELIMITER       => qr/(?:,\s*)|\s+/,    # match a comma or whitespace
@@ -49,7 +50,7 @@ use constant {
 };
 
 CONSTANTS->export_any(qw( 
-    CONSTANTS LAST BLANK SPACE CRLF DELIMITER PKG REFS ONCE
+    CONSTANTS LAST BLANK SPACE CRLF DELIMITER PKG REFS ONCE WARN
 ));
 
 CONSTANTS->export_tags({
