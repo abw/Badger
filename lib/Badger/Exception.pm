@@ -27,8 +27,8 @@ use overload
 
 our $FORMAT  = '<type> error - <info>'  unless defined $FORMAT;
 our $TYPE    = 'undef'                  unless defined $TYPE;
-our $INFO    = 'No information'         unless defined $INFO;
-our $ANON    = 'Unknown'                unless defined $ANON;
+our $INFO    = 'no information'         unless defined $INFO;
+our $ANON    = 'unknown'                unless defined $ANON;
 
 
 sub init {
