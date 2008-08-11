@@ -68,27 +68,6 @@ sub init {
     return $self;
 }
 
-sub OLD_id { 
-    my $self = shift;
-    my $pkg  = ref $self || $self;
-    no strict   REFS;
-    no warnings ONCE;
-
-    # use value in $ID or generate it from class name and cache
-    return @_
-        ? (${ $pkg.PKG.ID }   = shift)
-        :  ${ $pkg.PKG.ID } ||= do {
-            my $base = $self->base_id;          # base to remove, e.g. Badger
-            if ($base eq $pkg) {
-                $pkg = $1 if  $pkg =~ /(\w+)$/; # Badger - Badger --> Badger
-            } else {                              
-                $pkg =~ s/^${base}:://;         # Badger::X::Y - Badger --> X::Y
-            }
-            $pkg =~ s/::/./g;                   # X::Y --> X.Y
-            lc $pkg;                            # X.Y --> x.y
-        };
-}
-
 sub warn {
     my $self  = shift;
     return unless @_;
@@ -1169,6 +1148,8 @@ from C<Badger::Base> by adding a C<$EXCEPTION> package variable;
 
 =head2 id()
 
+NOTE: THIS METHOD HAS BEEN MOVED INTO L<Badger::Class>. 
+
 This method returns a short string used to identify the object. This is used
 for error reporting purposes if the object class doesn't explicitly define an
 error type (see the L<throws> configuration option and L<$THROWS> package
@@ -1185,6 +1166,8 @@ instead.  If C<$ID> isnt' defined then the method generates an identifier
 and caches it in the C<$ID> variable for subsequent use.
 
 =head2 base_id()
+
+NOTE: THIS METHOD IS OR WILL SOON BE DEPRECATED
 
 This method returns C<Badger> by default.  It is used by the L<id()>
 method to determine the common base part of a module name to remove
@@ -1334,23 +1317,6 @@ which will automatically define a C<$DEBUG> variable for you.
         base  => 'Badger::Base',
         debug => 0;
 
-=head2 $DEBUG_FORMAT
-
-The L<debug()> method uses the message format in the C<$DEBUG_FORMAT>
-package variable to generate debugging messages.  The default value is:
-
-    [<class> line <line>] <msg>
-
-The C<E<lt>classE<gt>>, C<E<lt>lineE<gt>> and C<E<lt>msgE<gt>> markers
-denote the positions where the class name, line number and debugging 
-message are inserted.
-
-The C<Badger::Class> module doesn't define or use any C<$DEBUG_FORMAT>
-package variable in classes derived from it.
-
-NOTE: the L<debug()> method and C<$DEBUG_FORMAT> variable are probably
-going to be moved to L<Badger::Debug>.
-
 =head2 $DECLINED
 
 This package variable is defined in each subclass derived from
@@ -1391,6 +1357,8 @@ C<$EXCEPTION> package variable in that class.
     Your::Badger::Module->exception('Your::Exception');
 
 =head2 $ID
+
+NOTE: THIS IS OR WILL SOON BE DEPRECATED
 
 This package variable can be defined to provide a default identifier
 for the class.  This is used as the default exception type for errors
