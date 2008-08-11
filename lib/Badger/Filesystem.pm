@@ -23,6 +23,7 @@ use Badger::Class
     constant  => {
         # Note: DIR should be DIRECTORY to be consistent with other uses but
         # I can't bring myself to break that lovely pattern down the left
+        virtual     => 0,
         NO_FILENAME => 1,
         FILESPEC    => 'File::Spec',
         ROOTDIR     =>  File::Spec->rootdir,
@@ -61,6 +62,7 @@ use Badger::Filesystem::Directory;
 *split_dir    = \&split_directory;        # ...because typing 'directory' 
 *join_dir     = \&join_directory;         #    gets tedious quickly
 *collapse_dir = \&collapse_directory;     
+*dir_exists   = \&directory_exists;
 *create_dir   = \&create_directory;
 *delete_dir   = \&delete_directory;
 *open_dir     = \&open_directory;
@@ -69,6 +71,25 @@ use Badger::Filesystem::Directory;
 *mkdir        = \&create_directory;
 *rmdir        = \&delete_directory;
 *touch        = \&touch_file;
+
+
+#-----------------------------------------------------------------------
+# In this base class definitive paths are the same as absolute paths.
+# However, in subclasses (like Badger::Filesystem::Virtual) we want 
+# to differentiate between absolute paths in a virtual filesystem
+# (e.g. /about/badger.html) and the definitive paths that they map to
+# in a real file system (e.g. /home/abw/web/badger/about/badger.html).
+# We make the further distinction between definitive paths used for 
+# reading or writing, and call the appropriate method to perform any
+# virtual -> real mapping before operating on any file or directory.
+# But like I said, these are just hooks for subclasses to use if they
+# need them.  In the base class, we patch them straight into the plain
+# old absolute() method.
+#-----------------------------------------------------------------------
+
+*definitive       = \&absolute;
+*definitive_read  = \&absolute;
+*definitive_write = \&absolute;
 
 
 #-----------------------------------------------------------------------
@@ -93,7 +114,7 @@ class->methods(
             $_[0]->prototype->{ $name };
         }
     }
-    qw( root rootdir updir curdir separator virtual )
+    qw( rootdir updir curdir separator )
 );
 
 
@@ -104,28 +125,6 @@ class->methods(
 sub init {
     my ($self, $config) = @_;
 
-    # A virtual root directory can be specified to effectively chroot
-    # the filesystem to a sub-directory.  For example, you can create a
-    # filesystem with a root directory set to wherever your web pages
-    # are (e.g. /path/to/your/web/pages).  Then any "absolute" paths
-    # will be resolved relative to that root, e.g. /index.html is an
-    # absolute path in a virtual file system with a definitive path of
-    # /path/to/your/web/pages/index.html.  If we do have a virtual root
-    # then cwd() should always return '/'.  This is so that the absolute()
-    # method will resolve a relative path like 'index.html' as '/index.html'
-    # rather than whatever the real cwd is.
-    if (my $root = $config->{ root }) {
-        $root = $self->join_dir(@$root) if ref $root eq ARRAY;
-        $self->{ root    } = $root;
-        $self->{ cwd     } = $config->{ cwd } || ROOTDIR;
-        $self->{ virtual } = 1;
-    }
-    else {
-        $self->{ root    } = ROOTDIR;
-        $self->{ cwd     } = $config->{ cwd };  # may be undef
-        $self->{ virtual } = 0;
-    }
-    
     # TODO: have filsystem "styles", e.g. URI/URL style provides defaults
     # for rootdir, updir, curdir, separator.  But this requires us to bypass
     # File::Spec, so we'll leave it for now.  KISS.
@@ -147,6 +146,10 @@ sub init {
 
     # flag to indicate if directory scans should return all entries
     $self->{ all_entries } = $config->{ all_entries } || 0;
+
+    # current working can be specified explicitly, otherwise we leave it
+    # undefined and let cwd() call getcwd() determine it dynamically
+    $self->{ cwd } = $config->{ cwd };
     
     return $self;
 }
@@ -192,7 +195,7 @@ sub join_path {
 sub join_directory {
     my $self = shift;
     my $dir  = @_ == 1 ? shift : [ @_ ];
-    $self->debug("join_dir($dir)\n") if $DEBUG;
+    $self->debug("join_dir(", ref $dir eq ARRAY ? '[' . join(', ', @$dir) . ']' : $dir, ")\n") if $DEBUG;
     ref $dir eq ARRAY
         ? FILESPEC->catdir(@$dir)
         : FILESPEC->canonpath($dir);
@@ -235,7 +238,7 @@ sub collapse_directory {
 
 
 #-----------------------------------------------------------------------
-# absolute, relative and definitive path tests and transmogrifiers
+# absolute and relative path tests and transmogrifiers
 #-----------------------------------------------------------------------
 
 sub is_absolute {
@@ -245,14 +248,6 @@ sub is_absolute {
 
 sub is_relative {
     shift->is_absolute(@_) ? 0 : 1;
-}
-
-sub definitive {
-    my $self = shift;
-    my $path = $self->absolute(@_);
-    return ref $self && $self->{ virtual }
-        ? FILESPEC->catdir($self->{ root }, $path)
-        : $path;
 }
 
 sub absolute {
@@ -269,12 +264,32 @@ sub relative {
 
 
 #-----------------------------------------------------------------------
+# file/directory test methods
+#-----------------------------------------------------------------------
+
+sub path_exists {
+    my $self = shift;
+    return -e $self->definitive_read(shift);
+}
+
+sub file_exists {
+    my $self = shift;
+    return -f $self->definitive_read(shift);
+}
+
+sub directory_exists {
+    my $self = shift;
+    return -d $self->definitive_read(shift);
+}
+    
+
+#-----------------------------------------------------------------------
 # file manipulation methods
 #-----------------------------------------------------------------------
 
 sub create_file {
     my $self = shift;
-    my $path = $self->definitive(shift);
+    my $path = $self->definitive_write(shift);
     unless (-e $path) {
         $self->write_file($path);
     }
@@ -283,7 +298,7 @@ sub create_file {
 
 sub touch_file {
     my $self = shift;
-    my $path = $self->definitive(shift);
+    my $path = $self->definitive_write(shift);
     if (-e $path) {
         my $now = time();
         utime $now, $now, $path;
@@ -295,16 +310,22 @@ sub touch_file {
 
 sub delete_file {
     my $self = shift;
-    my $path = $self->definitive(shift);
+    my $path = $self->definitive_write(shift);
     unlink($path)
         || return $self->error_msg( delete_failed => file => $path => $! );
 }
 
 sub open_file {
     my $self = shift;
-    my $path = $self->definitive(shift);
+    my $name = shift;
+    my $mode = $_[0] || 'r';            # leave it in @_ for IO::File
+    my $path = $mode eq 'r' 
+        ? $self->definitive_read($name)
+        : $self->definitive_write($name);
+
     require IO::File;
     $self->debug("about to open file $path (", join(', ', @_), ")\n") if $DEBUG;
+
     return IO::File->new($path, @_)
         || $self->error_msg( open_failed => file => $path => $! );
 }
@@ -342,8 +363,10 @@ sub append_file {
 
 sub create_directory { 
     my $self = shift;
-    my $path = $self->definitive(shift);
+    my $path = $self->definitive_write(shift);
+
     require File::Path;
+
     eval { 
         local $Carp::CarpLevel = 1;
         File::Path::mkpath($path, @_) 
@@ -352,16 +375,19 @@ sub create_directory {
     
 sub delete_directory { 
     my $self = shift;
-    my $path = $self->definitive(shift);
+    my $path = $self->definitive_write(shift);
+
     require File::Path;
     File::Path::rmtree($path, @_)
 }
 
 sub open_directory {
     my $self = shift;
-    my $path = $self->definitive(shift);
-    $self->debug("Opening directory: $path\n") if $DEBUG;
+    my $path = $self->definitive_read(shift);
+
     require IO::Dir;
+    $self->debug("Opening directory: $path\n") if $DEBUG;
+
     return IO::Dir->new($path, @_)
         || $self->error_msg( open_failed => directory => $path => $! );
 }
@@ -381,31 +407,21 @@ sub read_directory {
     return wantarray ? @paths : \@paths;
 }
 
-# TODO: this is clumsy.  Can we integrate it with read_directory() like we do
-# for read_file(), and/or provide a way of just getting files or dirs, or other
-# matches (but we don't want to duplicate File::Find::Rule - can we integrate?)
-
+sub directory_child {
+    my $self = shift;
+    my $path = $self->join_directory(@_);
+    stat($path);
+    -d _ ? $self->directory($path) : 
+    -f _ ? $self->file($path) :
+           $self->path($path);
+}
+    
 sub directory_children {
-#    local $DEBUG = 1;
     my $self  = shift;
     my $dir   = shift;
-    my @paths = $self->read_directory($dir, @_);
-    my $base  = $self->{ root } if $self->{ virtual };
-    my $path;
-    
-
-    @paths = map {
-        $path = $self->join_directory($dir, $_);
-        $self->debug("$dir + $_ => $path") if $DEBUG;
-        
-        # if we're using a virtual root then we need to tack that on to
-        # the start of the path for the directory entry
-        stat($base ? $self->join_directory($base, $path) : $path);
-        -d _ ? $self->directory($path) : 
-        -f _ ? $self->file($path) :
-               $self->path($path);
-    } @paths;
-    
+    my @paths = map { 
+        $self->directory_child($dir, $_) 
+    }   $self->read_directory($dir, @_);
     return wantarray ? @paths : \@paths;
 }
 
@@ -449,7 +465,7 @@ Badger::Filesystem - filesystem functionality
 =head1 SYNOPSIS
 
     # using Path/File/Dir constructor subroutines
-    use Badger::Filesystem 'Path File Dir';
+    use Badger::Filesystem 'Path File Dir Directory';
     
     # use native OS-specific paths:
     $path = Path('/path/to/file/or/dir');
@@ -479,14 +495,14 @@ Badger::Filesystem - filesystem functionality
     $dir  = FS->dir('/path/to/directory');
 
     # calling object methods
-    my $fs = Badger::Filsystem->new;
+    my $fs = Badger::Filesystem->new;
     
     $path = $fs->path('/path/to/file/or/dir');
     $file = $fs->file('/path/to/file');
     $dir  = $fs->dir('/path/to/directory');
 
     # filesystem options
-    my $fs = Badger::Filsystem->new(
+    my $fs = Badger::Filesystem->new(
         root      => '/path/to/my/web/site',
         separator => '/',     # path separator
         rootdir   => '/',     # root directory
@@ -519,6 +535,11 @@ simple day-to-day tasks.
 If you want to do something a little more involved than inspecting, reading
 and writing files, or if you want to find out more about the filesystem
 functionality hidden behind the file and directory objects, then read on!
+
+NOTE: The C<root> configuration option has been removed, along with all
+the virtual file system functionality.  This is now implemented in the
+L<Badger::Filesystem::Virtual> module.  This documentation has not yet
+been updated to reflect the fact.
 
 =head1 DESCRIPTION
 
@@ -967,6 +988,20 @@ directories). You can think of absolute paths as being like conceptual URIs
 (identifiers) and definitive paths as being like concrete URLs (locators). In
 practice, they'll both have the same value unless unless you're using a
 virtual root directory.
+
+=head1 PATH TEST METHODS
+
+=head2 path_exists($path)
+
+Returns true if the path exists, false if not.
+
+=head2 file_exists($path)
+
+Returns true if the path exists and is a file, false if not.
+
+=head2 dir_exists($path) / directory_exists($path)
+
+Returns true if the path exists and is a directory, false if not.
 
 =head1 FILE MANIPULATION METHODS
 
