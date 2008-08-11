@@ -15,7 +15,7 @@ package Badger::Utils;
 use strict;
 use warnings;
 use File::Path;
-use Scalar::Util qw(blessed reftype );
+use Scalar::Util qw( blessed reftype );
 use base 'Badger::Exporter';
 use constant {
     UTILS  => 'Badger::Utils',
