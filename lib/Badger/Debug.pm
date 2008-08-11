@@ -286,6 +286,19 @@ C<dump_text()> method for the item passed as the first argument.
 
     print STDERR $object->dump_data($item);
 
+=head1 PACKAGE VARIABLES
+
+=head2 $FORMAT
+
+The L<debug()> method uses the message format in the C<$FORMAT>
+package variable to generate debugging messages.  The default value is:
+
+    [<class> line <line>] <msg>
+
+The C<E<lt>classE<gt>>, C<E<lt>lineE<gt>> and C<E<lt>msgE<gt>> markers
+denote the positions where the class name, line number and debugging 
+message are inserted.
+
 =head1 AUTHOR
 
 Andy Wardley L<http://wardley.org/>
