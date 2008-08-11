@@ -17,7 +17,7 @@ use warnings;
 use File::Spec;
 use Badger::Filesystem qw( FS :types :dirs );
 use Badger::Test 
-    tests => 37,
+    tests => 32,
     debug => 'Badger::Filesystem',
     args  => \@ARGV;
 
@@ -128,25 +128,4 @@ is( $file1->filesystem, $file2->filesystem,
 
 is( $file1->filesystem, $fs, 
     'matches our filesystem: ' . $fs );
-
-
-
-#-----------------------------------------------------------------------
-# test a virtual root directory
-#-----------------------------------------------------------------------
-
-$fs = FS->new(
-    root      => '/path/to/my/web/pages', 
-    rootdir   => '/',
-    separator => '/',
-);
-ok( $fs, 'created filesystem with virtual root' );
-
-$file1 = $fs->file('foo', 'bar');
-is( $file1->absolute, '/foo/bar', 'absolute foo bar in virtual root fs' );
-
-$file1 = $fs->file('/foo/bar');
-is( $file1->absolute, '/foo/bar', 'absolute /foo/bar in virtual root fs' );
-is( $file1->definitive, '/path/to/my/web/pages/foo/bar', 'definitive path adds root' );
-ok( $fs->virtual, 'filesystem is virtual' );
 

@@ -17,7 +17,7 @@ use warnings;
 use Badger::Filesystem ':types';
 use Badger::Filesystem::Path;
 use Badger::Test 
-    tests => 11,
+    tests => 35,
     debug => 'Badger::Filesystem::Path',
     args  => \@ARGV;
 
@@ -65,15 +65,29 @@ is( File('/foo/bar')->base, '/foo', 'file base' );
 # parent()
 #-----------------------------------------------------------------------
 
-is( Path('/foo/bar')->parent, '/foo', 'path parent' );
-is( Directory('/foo/bar/baz')->parent, '/foo/bar', 'dir parent' );
-is( File('/foo/bar/baz/bam')->parent, '/foo/bar/baz', 'file parent' );
+# absolute
+is( Path('/foo/bar')->parent, '/foo', 'absolute path parent' );
+is( Directory('/foo/bar/baz')->parent, '/foo/bar', 'absolute dir parent' );
+is( File('/foo/bar/baz/bam')->parent, '/foo/bar/baz', 'absolute file parent' );
+is( Path('/foo/bar/baz/bam')->parent, '/foo/bar/baz', 'absolute path parent' );
+is( Path('/foo/bar/baz/bam')->parent(0), '/foo/bar/baz', 'absolute path parent zero' );
+is( Path('/foo/bar/baz/bam')->parent(1), '/foo/bar', 'absolute path parent one' );
+is( Path('/foo/bar/baz/bam')->parent(2), '/foo', 'absolute path parent two' );
+is( Path('/foo/bar/baz/bam')->parent(3), '/', 'absolute path parent three' );
+is( Path('/foo/bar/baz/bam')->parent(4), '/', 'absolute path parent four' );
+is( Path('/foo/bar/baz/bam')->parent(5), '/', 'absolute path parent five' );
 
-is( Path('/foo/bar/baz/bam')->parent, '/foo/bar/baz', 'path parent none' );
-is( Path('/foo/bar/baz/bam')->parent(0), '/foo/bar/baz', 'path parent zero' );
-is( Path('/foo/bar/baz/bam')->parent(1), '/foo/bar', 'path parent one' );
-is( Path('/foo/bar/baz/bam')->parent(2), '/foo', 'path parent two' );
-is( Path('/foo/bar/baz/bam')->parent(3), '/', 'path parent three' );
-is( Path('/foo/bar/baz/bam')->parent(4), '/', 'path parent four' );
-is( Path('/foo/bar/baz/bam')->parent(5), '/', 'path parent five' );
+# relative
+my $cwd = $FS->dir;
+is( Path('foo/bar')->parent, 'foo', 'relative path parent' );
+is( Path('foo/bar/')->parent, 'foo', 'relative path trailing slash parent' );
+is( Directory('foo/bar/baz')->parent, 'foo/bar', 'relative dir parent' );
+is( File('foo/bar/baz/bam')->parent, 'foo/bar/baz', 'relative file parent' );
+is( Path('foo/bar/baz/bam')->parent, 'foo/bar/baz', 'relative path parent' );
+is( Path('foo/bar/baz/bam')->parent(0), 'foo/bar/baz', 'relative path parent zero' );
+is( Path('foo/bar/baz/bam')->parent(1), 'foo/bar', 'relative path parent one' );
+is( Path('foo/bar/baz/bam')->parent(2), 'foo', 'relative path parent two' );
+is( Path('foo/bar/baz/bam')->parent(3), $cwd, "relative path parent three is $cwd" );
+is( Path('foo/bar/baz/bam')->parent(4), $cwd->parent, 'relative path parent four is ' . $cwd->parent );
+is( Path('foo/bar/baz/bam')->parent(5), $cwd->parent(1), 'relative path parent five is ' . $cwd->parent(1) );
 

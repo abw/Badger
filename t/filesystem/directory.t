@@ -15,6 +15,7 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use Badger::Filesystem::Directory;
+use Badger::Filesystem::Virtual;
 use Badger::Test 
     tests => 48,
     debug => 'Badger::Filesystem::Directory',
@@ -116,7 +117,7 @@ foreach my $kid (@kids) {
 # now try with a virtual filesystem
 #-----------------------------------------------------------------------
 
-my $vfs = Badger::Filesystem->new( root => $cwd );
+my $vfs = Badger::Filesystem::Virtual->new( root => $cwd );
 my $root = $vfs->dir('/');
 @kids = $root->children;
 ok( scalar(@kids), 'got some kids' );
