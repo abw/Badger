@@ -18,7 +18,7 @@ use File::Spec;
 use Badger::Filesystem 'FS';
 use Badger::Filesystem::Virtual 'VFS';
 use Badger::Test 
-    tests => 29,
+    tests => 30,
     debug => 'Badger::Filesystem Badger::Filesystem::Virtual',
     args  => \@ARGV;
 
@@ -105,7 +105,7 @@ ok( ! $bam->exists, 'VFS bam agrees' );
 # check we get a composite directory index
 #-----------------------------------------------------------------------
 
-is( join(', ', sort $vfs->dir('/')->read), 'bar, baz, foo, wibble, wobble',
+is( join(', ', sort grep { ! /^\./ } $vfs->dir('/')->read), 'bar, baz, foo, wibble, wobble',
     'got composite index' );
 
 my @kids = $vfs->dir('/')->children;
