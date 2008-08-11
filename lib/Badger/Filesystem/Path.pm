@@ -18,7 +18,6 @@ use Badger::Class
     version      => 0.01,
     debug        => 0,
     base         => 'Badger::Base Badger::Exporter',
-    mixin        => 'Badger::Mixin::Messages',
     import       => 'class',
     constants    => 'HASH ARRAY TRUE',
     get_methods  => 'path name volume directory',
@@ -66,7 +65,7 @@ class->methods(
 *is_dir = \&is_directory;
 *dir    = \&directory;
 *vol    = \&volume;     # goes up to 11
-*up     = \&parent;
+#*up     = \&parent;
 
 
 sub new {
@@ -174,13 +173,12 @@ sub parent {
     my $self   = shift;
     my $skip   = shift || 0;
     my $parent = $self->{ parent } 
-             ||= $self->{ directory }
-               ? $self->filesystem->directory($self->{ directory })
-
+             ||= $self->filesystem->directory( 
+                    $self->{ directory } ||= $self->up
+                 );
+#               : $self->up;
               # THIS IS BROKEN!  SHOULD SPLIT PATH AND RETURN PARENT
-               : $self->filesystem->directory->parent;
-
-#             ||= $self->filesystem->directory($self->{ directory });
+#               : $self->filesystem->directory->parent;
              
 #        ||=  $self->{ directory }
 #            ? $self->filesystem->directory($self->{ directory })
@@ -195,8 +193,40 @@ sub parent {
       : $parent;
 }
 
+sub up {
+    my $self = shift;
+    my $fs = $self->filesystem;
+    my $path = $fs->split_directory($self->{ path });
+
+    $self->debug("split path [$path] into [", join(', ', @$path), "]\n")
+        if $DEBUG;
+
+    if (@$path > 1) {
+        # multiple items in path can be relative or absolute - we're not 
+        # fussed.  e.g. /foo/bar ==> /foo  or  foo/bar ==> foo
+        pop(@$path);
+    }
+    elsif (@$path == 1) {
+        # if there's a single item in a path then it's either a single
+        # relative path item (e.g. 'foo' ==> ['foo']), in which case we 
+        # return the current working directory, or it's an empty item 
+        # indicating the root directory (e.g. '/' => ['']) in which case we
+        # do nothing, because you can't go up from the root directory.
+        if (length $path->[0]) {
+            return $fs->cwd;
+        }
+        $self->not_implemented("going up from relative paths");
+    }
+    else {
+        $self->error("Invalid path (no elements)\n");
+    }
+    
+    return $fs->join_directory($path);
+}
+
 sub exists {
-    -e $_[0]->definitive;
+    my $self = shift;
+    $self->filesystem->path_exists($self->{ path });
 }
 
 sub must_exist {

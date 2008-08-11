@@ -68,6 +68,11 @@ sub file {
         : $self->error( missing => 'file name' );
 }
 
+sub exists {
+    my $self = shift;
+    $self->filesystem->directory_exists($self->{ path });
+}
+
 sub create { 
     my $self = shift;
     $self->filesystem->create_directory($self->{ path }, @_);

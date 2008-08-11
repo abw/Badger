@@ -59,6 +59,11 @@ sub file {
         : $self;
 }
 
+sub exists {
+    my $self = shift;
+    $self->filesystem->file_exists($self->{ path });
+}
+
 sub create {
     my $self = shift;
     $self->filesystem->create_file($self->{ path }, @_);
@@ -76,13 +81,13 @@ sub open {
 
 sub text {
     my $text = shift->read(@_);
-    # TODO: bless
+    # TODO: bless?
     return $text;
 }
 
 sub read {
     my $self = shift;
-    $self->filesystem->read_file($self->{ path });
+    $self->filesystem->read_file($self->{ path }, @_);
 }
 
 sub write {
