@@ -314,9 +314,12 @@ This method is a wrapper around the L<read()> method which forces scalar
 context.  The content of the file is always returned as a single string.
 NOTE: future versions will probably return this as a text object.
 
-=head2 TODO_accept($visitor)
+=head2 accept($visitor)
 
-TODO
+This method is called to dispatch a visitor to the correct method for a
+filesystem object.  In the L<Badger::Filesystem::File> class, it calls the 
+visitor L<visit_file()|Badger::Filesystem::Visitor/visit_file()> method,
+passing the C<$self> object reference as an argument.
 
 =head1 AUTHOR
 
@@ -339,7 +342,8 @@ in L<Badger::Fileystem> for further information.
 
 L<Badger::Filesystem>, 
 L<Badger::Filesystem::Path>,
-L<Badger::Filesystem::Directory>.
+L<Badger::Filesystem::Directory>,
+L<Badger::Filesystem::Visitor>.
 
 =cut
 

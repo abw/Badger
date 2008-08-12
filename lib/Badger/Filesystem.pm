@@ -441,7 +441,7 @@ sub visitor {
 }
     
 sub accept {
-    $_[1]->visit_directory($_[0]->root);
+    $_[0]->root->accept($_[1]);
 }
 
 #-----------------------------------------------------------------------
@@ -1151,6 +1151,30 @@ returned as L<Badger::Filesystem::File> objects, directories as
 L<Badger::Filesystem::File> objects. Anything else is returned as a generic
 L<Badger::Filesystem::Path> object.
 
+=head1 VISITOR METHODS
+
+=head2 visitor(\%params)
+
+This method creates a L<Badger::Filesystem::Visitor> object from the arguments
+passed as a list or reference to a hash array of named parameters.
+
+    # list of named parameters.
+    $fs->visitor( files => 1, dirs => 0 );
+    
+    # reference to hash array of named parameters
+    $fs->visitor( files => 1, dirs => 0 );
+
+If the first argument is already a reference to a
+L<Badger::Filesystem:Visitor> object or subclass then it will be returned
+unmodified.
+
+=head2 accept($visitor)
+
+This method is called to dispatch a visitor to the correct method for a
+filesystem object. It forward the visitor onto the
+L<accept()|Badger::Filesystem::Directory/accept()> method for the L<root()>
+directory.
+
 =head1 MISCELLANEOUS METHODS
 
 =head2 cwd()
@@ -1161,6 +1185,11 @@ without an argument if you want a L<Badger::Filesystem::Directory> object
 instead.
 
     my $cwd = $fs->cwd;
+
+=head2 root()
+
+Returns a L<Badger::Filesystem::Directory> object representing the root
+directory for the filesystem.
 
 =head1 EXPORTABLE CONSTANTS
 
@@ -1211,8 +1240,11 @@ modules which were based on code originally by Michael Stevens.
 
 =head1 SEE ALSO
 
-L<Badger::Filesystem::Path>, L<Badger::Filesystem::Directory>,
-L<Badger::Filesystem::File>
+L<Badger::Filesystem::Path>, 
+L<Badger::Filesystem::Directory>,
+L<Badger::Filesystem::File>,
+L<Badger::Filesystem::Visitor>
+L<Badger::Filesystem::Virtual>.
 
 =cut
 

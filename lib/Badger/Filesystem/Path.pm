@@ -606,6 +606,42 @@ method.
     # same as
     Badger::Filesystem->dir('/a/new/directory/object');
 
+=head2 visit($visitor)
+
+Entry point for a filesystem visitor to visit a filesystem path.  A 
+reference to a L<Badger::Filesystem::Visitor> object (or subclass) should
+be passed as the first argument.  
+
+    use Badger::Filesystem::Visitor;
+    
+    my $visitor = Badger::Filesystem::Visitor->new( recurse => 1 );
+    $path->visit($visitor);
+
+Alternately, a list or reference to a hash array of named parameters may be
+provided. These will be used to instantiate a new
+L<Badger::Filesystem::Visitor> object (via the L<Badger::Filesystem>
+L<visitor()|Badger::Filesystem/visitor()> method) which will then be 
+applied to the path.  If no arguments are passed then a visitor is created
+with a default configuration.
+
+    # either list of named params
+    $path->visit( recurse => 1 );
+    
+    # or reference to hash array
+    $path->visit({ recurse => 1});
+
+The method then calls the visitor
+L<visit()|Badger::Filesystem::Visitor/visit()> passing C<$self> as an argument
+to begin the visit.
+
+=head2 accept($visitor)
+
+This method is called to dispatch a visitor to the correct method for a
+filesystem object. In the L<Badger::Filesystem::Path> base class, it calls the
+visitor L<visit_path()|Badger::Filesystem::Visitor/visit_path()> method,
+passing the C<$self> object reference as an argument. Subclasses redefine this
+method to call other visitor methods.
+
 =head1 STUB METHODS
 
 The following methods serve little or no purpose in the
@@ -661,8 +697,10 @@ in L<Badger::Fileystem> for further information.
 
 =head1 SEE ALSO
 
-L<Badger::Filesystem>, L<Badger::Filesystem::Directory>,
-L<Badger::Filesystem::File>
+L<Badger::Filesystem>, 
+L<Badger::Filesystem::File>,
+L<Badger::Filesystem::Directory>,
+L<Badger::Filesystem::Visitor>.
 
 =cut
 

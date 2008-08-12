@@ -26,20 +26,25 @@ use Badger::Class
 sub init {
     my ($self, $config) = @_;
 
+    $config->{ in_dirs } = 1
+        if $config->{ recurse };
+
     # allow 'directories' as alias for 'dirs'
-    $self->{ dirs } = $self->{ directories }
-        if exists $self->{ directories };
-    $self->{ no_dirs } = $self->{ no_directories }
-        if exists $self->{ no_directories };
-    $self->{ not_in_dirs } = $self->{ not_in_directories }
-        if exists $self->{ not_in_directories };
+    $config->{ dirs } = $config->{ directories }
+        if exists $config->{ directories };
+    $config->{ no_dirs } = $config->{ no_directories }
+        if exists $config->{ no_directories };
+    $config->{ in_dirs } = $config->{ in_directories }
+        if exists $config->{ in_directories };
+    $config->{ not_in_dirs } = $config->{ not_in_directories }
+        if exists $config->{ not_in_directories };
     
-    for (qw( all recurse no_files no_dirs not_in_dirs )) {
+    for (qw( all recurse no_files no_dirs in_dirs not_in_dirs )) {
         $self->{ $_ } = $config->{ $_ } || 0;
     }
 
     # tread carefully because a value in $config is likely to be false
-    for (qw( files dirs in_dirs )) {
+    for (qw( files dirs )) {
         $self->{ $_ } = defined $config->{ $_} 
             ? $config->{ $_ }
             : 1;

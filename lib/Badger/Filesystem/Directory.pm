@@ -322,6 +322,42 @@ objects.
     my @dirs = $dir->dirs;              # list in list context
     my $dirs = $dir->dirs;              # list ref in scalar context
 
+=head2 visit($visitor)
+
+Entry point for a filesystem visitor for visit a directory. A reference to a
+L<Badger::Filesystem::Visitor> object (or subclass) should be passed as the
+first argument.
+
+    use Badger::Filesystem::Visitor;
+    
+    my $visitor = Badger::Filesystem::Visitor->new( in_dirs => 1 );
+    $dir->visit($visitor);
+
+Alternately, a list or reference to a hash array of named parameters may be
+provided. These will be used to instantiate a new
+L<Badger::Filesystem::Visitor> object (via the L<Badger::Filesystem>
+L<visitor()|Badger::Filesystem/visitor()> method) which will then be applied
+to the directory. If no arguments are passed then a visitor is created with a
+default configuration.
+
+    # either list of named params
+    $dir->visit( in_dirs => 1 );
+    
+    # or reference to hash array
+    $dir->visit({ in_dirs => 1});
+
+The method then calls the visitor
+L<visit_directory_children()|Badger::Filesystem::Visitor/visit_directory_children()>
+passing C<$self> as an argument to begin visiting the files and
+sub-directories contained in this directory.
+
+=head2 accept($visitor)
+
+This method is called to dispatch a visitor to the correct method for a
+filesystem object. In the L<Badger::Filesystem::Directory> class, it calls the
+visitor L<visit_directory()|Badger::Filesystem::Visitor/visit_directory()>
+method, passing the C<$self> object reference as an argument.
+
 =head1 AUTHOR
 
 Andy Wardley E<lt>abw@wardley.orgE<gt>
@@ -343,7 +379,8 @@ in L<Badger::Fileystem> for further information.
 
 L<Badger::Filesystem>, 
 L<Badger::Filesystem::Path>,
-L<Badger::Filesystem::File>.
+L<Badger::Filesystem::File>,
+L<Badger::Filesystem::Visitor>.
 
 =cut
 
