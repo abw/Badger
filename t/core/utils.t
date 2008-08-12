@@ -18,12 +18,31 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Utils qw( UTILS blessed );
 use Badger::Debug;
 use Badger::Test 
-    tests => 11,
+    tests => 14,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
 is( UTILS, 'Badger::Utils', 'got UTILS defined' );
 ok( blessed bless([], 'Wibble'), 'got blessed' );
+
+
+#-----------------------------------------------------------------------
+# test is_object()
+#-----------------------------------------------------------------------
+
+package My::Base;
+use base 'Badger::Base';
+
+package My::Sub;
+use base 'My::Base';
+
+package main;
+use Badger::Utils 'is_object';
+
+my $obj = My::Sub->new;
+ok(   is_object( 'My::Sub'   => $obj ), 'object is a My::Sub' );
+ok(   is_object( 'My::Base'  => $obj ), 'object is a My::Base' );
+ok( ! is_object( 'My::Other' => $obj ), 'object is not My::Other' );
 
 
 #-----------------------------------------------------------------------
@@ -56,6 +75,8 @@ is( UTILS->xprintf('<1> is <2:4.3f>', pi => 3.1415926),
 
 is( UTILS->xprintf('<1> is <2:4.3f>', e => 2.71828),
     'e is 2.718', 'pi is 2.718' );
+
+
     
 
 

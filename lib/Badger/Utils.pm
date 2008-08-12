@@ -30,7 +30,7 @@ our $MESSAGES = {
 };
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed reftype load_module
+    UTILS blessed reftype is_object load_module
 ));
 
 __PACKAGE__->export_hooks(
@@ -42,6 +42,9 @@ __PACKAGE__->export_hooks(
     }
 );
 
+sub is_object {
+    blessed $_[1] && $_[1]->isa($_[0]);
+}
 
 
 #------------------------------------------------------------------------
@@ -121,15 +124,26 @@ having to hard-code the C<Badger::Utils> class name in your code.
     
     UTILS->load_module('My::Module');
 
-=head2 blessed
+=head2 blessed($ref)
 
 Exports a reference to the L<Scalar::Util> L<blessed()|Scalar::Util/blessed()>
 function.
 
-=head2 reftype
+=head2 reftype($ref)
 
 Exports a reference to the L<Scalar::Util> L<reftype()|Scalar::Util/reftype()>
 function.
+
+=head2 is_object($class,$object)
+
+Returns true if the C<$object> is a blessed reference which isa C<$class>.
+
+    use Badger::Filesystem 'FS';
+    use Badger::Utils 'is_object';
+    
+    if (is_object( FS => $object )) {       # FS == Badger::Filesystem
+        print $object, ' isa ', FS, "\n";
+    }
 
 =head2 md5_hex
 
