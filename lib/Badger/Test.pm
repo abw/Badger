@@ -109,7 +109,7 @@ sub debugging {
     $debug = [ split(DELIMITER, $debug) ] unless ref $debug eq ARRAY;
     
     foreach my $pkg (@$debug) {
-        class($pkg)->var( DEBUG => $flag );
+        class($pkg)->load->var( DEBUG => $flag );
     }
     $DEBUGGING = $flag;
 }
