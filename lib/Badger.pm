@@ -1,6 +1,6 @@
 package Badger;
 
-use 5.8.0;
+use 5.008;
 use Badger::Hub;
 use Badger::Class
     debug   => 0,

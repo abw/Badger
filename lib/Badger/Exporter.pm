@@ -815,6 +815,15 @@ future use.
 This method can be used to install a code reference as a symbol in a 
 package.  
 
+=begin Test::Pod::Coverage
+
+This is to keep L<Test::Pod::Coverage> quiet.  You shouldn't see this when 
+the POD is displayed.
+
+=head2 EXPORT_ANY EXPORT_ALL EXPORT_TAGS EXPORT_HOOKS EXPORT_FAIL ISA
+
+=end Test::Pod::Coverage
+
 =head1 AUTHOR
 
 Andy Wardley L<http://wardley.org/>

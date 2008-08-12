@@ -99,17 +99,139 @@ to import different sets of constants.
     use Badger::Constants ':types';
     print HASH;   # HASH
 
+=head1 EXPORTABLE CONSTANTS
+
+=head2 CONSTANTS
+
+Set to C<Badger::Constants>.
+
+=head2 ARRAY
+
+The literal word C<ARRAY>, typically used for testing references.
+
+    if (ref $data eq ARRAY) {
+        ...
+    }
+
+=head2 HASH
+
+The literal word C<HASH>, typically used for testing references.
+
+    if (ref $data eq HASH) {
+        ...
+    }
+
+=head2 CODE
+
+The literal word C<CODE>, typically used for testing references.
+
+    if (ref $data eq CODE) {
+        ...
+    }
+
+=head2 REGEX
+
+The literal word C<Regexp>, typically used for testing references.
+
+    if (ref $data eq REGEX) {
+        ...
+    }
+
+=head2 FALSE
+
+A false value (0)
+
+=head2 TRUE
+
+A true value (1)
+
+=head2 OFF
+
+A generic flag used to disable things (0).
+
+=head2 ON
+
+A generic flag used to enable things (1).
+
+=head2 ALL
+
+The literal string C<all>.
+
+=head2 NONE
+
+The literal string C<none>.
+
+=head2 DEFAULT
+
+The literal string C<default>.
+
+=head2 WARN
+
+The literal string C<warn>.
+
+=head2 LAST
+
+The value C<-1>, used to index the last item in an array.
+
+    $array[LAST];
+
+=head2 CRLF
+
+An unambiguous carriage return and newline sequence: C<\015\012>
+
+=head2 PKG
+
+An alias for the C<::> symbol used to delimiter Perl packages.  Typically 
+used to construct symbol references.
+
+    use Badger::Constants 'PKG';
+    use constant EXAMPLE => 'EXAMPLE';
+    
+    my $var = ${ $pkg.PKG.EXAMPLE };   # same as: ${"${pkg}::EXAMPLE"}
+
+=head2 REFS
+
+The literal string C<refs>.  Typically used like so:
+
+    no strict REFS;
+
+=head2 ONCE
+
+The literal string C<once>.  Typically used like so:
+
+    no warnings ONCE;
+
+=head2 BLANK
+
+An empty string.
+
+=head2 SPACE
+
+A single space.
+
+=head2 DELIMITER
+
+A regular expression used to split whitespace delimited tokens.  Also
+accepts commas with optional trailing whitespace as a delimiter.
+
+    $names = [ split DELIMITER, $names ] 
+        unless ref $names eq ARRAY;
+
 =head1 EXPORTABLE TAG SETS
 
 The following tag sets and associated constants are defined: 
 
-  :types
-   HASH
-   ARRAY
-   CODE
-   REGEX
+=head2 :types
 
-  :all              # all the above constants.
+    HASH ARRAY CODE REGEX
+
+=head2 :values
+
+    FALSE TRUE OFF ON ALL NONE DEFAULT
+
+=head2 :all
+
+All the constants.
 
 =head1 AUTHOR
 

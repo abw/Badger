@@ -2311,6 +2311,15 @@ resolve its own methods).
 
 Finish documentation.
 
+=begin Test::Pod::Coverage
+
+This is to keep L<Test::Pod::Coverage> quiet.  You shouldn't see this when 
+the POD is displayed.
+
+=head2 CONSTANTS DEBUG LOADED UTILS VERSION
+
+=end Test::Pod::Coverage
+
 =head1 AUTHOR
 
 Andy Wardley L<http://wardley.org/>

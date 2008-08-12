@@ -12,7 +12,7 @@
 
 package Badger::Codec::Unicode;
 
-use 5.8.0;                  # Unicode not fully supported prior to 5.8.0
+use 5.008;                      # Unicode not fully supported prior to 5.8
 use Badger::Class
     version => 0.01,
     base    => 'Badger::Codec::Encode';
