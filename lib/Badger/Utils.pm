@@ -17,6 +17,7 @@ use warnings;
 use base 'Badger::Exporter';
 use File::Path;
 use Scalar::Util qw( blessed reftype );
+use Badger::Constants 'HASH';
 use constant {
     UTILS  => 'Badger::Utils',
 };
@@ -30,7 +31,7 @@ our $MESSAGES = {
 };
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed reftype is_object load_module
+    UTILS blessed reftype is_object params load_module
 ));
 
 __PACKAGE__->export_hooks(
@@ -44,6 +45,10 @@ __PACKAGE__->export_hooks(
 
 sub is_object {
     blessed $_[1] && $_[1]->isa($_[0]);
+}
+
+sub params {
+    @_ && ref $_[0] eq HASH ? shift : { @_ };
 }
 
 
@@ -134,6 +139,11 @@ function.
 Exports a reference to the L<Scalar::Util> L<reftype()|Scalar::Util/reftype()>
 function.
 
+=head2 md5_hex
+
+Exports a reference to the L<Digest::MD5> L<md5_hex()|Digest::MD5/md5_hex()>
+function.
+
 =head2 is_object($class,$object)
 
 Returns true if the C<$object> is a blessed reference which isa C<$class>.
@@ -145,10 +155,14 @@ Returns true if the C<$object> is a blessed reference which isa C<$class>.
         print $object, ' isa ', FS, "\n";
     }
 
-=head2 md5_hex
+=head2 params(@args)
 
-Exports a reference to the L<Digest::MD5> L<md5_hex()|Digest::MD5/md5_hex()>
-function.
+Method to coerce a list of named paramters to a hash array reference.  If the
+first argument is a reference to a hash array then it is returned.  Otherwise
+the arguments are folded into a hash reference.
+
+    params({ a => 10 });            # { a => 10 }
+    params( a => 10 );              # { a => 10 }
 
 =head1 METHODS
 

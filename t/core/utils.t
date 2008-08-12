@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Utils qw( UTILS blessed );
 use Badger::Debug;
 use Badger::Test 
-    tests => 14,
+    tests => 16,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -43,6 +43,20 @@ my $obj = My::Sub->new;
 ok(   is_object( 'My::Sub'   => $obj ), 'object is a My::Sub' );
 ok(   is_object( 'My::Base'  => $obj ), 'object is a My::Base' );
 ok( ! is_object( 'My::Other' => $obj ), 'object is not My::Other' );
+
+
+#-----------------------------------------------------------------------
+# test params()
+#-----------------------------------------------------------------------
+
+use Badger::Utils 'params';
+
+my $hash = {
+    a => 10,
+    b => 20,
+};
+is( params($hash), $hash, 'params returns hash ref' );
+is( params(%$hash)->{ a }, 10, 'params merged named param list' );
 
 
 #-----------------------------------------------------------------------
