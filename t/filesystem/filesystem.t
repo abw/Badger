@@ -17,7 +17,7 @@ use warnings;
 use File::Spec;
 use Badger::Filesystem qw( FS :types :dirs );
 use Badger::Test 
-    tests => 32,
+    tests => 34,
     debug => 'Badger::Filesystem',
     args  => \@ARGV;
 
@@ -64,7 +64,7 @@ ok( $dir, 'created directory using constructor class' );
 
 
 #-----------------------------------------------------------------------
-# and also via the BFS alias for Badger::Filesystem
+# and also via the FS alias for Badger::Filesystem
 #-----------------------------------------------------------------------
 
 $path = FS->path('/foo/bar');
@@ -78,6 +78,16 @@ ok( $dir, 'created dir using FS class' );
 
 $dir = FS->directory->new('/foo/bar');
 ok( $dir, 'created directory using FS class' );
+
+
+#-----------------------------------------------------------------------
+# check we can get root directory
+#-----------------------------------------------------------------------
+
+my $root = FS->root;
+my $sub = $root->dir('foo', 'bar');
+is( $root, File::Spec->rootdir, 'root dir' );
+is( $sub, File::Spec->catfile('', 'foo', 'bar'), 'root dir relative' );
 
 
 #-----------------------------------------------------------------------
