@@ -42,9 +42,9 @@ use Badger::Codecs codec => 'utf8';
 use Badger::Test;
 
 our $moose   = "\x{ef}\x{bb}\x{bf}m\x{c3}\x{b8}\x{c3}\x{b8}se\x{e2}\x{80}\x{a6}";
-our $uncoded = Encode::decode( utf8 => $moose );
-our $encoded = encode($uncoded);
-our $decoded = decode($encoded);
+$uncoded = Encode::decode( utf8 => $moose );
+$encoded = encode($uncoded);
+$decoded = decode($encoded);
 
 is( reasciify($encoded), reasciify($moose), "encoded utf8" );
 is( $decoded, $uncoded, "decoded utf8" );
