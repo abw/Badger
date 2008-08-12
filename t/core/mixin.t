@@ -16,7 +16,6 @@ use warnings;
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Mixin;
-use Badger::Mixins;
 use Badger::Test 
     tests  => 7, 
     debug  => 'Badger::Mixin Badger::Mixins',
