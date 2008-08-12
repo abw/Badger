@@ -31,7 +31,7 @@ our $MESSAGES = {
 };
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed reftype is_object params load_module
+    UTILS blessed reftype is_object params self_params load_module
 ));
 
 __PACKAGE__->export_hooks(
@@ -49,6 +49,10 @@ sub is_object {
 
 sub params {
     @_ && ref $_[0] eq HASH ? shift : { @_ };
+}
+
+sub self_params {
+    (shift, @_ && ref $_[0] eq HASH ? shift : { @_ });
 }
 
 
@@ -161,8 +165,22 @@ Method to coerce a list of named paramters to a hash array reference.  If the
 first argument is a reference to a hash array then it is returned.  Otherwise
 the arguments are folded into a hash reference.
 
+    use Badger::Utils 'params';
+    
     params({ a => 10 });            # { a => 10 }
     params( a => 10 );              # { a => 10 }
+
+=head2 self_params(@args)
+
+Similar to L<params()> but also expects a C<$self> reference at the start of
+the argument list.
+
+    use Badger::Utils 'self_params';
+    
+    sub example {
+        my ($self, $params) = self_params(@_);
+        # do something...
+    }
 
 =head1 METHODS
 

@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Utils qw( UTILS blessed );
 use Badger::Debug;
 use Badger::Test 
-    tests => 16,
+    tests => 20,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -46,7 +46,7 @@ ok( ! is_object( 'My::Other' => $obj ), 'object is not My::Other' );
 
 
 #-----------------------------------------------------------------------
-# test params()
+# test params() and self_params()
 #-----------------------------------------------------------------------
 
 use Badger::Utils 'params';
@@ -57,6 +57,26 @@ my $hash = {
 };
 is( params($hash), $hash, 'params returns hash ref' );
 is( params(%$hash)->{ a }, 10, 'params merged named param list' );
+
+
+package Selfish;
+use base 'Badger::Base';
+use Badger::Utils 'self_params';
+
+sub test1 {
+    my ($self, $params) = self_params(@_);
+    return ($self, $params);
+}
+
+package main;
+my $selfish = Selfish->new();
+my ($s, $p) = $selfish->test1($hash);
+is( $s, $selfish, 'self_params returns self' );
+is( $p, $hash, 'self_params returns params' );
+($s, $p) = $selfish->test1(%$hash);
+is( $s, $selfish, 'self_params returns self again' );
+is( $p->{a}, 10, 'self_params returns params again' );
+
 
 
 #-----------------------------------------------------------------------
