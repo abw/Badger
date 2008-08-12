@@ -255,6 +255,17 @@ sub filesystem {
         ||= $self->class->any_var('FILESYSTEM')->prototype;
 }
 
+sub visit {
+    my $self    = shift;
+    my $visitor = $self->filesystem->visitor(@_);
+    $visitor->visit($self);
+    return $visitor;
+}
+
+sub accept {
+    $_[1]->visit_path($_[0]);
+}
+
 
 
 1;

@@ -105,6 +105,9 @@ sub text {
     return $text;
 }
 
+sub accept {
+    $_[1]->visit_file($_[0]);
+}
 
 1;
 
@@ -310,6 +313,10 @@ This method deletes the file permanently.  Use it wisely.
 This method is a wrapper around the L<read()> method which forces scalar
 context.  The content of the file is always returned as a single string.
 NOTE: future versions will probably return this as a text object.
+
+=head2 TODO_accept($visitor)
+
+TODO
 
 =head1 AUTHOR
 

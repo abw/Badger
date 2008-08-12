@@ -112,6 +112,10 @@ sub directories {
     return wantarray ? @dirs : \@dirs;
 }
 
+sub accept {
+    $_[1]->visit_directory($_[0]);
+}
+
 1;
 
 

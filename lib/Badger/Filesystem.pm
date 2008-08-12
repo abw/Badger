@@ -19,20 +19,20 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Prototype Badger::Exporter',
     import    => 'class',
+    utils     => 'params is_object',
     constants => 'HASH ARRAY TRUE',
     constant  => {
-        # Note: DIR should be DIRECTORY to be consistent with other uses but
-        # I can't bring myself to break that lovely pattern down the left
         virtual     => 0,
         NO_FILENAME => 1,
         FILESPEC    => 'File::Spec',
         ROOTDIR     =>  File::Spec->rootdir,
         CURDIR      =>  File::Spec->curdir,
         UPDIR       =>  File::Spec->updir,
+        FS          => 'Badger::Filesystem',
         PATH        => 'Badger::Filesystem::Path',
         FILE        => 'Badger::Filesystem::File',
-        DIR         => 'Badger::Filesystem::Directory',
-        FS          => 'Badger::Filesystem',
+        DIRECTORY   => 'Badger::Filesystem::Directory',
+        VISITOR     => 'Badger::Filesystem::Visitor',
     },
     exports   => {
         any   => 'FS PATH FILE DIR DIRECTORY',
@@ -51,12 +51,10 @@ use Badger::Filesystem::Directory;
 
 
 #-----------------------------------------------------------------------
-# aliases - the only reason we've "reversed" DIRECTORY -> DIR (all the 
-# others alias dir -> directory) is so we don't mess up the lovely 
-# indenting in the 'constant' declaration above.  Yeah I know, I'm silly.
+# aliases
 #-----------------------------------------------------------------------
 
-*DIRECTORY    = \&DIR;                    # constant class name
+*DIR          = \&DIRECTORY;              # constant class name
 *Dir          = \&Directory;              # constructor sub
 *dir          = \&directory;              # object method
 *split_dir    = \&split_directory;        # ...because typing 'directory' 
@@ -97,9 +95,9 @@ use Badger::Filesystem::Directory;
 # factory subroutines
 #-----------------------------------------------------------------------
 
-sub Path      { return @_ ?  FS->path(@_) : PATH }
-sub File      { return @_ ?  FS->file(@_) : FILE }
-sub Directory { return @_ ?  FS->dir(@_)  : DIR  }
+sub Path      { return @_ ? FS->path(@_)      : PATH      }
+sub File      { return @_ ? FS->file(@_)      : FILE      }
+sub Directory { return @_ ? FS->directory(@_) : DIRECTORY }
 
 
 #-----------------------------------------------------------------------
@@ -172,6 +170,11 @@ sub directory {
         if exists $args->{ path } && ! defined $args->{ path };
     
     Directory->new($args);
+}
+
+sub root {
+    my $self = shift->prototype;
+    Directory->new($self->{ rootdir });
 }
 
 sub cwd {
@@ -427,6 +430,23 @@ sub directory_children {
     return wantarray ? @paths : \@paths;
 }
 
+sub visitor {
+    my $self  = shift;
+
+#    return $self->error_msg( missing_to => parameters => 'visitor' )
+#        unless @_;
+
+    my $vtype = $self->VISITOR;
+    class($vtype)->load;
+    
+    return @_ && is_object($vtype => $_[0])
+        ? shift
+        : $vtype->new(@_);
+}
+    
+sub accept {
+    $_[1]->visit_directory($_[0]->root);
+}
 
 #-----------------------------------------------------------------------
 # internal methods
