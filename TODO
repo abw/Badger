@@ -1,18 +1,33 @@
 Badger::Class
 -------------
 
+* Have DEBUG generate constant DEBUG subroutine fixed to value of flag
+  (or pre-defined $DEBUG variable if possible).  Unlike $DEBUG which is 
+  evaluated at runtime and thus, is dynamic, the DEBUG constant subroutine
+  would be statically resolved at compile time.  Slightly different usage,
+  but worthwhile.
+  
 * finish cleanup and documentation
 
 * pkg() alias for name()
 
 * AUTOLOAD method to delegate to real class if possible?
 
+* fix up id() / base_id() to do something better
+
 
 Badger::Codec
 --------------
 
 * encoded()/decoded() methods (e.g. for utf8)
+* codec path should include BadgerX::Codec
 
+
+Badger::Debug
+-------------
+
+* See if we can make this a low-level mixin that we can import into 
+  Badger::Utils et al.
 
 Badger::Config
 --------------
@@ -21,10 +36,10 @@ Badger::Config
   and other stuff.
 
 
-Badger::Debug
--------------
+Badger::Docs
+------------
 
-* move in debug() from Badger::Base and make it a mixin.
+* Finish writing it so we can build the web site.
 
 
 Badger::Exception
@@ -36,17 +51,23 @@ Badger::Exception
 Badger::Filesystem
 ------------------
 
-* documentation
+* finish documentation - move VFS docs out of B::FS into B::FS::Virtual
 
-* exists() should check the type for file/dir
-
-* directory files/directories/dirs
+* directory files/directories/dirs as grep across children
 
 * virtual filesystems composed across several real filesystems
+
+* need to handle encoding better in read_file() and write_file() methods.
+
+* write_file() should have an option for writing to a temporary file and
+  renaming into place to avoid race conditions.
 
 
 Badger::Storage
 ---------------
+
+* This is available in subversion but not yet included in the released
+  distribution.
 
 * unify parameter parsing and identity definition between filesystem and
   database storage modules.
@@ -65,9 +86,27 @@ Badger::Test
   do tend to thrash it quite well...
 
 
-Misc
-----
+Badger::Utils
+-------------
 
-* Move Badger::Exception to Badger::Error and clean out.  Hmm... nah, 
-  maybe not.
+* make methods exportable subroutines
+
+* maybe_load_module can be done using try() (although that requires us to
+  call a class method.
+
+* look into merging load_module() with Badger::Class::_autoload
+
+
+Longer Terms Goals / Larger Projects
+------------------------------------
+
+* incorporate re-write of AppConfig into Badger::Config
+
+* consider doing the same with Pod::POM into Badger::Pod and combining
+  with Badger::Docs.
+
+* Finish cleaning Badger-Web and release
+
+* Finish refactoring Badger-Database and release
+
 

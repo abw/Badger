@@ -1,0 +1,13 @@
+\.svn
+\.DS_Store
+^MANIFEST\.
+^Makefile$
+^Makefile.old$
+^Badger-\d\.\d+\.tar\.gz$
+\.gz$
+^blib/
+pm_to_blib
+t/storage
+Storage
+tmp
+
