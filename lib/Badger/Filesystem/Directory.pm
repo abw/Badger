@@ -112,6 +112,14 @@ sub directories {
     return wantarray ? @dirs : \@dirs;
 }
 
+sub visit {
+    my $self    = shift;
+    my $visitor = $self->filesystem->visitor(@_);
+    # directory doesn't visit self, but instead visits all children
+    $visitor->visit_directory_children($self);
+    return $visitor;
+}
+
 sub accept {
     $_[1]->visit_directory($_[0]);
 }
