@@ -45,7 +45,7 @@ sub AUTOLOAD {
 # Generate an accessor method for each of the items passed as arguments
 #------------------------------------------------------------------------
 
-sub OLD_generate_config_methods {
+sub _OLD_generate_config_methods {
     my $class   = shift;
     my $methods = shift; # || $class->pkgvar('METHODS');
     $class = ref $class || $class;
@@ -93,11 +93,15 @@ TODO
 
 =head1 DESCRIPTION
 
-TODO
+This is a quick hack to implement a placeholder for the L<Badger::Config>
+module.  A config object is currently little more than a blessed hash with
+an AUTOLOAD method which allows you to get/set items via methods.
 
 =head1 METHODS
 
-TODO
+=head2 new()
+
+Constructor method to create a new L<Badger::Config> object.
 
 =head1 AUTHOR
 

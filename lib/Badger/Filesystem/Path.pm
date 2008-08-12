@@ -272,7 +272,7 @@ Badger::Filesystem::Path - generic fileystem path object
     $path = Path('/path/to/something');
     
     # or generic OS-independant paths
-    $path = File('path', 'to', 'something');
+    $path = Path('path', 'to', 'something');
 
     # manual object construction
     use Badger::Filesystem::Path;
@@ -405,6 +405,11 @@ Default initialisation method which subclasses (e.g.
 L<Badger::Filesystem::Directory> and L<Badger::Filesystem::File>) can 
 redefine.
 
+=head2 path()
+
+This method returns the path as a text string.  It is called automatically
+whenever the path object is stringified.
+
 =head2 is_absolute()
 
 Returns true if the path is absolute, false if not.
@@ -505,7 +510,7 @@ which the file is located.
 
     print File('/foo/bar')->base;           # /foo
 
-=head2 parent($skip_generations)
+=head2 parent($skip_generations) / up($skip_generations)
 
 Returns a L<Badger::Filesystem::Directory> object representing the parent
 directory for a path.
@@ -523,6 +528,16 @@ The root directory will be returned if you try to skip too many generations.
 
     Path->('/foo/bar/baz/bam')->parent(20); # path object for /
 
+=head2 path_up()
+
+This returns a text string representing the parent of a path.  If the path
+contains multiple items (e.g. '/foo/bar' or 'foo/bar') then the last item
+will be removed (e.g. resulting in '/foo' or 'foo' respectively).  If an
+absolute path contains one item or none (e.g. '/foo' or '/') then the 
+root directory ('/') will be returned.  A relative path with only one item
+(e.g. 'foo') is assumed to be relative to the current working directory
+which will be returned (e.g. '/path/to/current/dir').
+
 =head2 exists
 
 Returns true if the path exists in the filesystem (e.g. as a file, directory,
@@ -535,11 +550,6 @@ or some other entry), or false if not.
         print "Creating $path\n";
         # ...etc...
     }
-
-TODO: File and Directory subclasses should redefine this to also check
-that it is of the right type.  e.g. a file should tests -f, a dir -d.
-What to do if path exists but is of wrong type?  Throwing an error seems
-too aggressive, but returning false too passive.
 
 =head2 must_exist
 
@@ -584,6 +594,42 @@ method.
     
     # same as
     Badger::Filesystem->dir('/a/new/directory/object');
+
+=head1 STUB METHODS
+
+The following methods serve little or no purpose in the
+C<Badger::Filesystem::Path> base class. They are redefined by the
+C<Badger::Filesystem::Directory> and C<Badger::Filesystem::File> modules
+to do the right thing.
+
+=head2 is_file()
+
+This method always returns false in the C<Badger::Filesystem::Path> base
+class. The C<Badger::Filesystem::File> subclass redefines this to return
+true.  NOTE: this may be changed to examine the filesystem and return true
+if the path references a file.
+
+=head2 is_directory() / is_dir()
+
+This method always returns false in the C<Badger::Filesystem::Path> base
+class. The C<Badger::Filesystem::Directory> subclass redefines this to return
+true.  NOTE: this may be changed to examine the filesystem and return true
+if the path references a file.
+
+=head2 volume() / vol()
+
+Returns any volume defined as part of the path. This method does nothing in
+the C<Badger::Fileystem::Path> base class.
+
+=head2 directory() / dir()
+
+Returns the directory portion of a path. This method does nothing in the
+C<Badger::Fileystem::Path> base class.
+
+=head2 name()
+
+Returns the file name portion of a path. This method does nothing in the
+C<Badger::Fileystem::Path> base class.
 
 =head1 AUTHOR
 
