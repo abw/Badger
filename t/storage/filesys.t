@@ -16,7 +16,7 @@ use strict;
 use warnings;
 use Badger::Filesystem;
 use Badger::Storage::Filesystem::Store;
-use Test::More tests => 7;
+use Badger::Test skip => 'storage subsystem is experimental';
 
 our $DEBUG = $Badger::Storage::Filesystem::Store::DEBUG = grep(/^-d/, @ARGV);
 our $STORE = 'Badger::Storage::Filesystem::Store';
