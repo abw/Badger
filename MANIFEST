@@ -14,7 +14,6 @@ lib/Badger/Codecs.pm
 lib/Badger/Config.pm
 lib/Badger/Constants.pm
 lib/Badger/Debug.pm
-lib/Badger/Docs.pm
 lib/Badger/Exception.pm
 lib/Badger/Exporter.pm
 lib/Badger/Filesystem.pm
