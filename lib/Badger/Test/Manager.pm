@@ -275,24 +275,6 @@ sub test_name ($) {
     $self->message( name => $self->{ count }, $file, $line );
 }
 
-sub flush {
-    my $self    = shift->prototype;
-    my $results = shift || $self->{ results };
-    return unless @$results;
-    $self->{ plan } ||= @$results;
-    while (@$results) {
-        my $test = shift @$results;
-        $self->result(@$test);
-    }
-}
-
-sub summary {
-    my $self = shift->prototype;
-    return @_
-        ? ($self->{ summary } = shift)
-        :  $self->{ summary };
-}
-
 sub colour {
     my $self = shift->prototype;
     my $ansi = ANSI_colours;
@@ -311,12 +293,32 @@ sub colour {
     return $self->{ colour };
 }
 
+sub flush {
+    my $self    = shift->prototype;
+    my $results = shift || $self->{ results };
+    return unless @$results;
+    $self->{ plan } ||= @$results;
+    while (@$results) {
+        my $test = shift @$results;
+        $self->result(@$test);
+    }
+}
+
+sub summary {
+    my $self = shift->prototype;
+    return @_
+        ? ($self->{ summary } = shift)
+        :  $self->{ summary };
+}
+
 sub finish {
     my $self = shift->prototype;
     $self->flush;           # output any cached results
 
     my ($plan, $ran, $pass, $fail, $skip) 
         = @$self{ qw( plan tested passed failed skipped ) };
+    
+    return unless $plan;
 
     # mandatory warnings about too many/too few
     if ($ran < $plan) {
@@ -442,6 +444,24 @@ Fail a test.
 
     $manager->fail('Stonehenge crushed by a dwarf');
 
+=head2 skip($reason)
+
+Skip a single test.
+
+    $manager->skip("We don't have that piece of scenery any more");
+
+=head2 skip_some($number,$reason)
+
+Skip a number of tests.
+
+    $manager->skip_some(11, "We don't have that piece of scenery any more");
+
+=head2 skip_rest(,$reason)
+
+Skip any remaining tests.
+
+    $manager->skip_rest("We don't have that piece of scenery any more");
+
 =head2 skip_all($reason)
 
 Skip all tests.  This should be called instead of L<plan()>
@@ -455,6 +475,33 @@ Method to enable or disable colour mode.
 =head2 color($flag)
 
 An alias for L<colour()>.
+
+=head1 INTERNAL METHODS
+
+=head2 finish()
+
+This method is called automatically when the C<Badger::Test::Manager> object
+is destroyed.  It flushes any pending tests, performs any final sanity checks
+and prints a summary if requested.
+
+=head2 flush()
+
+This methods flushes any cached test results. You don't need to worry about
+it.
+
+=head2 summary()
+
+This method generates a final summary of the tests
+
+=head2 test_msg()
+
+Used to generate the test messages displayed via the L<Badger::Base>
+L<messages()|Badger::Base/messages()> method.  The message formats are 
+defined in the C<$MESSAGES> package variable.
+
+=head2 test_name()
+
+Use to generate a name for a test if one isn't explicitly provided.
 
 =head1 AUTHOR
 

@@ -8,9 +8,10 @@ use Badger::Class
     constants => 'ARRAY DELIMITER PKG',
     words     => 'DEBUG',
     exports   => {
-        all   => 'plan ok is isnt like unlike pass fail 
-                  skip skip_some skip_rest skip_all',
+        all   => 'plan ok is isnt like unlike pass fail     
+                  skip_some skip_rest skip_all',        # NOTE: changed skip...
         hooks => {
+            skip     => \&_skip_hook,                   # ...to be a hook
             debug    => \&_debug_hook,
             map { $_ => \&_export_hook }
             qw( manager summary colour color args tests )
@@ -44,6 +45,11 @@ sub _debug_hook {
     my $value = shift @$symbols;
     return unless $value;           # zero/false for no debugging
     $class->debug($value);
+}
+
+sub _skip_hook {
+    my ($class, $target, $key, $symbols, $import) = @_;
+    $MANAGER->skip_all(shift @$symbols);
 }
 
 sub manager {
@@ -246,6 +252,11 @@ L<Badger::Test::Manager>.
 
     # defining a custom manager class
     Badger::Test->manager('My::Test::Manager');
+
+=head2 summary()
+
+Prints a summary of the test results.  Delegates to L<Badger::Test::Manager>
+method of the same name.
 
 =head2 colour()
 

@@ -1146,62 +1146,6 @@ from C<Badger::Base> by adding a C<$EXCEPTION> package variable;
     use Some::Other::Exception;
     our $EXCEPTION = 'Some::Other::Exception';
 
-=head2 id()
-
-NOTE: THIS METHOD HAS BEEN MOVED INTO L<Badger::Class>. 
-
-This method returns a short string used to identify the object. This is used
-for error reporting purposes if the object class doesn't explicitly define an
-error type (see the L<throws> configuration option and L<$THROWS> package
-variable).
-
-It generates a lower case dotted representation of the class name, with the
-common base part removed (C<Badger::> by default). For example a
-C<Badger::Example> module would return C<example> as an identifier, and
-C<Badger::Foo::Bar> would return C<foo.bar>.
-
-If you want to use a different identifier for a module then you can store
-it in the C<$ID> package variable and the C<id()> method will use that 
-instead.  If C<$ID> isnt' defined then the method generates an identifier
-and caches it in the C<$ID> variable for subsequent use.
-
-=head2 base_id()
-
-NOTE: THIS METHOD IS OR WILL SOON BE DEPRECATED
-
-This method returns C<Badger> by default.  It is used by the L<id()>
-method to determine the common base part of a module name to remove
-when generating an identifer for error reporting.
-
-You can redefine this method for your own projects, either explicitly
-like this:
-
-    package Example::Project::Base;
-    use base 'Badger::Base';
-    sub base_id { 'Example::Project' }
-
-Or implicitly by defining a constant subroutine, like this:
-
-    package Example::Project::Base;
-    use base 'Badger::Base';
-    use constant base_id => 'Example::Project';
-
-You can also acheive the same thing using the L<Badger::Class> module:
-
-    package Example::Project::Base;
-    use Badger::Class
-        base     => 'Badger::Base',
-        constant => { base_id => 'Example::Project' };
-
-Now any modules that are derived from C<Example::Project::Base> will
-generate an L<id()> with C<Example::Project> removed from the name.
-
-    package Example::Project::Warp::Drive;
-    use base 'Example::Project::Base';
-    
-    package main;
-    print Example::Project::Warp::Drive->id;        # warp.drive
-
 =head2 fatal($info, $more_info, ...)
 
 This method is used internally to raise a fatal error.  It bypasses the 

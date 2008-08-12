@@ -252,6 +252,15 @@ At present this method simply prints all arguments to STDERR, prefixed
 by an object identifier.  This should eventually provide alternatives,
 allowing custom debug handlers to be defined, etc.
 
+=head2 debug_caller()
+
+Prints debugging information about the current caller.
+
+    sub wibble {
+        my $self = shift;
+        $self->debug_caller();
+    }
+
 =head2 dump()
 
 Debugging method which returns a text representation of the object internals.
@@ -285,6 +294,17 @@ Debugging method which calls the appropriate C<dump_hash()>, C<dump_list()> or
 C<dump_text()> method for the item passed as the first argument.
 
     print STDERR $object->dump_data($item);
+
+=head2 dump_data_inline($item)
+
+Wrapper around L<dump_data()> which strips any newlines from the generated
+output, suitable for a more compact debugging output.
+
+    print STDERR $object->dump_data_inline($item);
+
+=head2 enable_colour()
+
+Enables colourful debugging.
 
 =head1 PACKAGE VARIABLES
 

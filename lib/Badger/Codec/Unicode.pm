@@ -73,29 +73,6 @@ sub decoder {
     return sub { $self->decode(@_) };
 }
 
-sub decode_unicode {
-    my ($self, $text, $unicode) = @_;
-    my $textref = ref $text ? $text : \$text;
-    my $count = 0;
-
-    # try all the BOMs in order looking for one (order is important
-    # 32bit BOMs look like 16bit BOMs)
-    while ($count < @{ $UTFBOMS }) {
-        my $enc = $UTFBOMS->[$count++];
-        my $bom = $UTFBOMS->[$count++];
-        
-        # does the string start with the bom?
-        if ($bom eq substr($$textref, 0, length($bom))) {
-            # decode it and hand it back
-            require Encode;
-            $$textref = Encode::decode($enc, substr($$textref, length($bom)), 1);
-        }
-    }
-
-
-    return $textref;
-}
-
 1;
 
 __END__

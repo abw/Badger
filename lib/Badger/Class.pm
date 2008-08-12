@@ -1840,6 +1840,38 @@ It uses a simplified version of the C3 method resolution algorithm.  See
 L<IMPLEMENTATION NOTES> for further details if you're interested in that
 kind of thing.
 
+=head2 id()
+
+This method returns a short string used to identify the object class. This is
+typically used for error reporting purposes if the object doesn't explicitly
+define an error type (see the L<throws|Badger::Base/throws()> configuration
+option and L<$THROWS|Badger::Base/$THROWS> package variable in
+L<Badger::Base>).
+
+It generates a lower case dotted representation of the class name, with the
+common base part removed (C<Badger::> by default). For example a
+C<Badger::Example> module would return C<example> as an identifier, and
+C<Badger::Foo::Bar> would return C<foo.bar>.
+
+=head2 base_id()
+
+This method returns C<Badger> by default.  It is used by the L<id()>
+method to determine the common base part of a module name to remove
+when generating an identifer for error reporting.
+
+=head2 instance()
+
+Method to create an instance of an object class.  Delegates to the C<new()>
+method for the class.
+
+=head2 loaded()
+
+Returns true or false to indicate if the module class is loaded or not.
+
+=head2 load()
+
+Loads the module class if not already loaded.
+
 =head1 CLASS VARIABLE METHODS
 
 These methods can be used to access and manipulate the symbol table for a
@@ -1914,6 +1946,13 @@ is not required.
 
     class->var( X => 10 );              # like: $X = 10
     class->var('X');                    # like: $X
+
+=head2 var_default($name,$default)
+
+Method to get a scalar package variable.  An optional default value can
+be provided in case the package variable is undefined.
+
+    class->var_default( X => 10 );      # like: $X || 10
 
 =head2 any_var($name)
 

@@ -155,6 +155,21 @@ the codecs in the chain B<in reverse order>.
 
     $decoded = $codec->decode($encoded);
 
+=head2 encoder()
+
+Returns a reference to a subroutine which performs the encoding operation.
+
+=head2 decoder()
+
+Returns a reference to a subroutine which performs the decoding operation.
+
+=head1 INTERNAL METHODS
+
+=head2 coder(@coders)
+
+Internal method to construct an encoder or decoder subroutine for a codec
+chain.
+
 =head1 AUTHOR
 
 Andy Wardley E<lt>abw@wardley.orgE<gt>

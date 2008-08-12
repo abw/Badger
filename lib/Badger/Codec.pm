@@ -60,13 +60,13 @@ Creating a Badger::Codec subclass:
     
     sub encode {
         my ($self, $data) = @_;
-        # ...
+        # do something
         return $encoded_data;
     }
     
     sub decode {
         my ($self, $encoded_data) = @_;
-        # ...
+        # do something
         return $decoded_data;
     }
 
@@ -101,6 +101,14 @@ modules.
 
 Method for decoding data.  This must be redefined in subclassed
 modules.
+
+=head2 encoder()
+
+Returns a reference to a subroutine which performs the encoding operation.
+
+=head2 decoder()
+
+Returns a reference to a subroutine which performs the decoding operation.
 
 =head1 AUTHOR
 

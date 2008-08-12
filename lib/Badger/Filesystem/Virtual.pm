@@ -94,14 +94,6 @@ sub read_directory {
     return wantarray ? @items : \@items;
 }
 
-sub directory_child {
-    my $self = shift;
-    my $path = $self->join_directory(@_);
-    stat $self->definitive_read($path);
-    -d _ ? $self->directory($path) : 
-    -f _ ? $self->file($path) :
-           $self->path($path);
-}
 
 1;
 
@@ -144,6 +136,34 @@ specialised subclass of that which allows you to create a I<virtual>
 filesystem composed from the files and directories in a number of different
 I<real> directories.
 
+=head1 METHODS
+
+L<Badger::Filesystem::Virtual> inherits all the methods of
+L<Badger::Filesystem>.  The following methods are added or amended.
+
+=head2 init(\%config)
+
+This custom initialisation method allows one or more C<root> (or C<rootdir>)
+directories to be specified as the base of the virtual filesystem.
+
+=head2 definitive_write($path)
+
+Maps a virtual file path to a definitive one for write operations.  The 
+path will be mapped to the first virtual root directory.
+
+=head2 definitive_read($path)
+
+Maps a virtual file path to a definitive one for read operations.  The 
+path will be mapped to the first virtual root directory in which the 
+item exists.  If it does not exists in any of the virtual root directories
+then an undefined value is returned.
+
+=head2 read_directory($path)
+
+Custom method to read a directory in a virtual filesystem.  This returns
+a composite index of all entries in a particular directory across all 
+roots of the virtual filesystem.
+
 =head1 AUTHOR
 
 Andy Wardley E<lt>abw@wardley.orgE<gt>
@@ -152,13 +172,9 @@ Andy Wardley E<lt>abw@wardley.orgE<gt>
 
 Copyright (C) 2005-2008 Andy Wardley. All rights reserved.
 
-=head1 ACKNOWLEDGEMENTS
-
-
 =head1 SEE ALSO
 
-L<Badger::Filesystem::Path>, L<Badger::Filesystem::Directory>,
-L<Badger::Filesystem::File>
+L<Badger::Filesystem>
 
 =cut
 

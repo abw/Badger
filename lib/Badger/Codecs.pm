@@ -92,7 +92,7 @@ sub codec {
     if (! defined $codec) {
         # we haven't got an entry in the $CODECS table so let's try 
         # autoloading some modules using the $CODEC_BASE
-        $codec = $self->load_codec($type)
+        $codec = $self->load($type)
             || return $self->error_msg( not_found => codec => $type );
         $codec = $codec->new($config);
     }
@@ -123,7 +123,7 @@ sub chain {
     return CHAIN->new(@_);
 }
 
-sub load_codec {
+sub load {
     my $self   = shift->prototype;
     my $type   = shift;
     my $bases  = $self->base;
@@ -162,12 +162,12 @@ sub decode {
 
 class->exports( 
     hooks => {
-        map { ($_ => \&export_hook) }
+        map { ($_ => \&_export_hook) }
         qw( codec codecs )
     }
 );
 
-sub export_hook {
+sub _export_hook {
     my ($class, $target, $key, $symbols) = @_;
     croak "You didn't specify a value for the '$key' load option."
         unless @$symbols;
@@ -317,6 +317,8 @@ A I<codec> is an object responsible for encoding and decoding data.
 This module implements a codec manager to locate, load and instantiate
 codec objects.
 
+=head2 Using Codecs
+
 First you need to load the C<Badger::Codecs> module.
 
     use Badger::Codecs;
@@ -363,123 +365,7 @@ found.
         # tries: Badger::Codec + Url = Badger::Codec::Url   # Nope
         # tries: Badger::Codec + URL = Badger::Codec::URL   # Yay!
 
-=head1 METHODS
-
-=head2 new()
-
-Constructor method to create a new C<Badger::Codecs> object.
-
-    my $codecs  = Badger::Codecs->new();
-    my $encoded = $codecs->encode( url => $source );
-
-=head3 Configuration Options
-
-=head4 base
-
-This option can be used to specify the name(s) of one or more modules which
-define a search path for codec modules. The default value is C<Badger::Codec>.
-
-    my $codecs = Badger::Codecs->new( 
-        base => 'My::Codec' 
-    );
-    my $codec = $codecs->codec('Foo');      # My::Codec::Foo
-
-Multiple paths can be specified using a reference to a list.
-
-    my $codecs = Badger::Codecs->new( 
-        base => ['My::Codec', 'Badger::Codec'],
-    );
-    my $codec = $codecs->codec('Bar');      # either My::Codec::Bar
-                                            # or Badger::Codec::Bar
-
-=head4 codecs
-
-The C<codecs> configuration option can be used to define specific codec
-mappings to bypass the automagical name grokking mechanism.
-
-    my $codecs = Badger::Codecs->new( 
-        codecs => {
-            foo => 'Ferret::Codec::Foo', 
-            bar => 'Stoat::Codec::Bar',
-        },
-    );
-    my $codec = $codecs->codec('foo');      # Ferret::Codec::Foo
-
-=head2 encode($type, $data)
-
-All-in-one method for encoding data via a particular codec.
-
-    # class method
-    Badger::Codecs->encode( url => $source );
-    
-    # object method
-    my $codecs = Badger::Codecs->new();
-    $codecs->encode( url => $source );
-
-=head2 decode($type, $data)
-
-All-in-one method for decoding data via a particular codec.
-
-    # class method
-    Badger::Codecs->decode( url => $encoded );
-    
-    # object method
-    my $codecs = Badger::Codecs->new();
-    $codecs->decode( url => $encoded );
-
-=head2 codec($type, %config)
-
-Creates and returns a C<Badger::Codec> object for the specified
-C<$type>.  Any additional arguments are forwarded to the codec's 
-constructor method.
-
-    my $codec   = Badger::Codecs->codec('storable');
-    my $encoded = $codec->encode($original);
-    my $decoded = $codec->decode($encoded);
-
-If the named codec cannot be found then an error is thrown.
-
-=head2 base(@modules)
-
-The L<base()> method can be used to set the base module path.  It
-can be called as an object or class method.
-
-    # object method
-    my $codecs = Badger::Codecs->new;
-    $codecs->base('My::Codec');
-    $codecs->encode( Foo => $data );            # My::Codec::Foo
-    
-    # class method
-    Badger::Codecs->base('My::Codec');
-    Badger::Codecs->encode( Foo => $data );     # My::Codec::Foo
-
-Multiple items can be specified as a list of arguments or by reference 
-to a list.
-
-    $codecs->base('Ferret::Codec', 'Stoat::Codec');     
-    $codecs->base(['Ferret::Codec', 'Stoat::Codec']);
-
-=head2 codecs(\%new_codecs)
-
-The L<codecs()> method can be used to add specific codec mappings
-to the internal C<codecs> lookup table.  It can be called as an object
-method or a class method.
-
-    # object method
-    $codecs->codecs(
-        wam => 'Ferret::Codec::Wam', 
-        bam => 'Stoat::Codec::Bam',
-    );
-    my $codec = $codecs->codec('wam');          # Ferret::Codec::Wam
-    
-    # class method
-    Badger::Codecs->codecs(
-        wam => 'Ferret::Codec::Wam', 
-        bam => 'Stoat::Codec::Bam',
-    );
-    my $codec = Badger::Codecs->codec('bam');   # Stoat::Codec::Bam
-
-=head1 CHAINED CODECS
+=head2 Chained Codecs
 
 Codecs can be chained together in sequence. Specify the names of the
 individual codes separated by C<+> characters. Whitespace between the names
@@ -495,7 +381,7 @@ Note that the decoding process for a chain happens in reverse order
 to ensure that a round trip between L<encode()> and L<decode()> returns
 the original unencoded data.
 
-=head1 IMPORT HOOKS
+=head2 Import Hooks
 
 The C<codec> and C<codecs> import hooks can be used to load and define
 codec subroutines into another module.
@@ -554,6 +440,179 @@ hash array.
     $decoded = decode_text($encoded);
     $encoded = encode_data($original);
     $decoded = decode_data($encoded);
+
+=head1 METHODS
+
+=head2 new()
+
+Constructor method to create a new C<Badger::Codecs> object.
+
+    my $codecs  = Badger::Codecs->new();
+    my $encoded = $codecs->encode( url => $source );
+
+=head3 Configuration Options
+
+=head4 base
+
+This option can be used to specify the name(s) of one or more modules which
+define a search path for codec modules. The default value is C<Badger::Codec>.
+
+    my $codecs = Badger::Codecs->new( 
+        base => 'My::Codec' 
+    );
+    my $codec = $codecs->codec('Foo');      # My::Codec::Foo
+
+Multiple paths can be specified using a reference to a list.
+
+    my $codecs = Badger::Codecs->new( 
+        base => ['My::Codec', 'Badger::Codec'],
+    );
+    my $codec = $codecs->codec('Bar');      # either My::Codec::Bar
+                                            # or Badger::Codec::Bar
+
+=head4 codecs
+
+The C<codecs> configuration option can be used to define specific codec
+mappings to bypass the automagical name grokking mechanism.
+
+    my $codecs = Badger::Codecs->new( 
+        codecs => {
+            foo => 'Ferret::Codec::Foo', 
+            bar => 'Stoat::Codec::Bar',
+        },
+    );
+    my $codec = $codecs->codec('foo');      # Ferret::Codec::Foo
+
+=head2 base(@modules)
+
+The L<base()> method can be used to set the base module path.  It
+can be called as an object or class method.
+
+    # object method
+    my $codecs = Badger::Codecs->new;
+    $codecs->base('My::Codec');
+    $codecs->encode( Foo => $data );            # My::Codec::Foo
+    
+    # class method
+    Badger::Codecs->base('My::Codec');
+    Badger::Codecs->encode( Foo => $data );     # My::Codec::Foo
+
+Multiple items can be specified as a list of arguments or by reference 
+to a list.
+
+    $codecs->base('Ferret::Codec', 'Stoat::Codec');     
+    $codecs->base(['Ferret::Codec', 'Stoat::Codec']);
+
+=head2 codecs(\%new_codecs)
+
+The L<codecs()> method can be used to add specific codec mappings
+to the internal C<codecs> lookup table.  It can be called as an object
+method or a class method.
+
+    # object method
+    $codecs->codecs(
+        wam => 'Ferret::Codec::Wam', 
+        bam => 'Stoat::Codec::Bam',
+    );
+    my $codec = $codecs->codec('wam');          # Ferret::Codec::Wam
+    
+    # class method
+    Badger::Codecs->codecs(
+        wam => 'Ferret::Codec::Wam', 
+        bam => 'Stoat::Codec::Bam',
+    );
+    my $codec = Badger::Codecs->codec('bam');   # Stoat::Codec::Bam
+
+=head2 codec($type, %config)
+
+Creates and returns a C<Badger::Codec> object for the specified
+C<$type>.  Any additional arguments are forwarded to the codec's 
+constructor method.
+
+    my $codec   = Badger::Codecs->codec('storable');
+    my $encoded = $codec->encode($original);
+    my $decoded = $codec->decode($encoded);
+
+If the named codec cannot be found then an error is thrown.
+
+=head2 chain($type, %config)
+
+Creates a new L<Badger::Codec::Chain> object to represent a chain of codecs.
+
+=head2 encode($type, $data)
+
+All-in-one method for encoding data via a particular codec.
+
+    # class method
+    Badger::Codecs->encode( url => $source );
+    
+    # object method
+    my $codecs = Badger::Codecs->new();
+    $codecs->encode( url => $source );
+
+=head2 decode($type, $data)
+
+All-in-one method for decoding data via a particular codec.
+
+    # class method
+    Badger::Codecs->decode( url => $encoded );
+    
+    # object method
+    my $codecs = Badger::Codecs->new();
+    $codecs->decode( url => $encoded );
+
+=head2 export_codec($package,$name,$alias)
+
+Loads a single codec identified by C<$name> and exports the C<codec>,
+C<encode> and C<decode> functions into the C<$package> namespace.
+
+    package Your::Module;
+    use Badger::Codecs;
+    Badger::Codecs->export_code('Your::Module', 'base64');
+    
+    # base64() returns the codec
+    base64->encode($data);
+    base64->decode($data)
+    
+    # encode() and decode() are shortcuts
+    encode($data)
+    decode($data);
+
+An C<$alias> can be provided which will be used instead of C<codec> and 
+appended to the names of the C<encode> and C<decode> functions.
+
+    package Your::Module;
+    use Badger::Codecs;
+    Badger::Codecs->export_codec('Your::Module', 'base64', 'munger');
+    
+    # munged() returns the codec
+    munger->encode($data);
+    munger->decode($data)
+    
+    # encode_munger() and decode_munger() are shortcuts
+    encode_munger($data)
+    decode_munger($data);
+
+=head2 export_codecs($package,$names)
+
+Loads and exports multiple codecs into C<$package>. The codec C<$names> can be
+specified as a a string of whitespace delimited 
+codec names, a reference to a list of codec names, or a reference to a hash 
+array mapping codec names to aliases (see L<export_codec()>).
+
+    Badger::Codecs->export_codecs('Your::Module', 'base64 storable');
+    Badger::Codecs->export_codecs('Your::Module', ['base64', 'storable']);
+    Badger::Codecs->export_codecs('Your::Module', {
+        base64   => 'alias_for_base64',
+        storable => 'alias_for_storage',
+    });
+
+=head2 load($name)
+
+Loads a codec module identified by the C<$name> argument.  Returns the 
+name of the module implementing the codec.
+
+    print Badger::Codecs->load('base64');       # Badger::Codec::Base64
 
 =head1 AUTHOR
 

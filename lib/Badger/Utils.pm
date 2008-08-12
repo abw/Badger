@@ -14,9 +14,9 @@ package Badger::Utils;
 
 use strict;
 use warnings;
+use base 'Badger::Exporter';
 use File::Path;
 use Scalar::Util qw( blessed reftype );
-use base 'Badger::Exporter';
 use constant {
     UTILS  => 'Badger::Utils',
 };
@@ -76,9 +76,9 @@ sub maybe_load_module {
 
 sub xprintf {
     my ($class, $format, @args) = @_;
-    $class->debug(" input format: $format\n") if $DEBUG;
+    $class->_debug(" input format: $format\n") if $DEBUG;
     $format =~ s/<(\d+)(?::([#\-\+ ]?[\w\.]+))?>/'%' . $1 . '$' . ($2 || 's')/eg;
-    $class->debug("output format: $format\n") if $DEBUG;
+    $class->_debug("output format: $format\n") if $DEBUG;
     sprintf($format, @args);
     # accept numerical flags like %0 %1 %2 as well as %s
 #    my $n = 0;
@@ -86,7 +86,7 @@ sub xprintf {
 #    return $format;
 }
 
-sub debug {
+sub _debug {
     my $self = shift;
     print STDERR @_;
 }
@@ -109,9 +109,73 @@ Badger::Utils - various utility functions
 
 This module implements various utility functions.
 
-=head1 FUNCTIONS
+=head1 EXPORTABLE FUNCTIONS
 
-TODO
+=head2 UTILS
+
+Exports a C<UTILS> constant which contains the name of the C<Badger::Utils>
+class.  This can be used to call C<Badger::Utils> class methods without 
+having to hard-code the C<Badger::Utils> class name in your code.
+
+    use Badger::Utils 'UTILS';
+    
+    UTILS->load_module('My::Module');
+
+=head2 blessed
+
+Exports a reference to the L<Scalar::Util> L<blessed()|Scalar::Util/blessed()>
+function.
+
+=head2 reftype
+
+Exports a reference to the L<Scalar::Util> L<reftype()|Scalar::Util/reftype()>
+function.
+
+=head2 md5_hex
+
+Exports a reference to the L<Digest::MD5> L<md5_hex()|Digest::MD5/md5_hex()>
+function.
+
+=head1 METHODS
+
+NOTE: I'm planning to change the class methods listed below to be exportable
+subroutines.
+
+=head2 module_file($name)
+
+Returns the module name passed as an argument as a relative filesystem path
+suitable for feeding into C<require()>
+
+    print UTILS->module_file('My::Module');     # My/Module.pm
+
+=head2 load_module($name)
+
+Loads the Perl module specified as a parameter.  Returns the module name 
+as returned by L<module_file()>.  Throws an error if the 
+module cannot be found or loaded.
+
+    use Badger::Utils 'UTILS';
+    print UTILS->load_module('My::Module');     # My/Module.pm
+
+=head2 maybe_load_module($name)
+
+A wrapper around L<load_module()> which catches any errors thrown by missing
+or invalid modules and returns zero.
+
+    if (UTILS->maybe_load_module('My::Module')) {
+        print "loaded\n";
+    }
+    else {
+        print "no loaded\n";
+    }
+
+=head2 xprintf($format,@args)
+
+A wrapper around C<sprintf()> which provides some syntactic sugar for 
+embedding positional parameters.
+
+    UTILS->xprintf('The <2> sat on the <1>', 'mat', 'cat');
+    UTILS->xprintf('The <1> costs <2:%.2f>', 'widget', 11.99);
 
 =head1 AUTHOR
 

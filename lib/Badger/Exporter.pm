@@ -561,6 +561,8 @@ special import flags.
 
 =head1 METHODS
 
+These methods can be used to declare the symbols that a module exports.
+
 =head2 exports(%exports)
 
 This all-in-one methods accepts a reference to a hash array, or a list 
@@ -783,6 +785,35 @@ indicate failure which is then reported in the usual way.
     
 An C<export_fail> handler may also remove symbols from the C<$more_symbols>
 list to indicate that they have been handled, as per C<export_hooks()>.
+
+=head1 INTERNAL METHODS
+
+These methods are used internally to export symbols.
+
+=head2 import(@symbols)
+
+This is the method automatically called by Perl when a module is loaded via
+C<use>.  It delegates to the L<export()> method.
+
+=head2 export($package,@symbols)
+
+This is the main method for exporting symbols.
+
+=head2 exportables()
+
+This methods collects and collates the values of the various package
+variables that control the exporter (C<EXPORT_ALL>, C<EXPORT_ANY>, etc).
+It returns a reference to an array containing:
+
+    [\@all, \%any, \%tags, \%hooks, \@fails];
+
+This array reference is cached in the C<EXPORTABLES> package variable for
+future use.
+
+=head2 export_symbol($package,$symbol,$coderef)
+
+This method can be used to install a code reference as a symbol in a 
+package.  
 
 =head1 AUTHOR
 

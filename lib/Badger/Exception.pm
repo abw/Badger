@@ -153,12 +153,13 @@ about the error (e.g. 'foo/bar.html not found', 'parser error at line
 
 =head2 new()
 
-Constructor method for creating a new exception.  The first argument should 
-be a string denoting the exception type, followed by a string or reference
-to a data structure providing further information about the exception.
+Constructor method for creating a new exception.  
 
     my $exception = Badger::Exception->new(
-         database => 'could not connect'
+        type => 'database',
+        info => 'could not connect',
+        file => '/path/to/file.pm',
+        line => 420,
     );
 
 =head2 type()
@@ -172,7 +173,6 @@ It can also be called with an argument to set a new type for the exception.
 
     $exception->type('database');
 
-
 =head2 info()
 
 When called without arguments, this method returns the information field
@@ -184,6 +184,20 @@ It can also be called with an argument to define new information for
 the exception.
 
     $exception->info('could not connect');
+
+=head2 file()
+
+Method to get or set the name of the file in which the exception was raised.
+
+    $exception->file('path/to/file.pm');
+    print $exception->file;                 # /path/to/file.pm
+
+=head2 line()
+
+Method to get or set the line number at which the exception was raised.
+
+    $exception->line(420);
+    print $exception->line;                 # 420
 
 =head2 text()
 

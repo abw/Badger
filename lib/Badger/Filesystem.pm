@@ -67,6 +67,7 @@ use Badger::Filesystem::Directory;
 *delete_dir   = \&delete_directory;
 *open_dir     = \&open_directory;
 *read_dir     = \&read_directory;
+*dir_child    = \&directory_child;
 *dir_children = \&directory_children;
 *mkdir        = \&create_directory;
 *rmdir        = \&delete_directory;
@@ -410,7 +411,8 @@ sub read_directory {
 sub directory_child {
     my $self = shift;
     my $path = $self->join_directory(@_);
-    stat($path);
+    stat $self->definitive_read($path);
+#    stat($path);
     -d _ ? $self->directory($path) : 
     -f _ ? $self->file($path) :
            $self->path($path);
@@ -1013,7 +1015,7 @@ thrown as exceptions.
 
     $fs->create_file('/path/to/file');
 
-=head2 touch_file($path)
+=head2 touch_file($path) / touch($path)
 
 Creates a file if it doesn't exists, or updates the timestamp if it does.
 
@@ -1076,7 +1078,7 @@ to indicate success.  Errors are thrown as exceptions.
 
 =head1 DIRECTORY MANIPULATION METHODS
 
-=head2 create_dir($path) / create_directory($path)
+=head2 create_dir($path) / create_directory($path) / mkdir($path)
 
 Creates the directory specified by C<$path>. Errors are thrown as exceptions.
 
@@ -1085,6 +1087,12 @@ Creates the directory specified by C<$path>. Errors are thrown as exceptions.
 Additional arguments can be specified as per the L<File::Path> C<mkpath()>
 method. NOTE: this is subject to change. Better to use C<File::Path> directly
 for now if you're relying on this.
+
+=head2 delete_dir($path) / delete_directory($path) / rmdir($path)
+
+Deletes the directory specified by C<$path>. Errors are thrown as exceptions.
+
+    $fs->delete_dir('/path/to/directory');
 
 =head2 open_dir($path) / open_directory($path)
 
@@ -1112,8 +1120,6 @@ optional second argument to include these items.
 
 =head2 dir_children($dir, $all) / directory_children($dir, $all)
 
-NOTE: this method is likely to be renamed and/or refactored RSN
-
 Returns a list (in list context) or a reference to a list (in scalar
 context) of objects to represent the contents of a directory.  As per
 L<read_dir()>, the current (C<.>) and parent (C<..>) directories
@@ -1121,6 +1127,13 @@ are excluded unless you set the C<$all> flag to a true value.  Files are
 returned as L<Badger::Filesystem::File> objects, directories as
 L<Badger::Filesystem::File> objects.  Anything else is returned as a
 generic L<Badger::Filesystem::Path> object.
+
+=head2 dir_child($path) / directory_child($path)
+
+Returns an object to represent a single item in a directory. Files are
+returned as L<Badger::Filesystem::File> objects, directories as
+L<Badger::Filesystem::File> objects. Anything else is returned as a generic
+L<Badger::Filesystem::Path> object.
 
 =head1 MISCELLANEOUS METHODS
 
@@ -1132,6 +1145,24 @@ without an argument if you want a L<Badger::Filesystem::Directory> object
 instead.
 
     my $cwd = $fs->cwd;
+
+=head1 EXPORTABLE CONSTANTS
+
+=head2 FS
+
+An alias for C<Badger::Filesystem>
+
+=head2 PATH
+
+An alias for C<Badger::Filesystem::Path>
+
+=head2 FILE
+
+An alias for C<Badger::Filesystem::File>
+
+=head2 DIR / DIRECTORY
+
+An alias for C<Badger::Filesystem::Directory>
 
 =head1 AUTHOR
 

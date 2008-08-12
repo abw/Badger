@@ -350,7 +350,25 @@ utility collection modules. You are *so* lucky.
 
 =head1 METHODS
 
-Some, but not documented yet.  Use the source, Luke.
+Some, but not properly documented yet.  Use the source, Luke.
+
+=head2 hub()
+
+Returns a L<Badger::Hub> object.
+
+=head2 codec()
+
+Delegates to the L<Badger::Hub> L<codec()|Badger::Hub/codec()> method to 
+return a L<Badger::Codec> object.
+
+    my $base64  = Badger->codec('base64');
+    my $encoded = $base64->encode($uncoded);
+    my $decoded = $base64->decode($encoded);
+
+=head2 config()
+
+Delegates to the L<Badger::Hub> L<codec()|Badger::Hub/codec()> method to 
+return a L<Badger::Config> object.  This is still experimental.
 
 =head1 AUTHOR
 

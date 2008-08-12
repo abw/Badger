@@ -134,7 +134,7 @@ C<$Badger::Example::One::PROTOTYPE> package variable.
 
 =head1 METHODS
 
-=head1 prototype(@args)
+=head2 prototype(@args)
 
 Constructor method to create a prototype object and cache it in the
 C<$PROTOTYPE> package variable for subsequent use.  This is usually 

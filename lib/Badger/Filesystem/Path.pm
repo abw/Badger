@@ -65,7 +65,7 @@ class->methods(
 *is_dir = \&is_directory;
 *dir    = \&directory;
 *vol    = \&volume;     # goes up to 11
-#*up     = \&parent;
+*up     = \&parent;
 
 
 sub new {
@@ -174,15 +174,8 @@ sub parent {
     my $skip   = shift || 0;
     my $parent = $self->{ parent } 
              ||= $self->filesystem->directory( 
-                    $self->{ directory } ||= $self->up
-                 );
-#               : $self->up;
-              # THIS IS BROKEN!  SHOULD SPLIT PATH AND RETURN PARENT
-#               : $self->filesystem->directory->parent;
-             
-#        ||=  $self->{ directory }
-#            ? $self->filesystem->directory($self->{ directory })
-#            : $self->filesystem->cwd;
+                 $self->{ directory } ||= $self->path_up
+             );
 
     return 
         # don't return parents above the root
@@ -193,9 +186,9 @@ sub parent {
       : $parent;
 }
 
-sub up {
+sub path_up {
     my $self = shift;
-    my $fs = $self->filesystem;
+    my $fs   = $self->filesystem;
     my $path = $fs->split_directory($self->{ path });
 
     $self->debug("split path [$path] into [", join(', ', @$path), "]\n")
