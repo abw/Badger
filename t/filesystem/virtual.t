@@ -18,7 +18,7 @@ use File::Spec;
 use Badger::Filesystem 'FS';
 use Badger::Filesystem::Virtual 'VFS';
 use Badger::Test 
-    tests => 29,
+    tests => 30,
     debug => 'Badger::Filesystem Badger::Filesystem::Virtual',
     args  => \@ARGV;
 
