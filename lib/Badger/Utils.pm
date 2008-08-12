@@ -43,7 +43,7 @@ __PACKAGE__->export_hooks(
     }
 );
 
-sub is_object {
+sub is_object($$) {
     blessed $_[1] && $_[1]->isa($_[0]);
 }
 
