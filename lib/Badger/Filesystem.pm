@@ -432,10 +432,6 @@ sub directory_children {
 
 sub visitor {
     my $self  = shift;
-
-#    return $self->error_msg( missing_to => parameters => 'visitor' )
-#        unless @_;
-
     my $vtype = $self->VISITOR;
     class($vtype)->load;
     
