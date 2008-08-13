@@ -20,19 +20,20 @@ use Badger::Constants 'DELIMITER ARRAY HASH CODE PKG REFS ONCE';
 use Badger::Utils 'load_module';
 use Carp;
 use constant {
-    CONSTANTS => 'Badger::Constants',
-    EXPORTER  => 'Badger::Exporter',
-    MIXIN     => 'Badger::Mixin',
-    CODECS    => 'Badger::Codecs',
-    UTILS     => 'Badger::Utils',
-    LOADED    => 'BADGER_LOADED',
-    MESSAGES  => 'MESSAGES',
-    VERSION   => 'VERSION',
-    MIXINS    => 'MIXINS',
-    THROWS    => 'THROWS',
-    DEBUG     => 'DEBUG',
-    ISA       => 'ISA',
-    base_id   => 'Badger',
+    FILESYSTEM => 'Badger::Filesystem',
+    CONSTANTS  => 'Badger::Constants',
+    EXPORTER   => 'Badger::Exporter',
+    MIXIN      => 'Badger::Mixin',
+    CODECS     => 'Badger::Codecs',
+    UTILS      => 'Badger::Utils',
+    LOADED     => 'BADGER_LOADED',
+    MESSAGES   => 'MESSAGES',
+    VERSION    => 'VERSION',
+    MIXINS     => 'MIXINS',
+    THROWS     => 'THROWS',
+    DEBUG      => 'DEBUG',
+    ISA        => 'ISA',
+    base_id    => 'Badger',
 };
 use overload 
     '""' => 'name',
@@ -44,6 +45,7 @@ our $LOADED     = { };
 our @HOOKS      = qw( 
     base uber mixin mixins version debug constant constants words exports 
     throws messages utils codec codecs methods get_methods set_methods
+    filesystem
 );
 
 
@@ -170,6 +172,7 @@ sub id {
 # methods to access symbol table 
 #-----------------------------------------------------------------------
 
+*pkg = \&name;
 sub name       {    $_[0]->{ name    } }
 sub symbols    {    $_[0]->{ symbols } }
 sub symbol     {    $_[0]->{ symbols }->{ $_[1] } }
@@ -702,6 +705,20 @@ sub set_methods {
                 :  $_[0]->{ $name };
         };
     }
+    return $self;
+}
+
+sub filesystem {
+    my $self = shift;
+    my $syms = @_ == 1 ? shift : { @_ };
+
+    $syms = [ split(DELIMITER, $syms) ] 
+        unless ref $syms eq ARRAY;
+
+    _autoload($self->FILESYSTEM)->export(
+        $self->{ name }, @$syms
+    );
+    
     return $self;
 }
 
@@ -1807,6 +1824,18 @@ This can be used to define simple read/write mutator methods for a class.
 
 See the L<set_methods()> method for further details.
 
+=head2 filesystem
+
+This can be used to load and import symbols from the L<Badger::Filesystem>
+module.
+
+    use Badger::Class
+        filesystem => 'Dir File';
+    
+    my $dir = Dir('/path/to/dir');
+
+See the L<filesystem()> method for further details.
+
 =head1 METHODS
 
 =head2 new($package)
@@ -1814,7 +1843,7 @@ See the L<set_methods()> method for further details.
 Constructor method for a C<Badger::Class> object.  You shouldn't ever
 need to call this method directly.  Use the L<class> subroutine instead.
 
-=head2 name()
+=head2 name() / pkg()
 
 Returns the class (i.e. package) name.
 
@@ -1824,6 +1853,12 @@ This method is called automatically whenever a C<Badger::Class> object
 is stringified.
 
     print class;                # Your::Module
+
+The C<pkg()> method is an alias for C<name()> for those occasions when it
+reads better (for an entirely subjective definition of "better").
+
+    print class->pkg;           # Your::Module
+    class->pkg->new;            # Your::Module->new
 
 =head2 parents()
 
@@ -2236,6 +2271,10 @@ really important.  You would write it something like this:
 
 Using an automatic method generate gives you the best of both worlds -
 efficient code without the hassle of maintaining it.
+
+=head2 filesystem(@symbols)
+
+TODO
 
 =head1 INTERNAL METHODS
 
