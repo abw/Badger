@@ -16,13 +16,30 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Constants ':types';
 use Badger::Test 
-    tests => 2,
+    tests => 7,
     debug => 'Badger::Constants',
     args  => \@ARGV;
 
 
 ok(1, 'loaded Badger::Constants' );
 is( HASH, Badger::Constants::HASH, 'HASH is ' . HASH );
+
+
+#-----------------------------------------------------------------------
+# test WILDCARD and DELIMITER
+#-----------------------------------------------------------------------
+
+use Badger::Constants 'WILDCARD DELIMITER';
+
+  like( '*.html',     WILDCARD, '*.html matched by WILDCARD' );
+  like( 'foo.*',      WILDCARD, 'foo.* matched by WILDCARD' );
+  like( 'foo??.html', WILDCARD, 'foo??.html matched by WILDCARD' );
+unlike( 'foo.html',   WILDCARD, 'foo.html NOT matched by WILDCARD' );
+
+my @stuff = split DELIMITER, 'foo bar,baz, bam';
+is( join('|', @stuff), 'foo|bar|baz|bam', 'split using DELIMITER' );
+
+
 
 __END__
 
