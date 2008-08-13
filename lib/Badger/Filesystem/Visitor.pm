@@ -343,7 +343,7 @@ containing any of the above).
     $dir->visit( 
         no_files    => '*.bak',     
         no_dirs     => ['tmp', qr/backup/i],
-        not_in_dirs => '.svn',
+        not_in_dirs => ['.svn', '.DS_Store'],
     );
 
 When the visit is done, the L<collect()> method can be called to return
