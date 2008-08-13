@@ -65,7 +65,9 @@ class->methods(
 *is_dir = \&is_directory;
 *dir    = \&directory;
 *vol    = \&volume;     # goes up to 11
+*ext    = \&extension;  
 *up     = \&parent;
+*meta   = \&metadata;
 
 
 sub new {
@@ -247,6 +249,13 @@ sub stats {
         :  $stats;
 }
 
+sub extension {
+    my $self = shift;
+    return $self->{ path } =~ /\.([^\.]+)$/
+        ? $1
+        : '';
+}
+
 sub filesystem {
     my $self = shift;
     return $self->class->any_var('FILESYSTEM')->prototype
@@ -262,11 +271,28 @@ sub visit {
     return $visitor;
 }
 
+sub collect {
+    shift->visit(@_)->collect;
+}
+
 sub accept {
     $_[1]->visit_path($_[0]);
 }
 
-
+sub metadata {
+    my $self = shift;
+    my $meta = $self->{ metadata } ||= { };
+    if (@_ == 1) {
+        return $meta->{ $_[0] };
+    }
+    elsif (@_ > 1) {
+        while (@_) {
+            my $key = shift;
+            $meta->{ $key } = shift;
+        }
+    }
+    return $meta;
+}
 
 1;
 
@@ -549,6 +575,10 @@ root directory ('/') will be returned.  A relative path with only one item
 (e.g. 'foo') is assumed to be relative to the current working directory
 which will be returned (e.g. '/path/to/current/dir').
 
+=head2 extension() / ext()
+
+Returns any file extension portion following the final C<.> in the path.
+
 =head2 exists
 
 Returns true if the path exists in the filesystem (e.g. as a file, directory,
@@ -641,6 +671,35 @@ filesystem object. In the L<Badger::Filesystem::Path> base class, it calls the
 visitor L<visit_path()|Badger::Filesystem::Visitor/visit_path()> method,
 passing the C<$self> object reference as an argument. Subclasses redefine this
 method to call other visitor methods.
+
+=head2 collect(\%params)
+
+This is a short-cut to call the L<visit()> method and then the 
+L<collect()|Badger::Filesystem::Visitor/collect()> method on the 
+L<Badger::Filesystem::Visitor> object returned.
+
+    # short form
+    my @items = $path->collect( files => 1, dirs => 0 );
+
+    # long form
+    my @items = $path->visit( files => 1, dirs => 0 )->collect;
+
+=head2 metadata() / meta()
+
+This method allows you to associate metadata with a path.  The method
+accepts multiple arguments to set metadata:
+
+    $path->metadata( title => 'An Example', author => 'Arthur Dent' );
+
+It also accepts a single argument to fetch a metadata item:
+
+    print $path->metadata('author');        # Arthur Dent
+
+You can also call it without arguments.  The method returns a reference
+to a hash array of metadata items.
+
+    my $meta = $path->metadata;
+    print $meta->{ author };                # Arthur Dent
 
 =head1 STUB METHODS
 
