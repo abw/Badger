@@ -9,12 +9,14 @@ Badger::Class
   
 * finish cleanup and documentation
 
-* pkg() alias for name()
-
 * AUTOLOAD method to delegate to real class if possible?
 
 * fix up id() / base_id() to do something better
 
+* make debug hook work better: allow import of other items, e.g.
+  debug => ':dump'.  Also generate DEBUG constant using any existing
+  value of $DEBUG.
+  
 
 Badger::Codec
 --------------
