@@ -19,9 +19,11 @@ use Badger::Class
     exports => {
         any => [qw( 
             debug debug_caller
-            dump_data dump_data_inline
-            dump_hash dump_list dump_text 
         )],
+        tags => {
+            dump => 'dump dump_data dump_data_inline 
+                     dump_hash dump_list dump_text'
+        },
         hooks => {
             color  => \&enable_colour,
             colour => \&enable_colour,
