@@ -59,6 +59,8 @@ Badger::Filesystem
 
 * need to handle encoding better in read_file() and write_file() methods.
 
+* read-only filesystem option
+
 * write_file() should have an option for writing to a temporary file and
   renaming into place to avoid race conditions.
 
