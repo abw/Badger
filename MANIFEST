@@ -21,6 +21,7 @@ lib/Badger/Filesystem/Directory.pm
 lib/Badger/Filesystem/File.pm
 lib/Badger/Filesystem/Path.pm
 lib/Badger/Filesystem/Virtual.pm
+lib/Badger/Filesystem/Visitor.pm
 lib/Badger/Hub.pm
 lib/Badger/Mixin.pm
 lib/Badger/Prototype.pm
@@ -89,6 +90,7 @@ t/filesystem/testfiles/vdir_three/foo
 t/filesystem/testfiles/vdir_two/bar
 t/filesystem/testfiles/vdir_two/foo
 t/filesystem/virtual.t
+t/filesystem/visitor.t
 t/pod/quality.t
 t/pod/quantity.t
 TODO
