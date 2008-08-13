@@ -46,11 +46,12 @@ use constant {
     BLANK           => '',
     SPACE           => ' ',
     DELIMITER       => qr/(?:,\s*)|\s+/,    # match a comma or whitespace
+    WILDCARD        => qr/[\*\?]/,          # wildcards: *.html foo??.txt
 
 };
 
 CONSTANTS->export_any(qw( 
-    CONSTANTS LAST BLANK SPACE CRLF DELIMITER PKG REFS ONCE WARN
+    CONSTANTS LAST BLANK SPACE CRLF DELIMITER WILDCARD PKG REFS ONCE WARN
 ));
 
 CONSTANTS->export_tags({
@@ -216,6 +217,15 @@ accepts commas with optional trailing whitespace as a delimiter.
 
     $names = [ split DELIMITER, $names ] 
         unless ref $names eq ARRAY;
+
+=head2 WILDCARD
+
+A regular expression used to match strings containing the C<*> or C<?> 
+wildcard characters.
+
+    if ($path =~ WILDCARD) {
+        # do someting...
+    } 
 
 =head1 EXPORTABLE TAG SETS
 
