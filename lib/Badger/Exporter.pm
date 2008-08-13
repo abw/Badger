@@ -364,7 +364,7 @@ sub exportables {
             # entries put in first by more specialised sub-classes are used 
             # in preference to those defined by more general super-classes.
             if ($symbols = ${ $pkg.PKG.EXPORT_ANY }) {
-                $any{ $_ } ||= $pkg 
+                $any{ $_ } ||= $pkg
                     for @$symbols;
             }
 
@@ -385,8 +385,9 @@ sub exportables {
             }
 
             # $EXPORT_HOOKS are copied into %hooks unless already defined
+            # (by a more specific subclass) either as hooks or any/all items
             if ($symbols = ${ $pkg.PKG.EXPORT_HOOKS }) {
-                $hooks{ $_ } ||= $symbols->{ $_ } 
+                $any{ $_ } or $hooks{ $_ } ||= $symbols->{ $_ } 
                     for keys %$symbols;
             }
             
