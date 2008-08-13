@@ -1,0 +1,8 @@
+This file is large in size.  By "large", we mean it is larger than
+420 bytes, which just happens to be an arbitrary size that we test 
+for in the t/filesystem/visitor.t test script.  In order to make it
+longer than 420 bytes, I now have to randomly typed whatever comes
+into my head until I've got... hmm let's see, 420 / 70 = 6 so I 
+reckon I need to type a few more words until this line is complete
+and then I think I'll be done.
+

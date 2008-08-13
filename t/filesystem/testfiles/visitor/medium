@@ -1,0 +1,4 @@
+This file is medium in size.  By "medium", we mean it is larger than
+100 bytes and smaller than 420 bytes.  These are some arbitrary sizes
+that we test for in the t/filesystem/visitor.t test script.
+
