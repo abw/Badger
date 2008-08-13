@@ -124,17 +124,140 @@ Badger::Filesystem::Virtual - virtual filesystem
 
 This module defines a subclass of L<Badger::Filesystem> for creating virtual
 filesystems that are "mounted" onto one or more underlying source directories
-in a real file system. If you don't already know what that means then the
-chances are that you don't need to read this documentation. Either way you
-should read the documentation for L<Badger::Filesystem> first.
+in a real file system (if you're familiar with the Template Toolkit then think
+of the INCLUDE_PATH). If that doesn't mean much to you then the chances are
+that you don't need to read this documentation. Either way you should read the
+documentation for L<Badger::Filesystem> first, closely followed by
+L<Badger::Filesystem::Path>, L<Badger::Filesystem::File> and
+L<Badger::Filesystem::Directory>.
+
+Done that now?  Good, welcome back.  Let us begin.
 
 =head1 DESCRIPTION
 
-The L<Badger::Filesystem> module gives you access to the files and directories
-in a I<real> filesystem. The C<Badger::Filesystem::Virtual> module is a
-specialised subclass of that which allows you to create a I<virtual>
-filesystem composed from the files and directories in a number of different
-I<real> directories.
+C<Badger::Filesystem::Virtual> module is a specialised subclass of the
+L<Badger::Filesystem> module. In contrast to L<Badger::Filesystem> module
+which gives you access to the files and directories in a I<real> filesystem,
+C<Badger::Filesystem::Virtual> allows you to create a I<virtual> filesystem
+I<mounted> under a I<real> directory, or composed from a number of I<real>
+directories.
+
+    use Badger::Filesystem::Virtual;
+
+    # virtual file system with single root
+    my $vfs1 = Badger::Filesystem::Virtual->new(
+        root => '/path/to/virtual/root',
+    );
+
+    # virtual file system with multiple roots
+    my $vfs2 = Badger::Filesystem::Virtual->new(
+        root => [
+            '/path/to/virtual/root/one',
+            '/path/to/virtual/root/two',
+        ],
+    );
+
+The module defines the exportable C<VFS> symbol as an alias for
+C<Badger::Filesystem::Virtual> to save on typing:
+
+    use Badger::Filesystem::Virtual 'VFS';
+    
+    my $vfs1 = VFS->new( root => '/path/to/virtual/root' );
+
+You can also access this via the L<Badger::Filesystem> module.
+
+    use Badger::Filesystem 'VFS';
+
+TODO: and eventually the L<Badger> module...
+
+=head2 Single Root Virtual Filesystem
+
+A filesystem object with a single virtual root directory works in a similar
+way to the C<chroot> command.
+
+    use Badger::Filesystem::Virtual 'VFS';
+    
+    my $vfs1 = VFS->new( root => '/my/web/site' );
+
+Any absolute paths specified for this file system are then assumed to be
+relative to the virtual root. For example, we can create an object to
+represent a file in our virtual file system.
+
+    my $home = $vfs1->file('index.html');
+
+This file as a relative path of C<index.html>.
+
+    print $home->relative;                     # index.html
+
+The absolute path is C</index.html>.
+
+    print $home->absolute;                     # /index.html
+
+However, the real, physical path to the file is relative to the 
+virtual root directory.  The L<definitive()> method returns this
+path.
+
+    print $home->definitive;                   # /my/web/site/index.html
+
+You can open, read, write and generally perform any kind of operation on a
+file or directory in a virtual file system the same way as you would for a
+real file system (i.e. one without a virtual C<root> directory defined).
+Behind the scenes, the filesystem object handles the mapping of paths in the
+virtual file system to their physical counterparts via the L<definitive>
+method. 
+
+    my $text = $home->read;                     # read file
+    $home->write($text);                        # write file
+    $home->append($more_text);                  # append file
+    # ...etc...
+
+=head2 Multiple Root Virtual File System
+
+Things get a little more interesting when you have a virtual filesystem
+with multiple root directories.
+
+    use Badger::Filesystem::Virtual 'VFS';
+    
+    my $vfs2 = VFS->new( root => [
+        '/my/root/dir/one',
+        '/my/root/dir/two'
+    ] );
+
+The handling of relative and absolute paths is exactly the same as for a 
+single root virtual file system.  
+
+    my $home = $vfs2->file('index.html');
+    print $home->relative;                     # index.html
+    print $home->absolute;                     # /index.html
+
+You can call any of the regular methods on L<Badger::Filesystem::File> and
+L<Badger::Filesystem::Directory> objects as you would for a normal file
+system, and leave it up to the C<Badger::Filesystem::Virtual> module to Do The
+Right Thing to handle the mapping.
+
+    print $home->text;          # locates file under either root dir
+    print $home->size;
+
+If you look at the contents of a directory, you'll see the combined contents
+of that directory under any and all virtual roots that contain it.
+
+    my $dir = $vfs2->dir('foo');
+    print join "\n", $dir->children;
+
+The L<children()|Badger::Filesystem::Directory/children()> method in this
+example will returns all the files and sub-directories in both 
+C</my/root/dir/one/foo> and C</my/root/dir/two>.
+
+The L<definitive_read()> and L<definitive_write()> methods are used to map
+virtual paths onto their real counterparts whenever you read, write, or
+perform any other operation on an underlying file or directory. For read
+operations, the L<definitive_read()> method will look for the file or
+directory under each of the virtual root directories until it is located or
+presumed not found. The L<definitive_write()> method always maps paths to the
+first root directory (NOTE: we'll be providing some options to customise this
+at some point in the future - be aware for now that the append() method may
+not work correctly if you're trying to append to a file that isn't under the
+first root directory).
 
 =head1 METHODS
 
@@ -145,6 +268,10 @@ L<Badger::Filesystem>.  The following methods are added or amended.
 
 This custom initialisation method allows one or more C<root> (or C<rootdir>)
 directories to be specified as the base of the virtual filesystem.
+
+=head2 definitive($path)
+
+This is aliased to the L<definitive_write()> method.
 
 =head2 definitive_write($path)
 
