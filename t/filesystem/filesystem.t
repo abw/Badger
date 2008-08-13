@@ -15,9 +15,9 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use File::Spec;
-use Badger::Filesystem qw( FS :types :dirs );
+use Badger::Filesystem qw( FS VFS :types :dirs );
 use Badger::Test 
-    tests => 34,
+    tests => 36,
     debug => 'Badger::Filesystem',
     args  => \@ARGV;
 
@@ -78,6 +78,14 @@ ok( $dir, 'created dir using FS class' );
 
 $dir = FS->directory->new('/foo/bar');
 ok( $dir, 'created directory using FS class' );
+
+
+#-----------------------------------------------------------------------
+# we should also have a VFS reference defined and the module loaded
+#-----------------------------------------------------------------------
+
+is( VFS, 'Badger::Filesystem::Virtual', 'VFS is defined' );
+ok( VFS->VERSION, 'VFS version is ' . VFS->VERSION );
 
 
 #-----------------------------------------------------------------------
