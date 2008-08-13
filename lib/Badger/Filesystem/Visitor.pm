@@ -250,7 +250,7 @@ object which can be used to traverse filesystems.
 The most common use of a visitor is to walk a filesystem and locate files and
 directories matching (or not matching) a particular set of criteria (e.g. file
 name, type, size, etc). The L<Badger::Filesystem::Visitor> module provides a
-number of configuration options to assist in this common tasks. For more
+number of configuration options to assist in these common tasks. For more
 complex operations, you can subclass the module to create your own custom
 visitors.
 
