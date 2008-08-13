@@ -29,6 +29,7 @@ use Badger::Class
         CURDIR      =>  File::Spec->curdir,
         UPDIR       =>  File::Spec->updir,
         FS          => 'Badger::Filesystem',
+        VFS         => 'Badger::Filesystem::Virtual',
         PATH        => 'Badger::Filesystem::Path',
         FILE        => 'Badger::Filesystem::File',
         DIRECTORY   => 'Badger::Filesystem::Directory',
@@ -39,6 +40,12 @@ use Badger::Class
         tags  => { 
             types   => 'Path File Dir Directory',
             dirs    => 'ROOTDIR UPDIR CURDIR',
+        },
+        hooks => {
+            VFS => sub {
+                # load VFS module and call its export() method
+                class(shift->VFS)->load->pkg->export(shift, shift)
+            }
         },
     },
     messages  => {
@@ -683,26 +690,9 @@ against it.
     my $dir  = $fs->dir('/path/to/dir');
 
 Creating an object allows you to define additional configuration parameters
-for the filesystem.  At present, the only configuration item of interest is
-C<root> which allows you to define a virtual root directory for a filesystem.
-
-    my $fs = Badger::Filesystem->new( root => '/my/web/site' );
-
-This allows you to work with "absolute" paths that really aren't absolute at
-all. This is particular useful when dealing with "absolute" and "relative"
-paths in a web site.
-
-    my $home = $fs->file('index.html');        # /my/web/site/index.html
-    print $home->relative;                     # index.html
-    print $home->absolute;                     # /index.html
-    print $home->definitive;                   # /my/web/site/index.html
-
-You can open, read, write and generally perform any kind of operation on a
-file or directory in a virtual file system the same way as you would for a
-real file system (i.e. one without a virtual C<root> directory defined).
-Behind the scenes, the filesystem object handles the mapping of paths in the
-virtual file system to their physical counterparts via the L<definitive>
-method. 
+for the filesystem. There aren't any interesting paramters worth mentioning in
+the base class L<Badger::Filesystem> module at the moment, but subclasses
+(like L<Badger::Filesystem::Virtual>) do use them.
 
 =head1 CONSTRUCTOR SUBROUTINES
 
@@ -796,44 +786,9 @@ However, you might want to create a filesystem object to pass to some other
 method or object to work with.  In that case, the C<Badger::Filesystem> 
 methods work equally well being called as object or class methods.
 
-The other reason you might want to create a filesystem object is to provide
-configuration options. There is only one interesting option at present -
-C<root>.  This allows you to define a virtual root for the filesystem.  
-
-    my $fs = Badger::Filesystem->new( root => '/my/web/site' );
-
-A filesystem object with a virtual root directory works in a similar way
-to the C<chroot> command.  Any absolute paths specified for this file 
-system are then assumed to be relative to the virtual root.  For example,
-we can create an object to represent a file in our virtual file system.
-
-    my $home = $fs->file('index.html');
-
-This file as a relative path of C<index.html>.
-
-    print $home->relative;                     # index.html
-
-The absolute path is C</index.html>.
-
-    print $home->absolute;                     # /index.html
-
-However, the real, physical path to the file is relative to the 
-virtual root directory.  The L<definitive()> method returns this
-path.
-
-    print $home->definitive;                   # /my/web/site/index.html
-
-You can open, read, write and generally perform any kind of operation on a
-file or directory in a virtual file system the same way as you would for a
-real file system (i.e. one without a virtual C<root> directory defined).
-Behind the scenes, the filesystem object handles the mapping of paths in the
-virtual file system to their physical counterparts via the L<definitive>
-method. 
-
-    my $text = $home->read;                     # read file
-    $home->write($text);                        # write file
-    $home->append($more_text);                  # append file
-    # ...etc...
+You may also want to use a subclass of C<Badger::Filesystem> such as 
+L<Badger::Filesystem::Virtual> which requires configuration parameters
+to be properly initialised.
 
 =head2 path(@path)
 
@@ -992,20 +947,35 @@ a definitive path is identical to an absolute one.
 
     $fs->definitive('/foo/bar');            # /foo/bar
 
-However, if you're using a filesystem with a virtual root directory, then 
-a I<definitive> path I<will> include the virtual root directory, whereas a 
-an I<absolute> path will I<not>.
+However, if you're using a L<virtual filesystem|Badger::Filesystem::Virtual>
+with a virtual root directory, then a I<definitive> path I<will> include the
+virtual root directory, whereas a an I<absolute> path will I<not>.
 
-    my $fs = Badger::Filesystem->new( root => '/my/vfs' );
-    $fs->absolute('/foo/bar');              # /foo/bar
-    $fs->definitive('/foo/bar');            # /my/vfs/foo/bar
+    my $vfs = Badger::Filesystem::Virtual->new( root => '/my/vfs' );
+    $vfs->absolute('/foo/bar');              # /foo/bar
+    $vfs->definitive('/foo/bar');            # /my/vfs/foo/bar
 
 The C<Badger::Filesystem> module uses definitive paths when performing any
 operations on the file system (e.g. opening and reading files and
 directories). You can think of absolute paths as being like conceptual URIs
 (identifiers) and definitive paths as being like concrete URLs (locators). In
 practice, they'll both have the same value unless unless you're using a
-virtual root directory.
+virtual file system.
+
+In the C<Badger::Filesystem> base class, the C<definitive()> method is
+mapped directly to the L<definitive_write()> method.  This has no real
+effect in this module, but provides the relevant hooks that allow the 
+L<Badger::Filesystem::Virtual> subclass to work properly.
+
+=head2 definitive_read($path)
+
+Converts an absolute or relative path to a definitive one for a read
+operation.  See L<definitive()>.
+
+=head2 definitive_write($path)
+
+Converts an absolute or relative path to a definitive one for a write 
+operation.  See L<definitive()>.
 
 =head1 PATH TEST METHODS
 
@@ -1196,6 +1166,11 @@ directory for the filesystem.
 =head2 FS
 
 An alias for C<Badger::Filesystem>
+
+=head2 VFS
+
+An alias for L<Badger::Filesystem::Virtual>.  This also ensures that the
+L<Badger::Filesystem::Virtual> module is loaded.
 
 =head2 PATH
 
