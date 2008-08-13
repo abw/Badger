@@ -15,13 +15,13 @@ package Badger::Filesystem;
 use File::Spec;
 use Cwd 'getcwd';
 use Badger::Class
-    version   => 0.01,
-    debug     => 0,
-    base      => 'Badger::Prototype Badger::Exporter',
-    import    => 'class',
-    utils     => 'params is_object',
-    constants => 'HASH ARRAY TRUE',
-    constant  => {
+    version     => 0.01,
+    debug       => 0,
+    base        => 'Badger::Prototype Badger::Exporter',
+    import      => 'class',
+    utils       => 'params is_object',
+    constants   => 'HASH ARRAY TRUE',
+    constant    => {
         virtual     => 0,
         NO_FILENAME => 1,
         FILESPEC    => 'File::Spec',
@@ -35,14 +35,14 @@ use Badger::Class
         DIRECTORY   => 'Badger::Filesystem::Directory',
         VISITOR     => 'Badger::Filesystem::Visitor',
     },
-    exports   => {
-        any   => 'FS PATH FILE DIR DIRECTORY',
-        tags  => { 
+    exports     => {
+        any     => 'FS PATH FILE DIR DIRECTORY',
+        tags    => { 
             types   => 'Path File Dir Directory',
             dirs    => 'ROOTDIR UPDIR CURDIR',
         },
-        hooks => {
-            VFS => sub {
+        hooks   => {
+            VFS     => sub {
                 # load VFS module and call its export() method
                 class(shift->VFS)->load->pkg->export(shift, shift)
             }
@@ -181,7 +181,7 @@ sub directory {
 
 sub root {
     my $self = shift->prototype;
-    Directory->new($self->{ rootdir });
+    $self->directory($self->{ rootdir });
 }
 
 sub cwd {
@@ -422,7 +422,6 @@ sub directory_child {
     my $self = shift;
     my $path = $self->join_directory(@_);
     stat $self->definitive_read($path);
-#    stat($path);
     -d _ ? $self->directory($path) : 
     -f _ ? $self->file($path) :
            $self->path($path);
@@ -446,7 +445,15 @@ sub visitor {
         ? shift
         : $vtype->new(@_);
 }
-    
+
+sub visit {
+    shift->root->visit(@_);
+}
+
+sub collect {
+    shift->visit(@_)->collect;
+}
+
 sub accept {
     $_[0]->root->accept($_[1]);
 }
@@ -1138,12 +1145,30 @@ If the first argument is already a reference to a
 L<Badger::Filesystem:Visitor> object or subclass then it will be returned
 unmodified.
 
+=head2 visit(\%params)
+
+This methods forwards all arguments onto the
+L<visit()|Badger::Filesystem::Directory/visit()> method of the 
+L<root()> directory.
+
 =head2 accept($visitor)
 
-This method is called to dispatch a visitor to the correct method for a
-filesystem object. It forward the visitor onto the
+This lower-level method is called to dispatch a visitor to the correct method
+for a filesystem object. It forward the visitor onto the
 L<accept()|Badger::Filesystem::Directory/accept()> method for the L<root()>
 directory.
+
+=head2 collect(\%params)
+
+This is a short-cut to call the L<visit()> method and then the 
+L<collect()|Badger::Filesystem::Visitor/collect()> method on the 
+L<Badger::Filesystem::Visitor> object returned.
+
+    # short form
+    my @items = $fs->collect( files => 1, dirs => 0 );
+
+    # long form
+    my @items = $fs->visit( files => 1, dirs => 0 )->collect;
 
 =head1 MISCELLANEOUS METHODS
 
