@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 105,
+    tests => 107,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -496,6 +496,22 @@ package main;
 is( $Test::My::Class::VERSION, 11, 'outside version 11' );
 is( Test::My::Class->colour, 'black', 'How much more black could this be?' );
 is( Test::My::Class->none, 'none', 'None, none more black' );
+
+
+#-----------------------------------------------------------------------
+# test filesystem hooks
+#-----------------------------------------------------------------------
+
+package Test::My::Filesystem;
+
+use Badger::Class
+    version    => 1,
+    filesystem => 'FS VFS';
+
+package main;
+
+is( Test::My::Filesystem->FS, 'Badger::Filesystem', 'FS loaded' );
+is( Test::My::Filesystem->VFS, 'Badger::Filesystem::Virtual', 'VFS loaded' );
 
 __END__
 #-----------------------------------------------------------------------
