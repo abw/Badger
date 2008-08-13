@@ -16,12 +16,15 @@ use Badger::Class
     version   => 0.01,
     debug     => 0,
     base      => 'Badger::Base',
-    constants => 'ARRAY CODE REGEX',
+    constants => 'ARRAY CODE REGEX ON WILDCARD',
     utils     => 'params',
     messages  => {
         no_node    => 'No node specified to %s',
-        bad_filter => 'Invalid reference to %s %s: %s',
+        bad_filter => 'Invalid test in %s specification: %s',
     };
+
+use Badger::Debug ':dump';
+our @FILTERS = qw( files dirs in_dirs no_files no_dirs not_in_dirs );
 
 *enter_dir      = \&enter_directory;
 *visit_dir      = \&visit_directory;
@@ -43,7 +46,7 @@ sub init {
     $config->{ not_in_dirs } = $config->{ not_in_directories }
         if exists $config->{ not_in_directories };
     
-    for (qw( all recurse no_files no_dirs in_dirs not_in_dirs )) {
+    for (qw( all recurse  in_dirs no_files no_dirs not_in_dirs )) {
         $self->{ $_ } = $config->{ $_ } || 0;
     }
 
@@ -57,10 +60,54 @@ sub init {
     $self->{ collect  } = [ ];
     $self->{ identify } = { };
         
-    # TODO: accept, ignore, handlers
+    # TODO: at_file/at_dir handlers
+
+    $self->init_filters;
 
     return $self;
 }
+
+sub init_filters {
+    my $self = shift;
+    my ($filter, $tests, $test, $type);
+    
+    foreach $filter (@FILTERS) {
+        $tests = $self->{ $filter } || next;        # skip over false values
+        $tests = $self->{ $filter } = [$tests] 
+            unless ref $tests eq ARRAY;
+        
+        # NOTE: $test is aliasing list item so we can change it
+        foreach $test (@$tests) {
+            $self->debug("  - test: $test\n") if $DEBUG;
+            last unless $test;                      # false test always fails
+            
+            if ($type = ref $test) {
+                return $self->error_msg( bad_filter => $filter => $test )
+                    unless $type eq CODE or $type eq REGEX;
+                # OK
+            }
+            elsif ($test eq ON) {
+                # OK
+            }
+            elsif ($test =~ WILDCARD) {
+                # changing test affects list item via regex
+                $test =~ s/\./<<DOT>>/g;     # . => <<DOT>>     (tmp)
+                $test =~ s/\?/./g;           # ? => .
+                $test =~ s/\*/.*/g;          # * => .*
+                $test =~ s/<<DOT>>/\\./g;    # <<DOT>> => \.
+                $test = qr/^$test$/;
+                $self->debug("transmogrified wildcard into regex: $test\n") if $DEBUG;
+            }
+        }
+        
+        $self->debug(
+            "initialised $filter tests: ", 
+            $self->dump_data_inline($tests),
+            "\n"
+        ) if $DEBUG;
+    }
+}
+
 
 sub visit {
     my $self = shift;
@@ -101,54 +148,52 @@ sub visit_directory_children {
 }
 
 sub filter {
-    my ($self, $type, $name, $method, $item) = @_;
-    my $tests = $self->{ $name } || return 0;
+    my ($self, $filter, $method, $item) = @_;
+    my $tests = $self->{ $filter } || return 0;
+    my ($test, $type);
 
-    $self->debug("filter($type, $name, $method, $item)  tests: $tests\n") if $DEBUG;
+    $self->debug("filter($filter, $method, $item)  tests: $tests\n") if $DEBUG;
     
-    if ($tests eq '1') {
-        return 1;
-    }
-    else {
-        $tests = [$tests]
-            unless ref $tests eq ARRAY;
-    }
-    foreach my $test (@$tests) {
+    foreach $test (@$tests) {
         $self->debug("  - test: $test\n") if $DEBUG;
-        if (ref $test eq CODE) {
-            return 1 if $test->($item, $self);
+        if ($test eq ON) {
+            return 1;
         }
-        elsif (ref $test eq REGEX) {
-            return 1 if $item->$method =~ $test;
-        }
-        elsif (ref $test) {
-            return $self->error_msg( bad_filter => $type => $name => $test );
+        elsif ($type = ref $test) {
+            if ($type eq CODE) {
+                return 1 if $test->($item, $self);
+            }
+            elsif ($type eq REGEX) {
+                return 1 if $item->$method =~ $test;
+            }
+            else {
+                return $self->error_msg( bad_filter => $filter => $test );
+            }
         }
         else {
-            # TODO: handle wildcards, e.g. *.html, foo.* either here or
-            # by pre-constructing regexen.  For now we just match
             return 1 if $item->$method eq $test;
         }
     }
+    $self->debug("  - ALL FAIL - ignore\n") if $DEBUG;
     return 0;
 }
 
 sub accept_file {
     my $self = shift;
-    return $self->filter( accept => files    => name => @_ )
-      && ! $self->filter( reject => no_files => name => @_ );
+    return $self->filter( files    => name => @_ )
+      && ! $self->filter( no_files => name => @_ );
 }
 
 sub accept_directory {
     my $self = shift;
-    return $self->filter( accept => dirs    => name => @_ )
-      && ! $self->filter( reject => no_dirs => name => @_ );
+    return $self->filter( dirs    => name => @_ )
+      && ! $self->filter( no_dirs => name => @_ );
 }
 
 sub enter_directory {
     my $self = shift;
-    return $self->filter( accept => in_dirs     => name => @_ )
-      && ! $self->filter( reject => not_in_dirs => name => @_ );
+    return $self->filter( in_dirs     => name => @_ )
+      && ! $self->filter( not_in_dirs => name => @_ );
 }
 
 sub collect {
@@ -186,7 +231,7 @@ Badger::Filesystem::Visitor - visitor for traversing filesystems
     use Badger::Filesystem 'FS';
     
     my $controls = {
-        files       => 1,               # collect all files
+        files       => '*.pm',          # collect all *.pm files
         dirs        => 0,               # ignore dirs
         in_dirs     => 1,               # but do look in dirs for more files
         not_in_dirs => ['.svn', '.hg'], # don't look in these dirs
@@ -231,7 +276,7 @@ configures the new visitor using any parameters passed as arguments, specified
 either as a list or reference to a hash array of named parameters. If no
 parameters are specified then the defaults are used.  The visitor's L<visit()>
 method is then called, passing the L<Badger::Filesystem::Directory> object
-as an argument.  And so begins the visitor's visit into the filesystem...
+as an argument.  And so begins the visitor's journey into the filesystem...
 
 The configuration parameters are used to define what the visitor should 
 collect on its travels.  Here are some examples.
@@ -240,15 +285,20 @@ collect on its travels.  Here are some examples.
         files => 1,                 # collect all files
         dirs  => 0,                 # ignore all dirs
     );
-    
+
+    $dir->visit( 
+        files => '*.pm',            # collect all .pm files
+        dirs  => 0,                 # ignore all dirs
+    );
+
     $dir->visit(
-        files   => 1,               # as above, no dirs are collected
+        files   => '*.pm',          # as above, no dirs are collected
         dirs    => 0,               # but we do enter into them to 
         in_dirs => 1,               # find more files
     );
 
     $dir->visit( 
-        files       => 1,           # collect files
+        files       => '*.pm',      # collect *.pm files
         dirs        => 0,           # don't collect dirs
         in_dirs     => 1,           # do recurse into them
         not_in_dirs => '.svn',      # but don't look in .svn dirs
@@ -263,9 +313,10 @@ collect on its travels.  Here are some examples.
 You can also define subroutines to filter the files and/or directories that
 you're interested in. The first argument passed to the subroutine is the
 L<Badger::Filesystem::File> or L<Badger::Filesystem::Directory> object being
-visited (and the second argument is a reference to the visitor object). In the
-following example, we collect files that are smaller than 420 bytes in size,
-and directories that contain a F<metadata.yaml> file.
+visited.  The second argument is a reference to the visitor object. 
+
+In the following example, we collect files that are smaller than 420 bytes in
+size, and directories that contain a F<metadata.yaml> file.
 
     $dir->visit(
         files   => sub { shift->size < 420 },
@@ -382,15 +433,14 @@ This is a general purpose method which implements the selection algorithm
 for the above methods.  For example, the L<accept_file()> method is 
 implemented as:
 
-    return $self->filter( accept => files    => name => $file )
-      && ! $self->filter( reject => no_files => name => $file );
+    return $self->filter( files    => name => $file )
+      && ! $self->filter( no_files => name => $file );
 
-The first argument is purely decorative and is only used for generating
-meaningful error messages. The second argument provides the name of the
-configuration parameter which defines the filter specification. The third
-argument is the name of the file/directory method that returns the value 
-that should be compared (in this case, the file or directory name).  The 
-final argument is the file or directory object itself.
+The first argument provides the name of the configuration parameter which
+defines the filter specification. The second argument is the name of the
+file/directory method that returns the value that should be compared (in this
+case, the file or directory name). The third argument is the file or directory
+object itself.
 
 =head1 AUTHOR
 
