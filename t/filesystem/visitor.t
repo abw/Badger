@@ -17,7 +17,7 @@ use warnings;
 use File::Spec;
 use Badger::Filesystem 'FS';
 use Badger::Test 
-    tests => 21,
+    tests => 24,
     debug => 'Badger::Filesystem::Visitor',
     args  => \@ARGV;
 
@@ -26,18 +26,21 @@ our $tdir = $here->dir('testfiles')->must_exist;
 our $vdir = $tdir->dir('visitor')->must_exist;
 
 
+my ($visitor, @files);
+
 #-----------------------------------------------------------------------
 # basic tests
 #-----------------------------------------------------------------------
 
-my $visitor = $tdir->visit( 
+$visitor = $tdir->visit( 
     recurse => 1, 
     dirs    => 0, 
     files   => 'foo'
 );
 ok( $visitor, 'got visitor' );
 is( ref $visitor, 'Badger::Filesystem::Visitor', 'isa visitor object' );
-my @files = $visitor->collect;
+
+@files = $visitor->collect;
 is( scalar @files, 3, 'got 3 foo files' );
 
 @files = $tdir->visit( 
@@ -187,3 +190,40 @@ is( scalar @files, 1, 'got 1 dir with README' );
 is( join(' ', sort map { $_->name } @files), 
     'tmp',
     'got all dirs with README files in' );
+
+
+
+#-----------------------------------------------------------------------
+# all-in-one test with default arguments
+#-----------------------------------------------------------------------
+
+@files = grep { $_ !~ /svn/ } $vdir->collect;
+
+print STDERR "default files: \n", join("\n  ", @files), "\n" if $DEBUG;
+
+is( scalar @files, 6, 'got  default files' );
+is( join(' ', sort map { $_->name } @files), 
+    'large medium one small tmp two',
+    'got all default files' );
+
+
+
+#-----------------------------------------------------------------------
+# subclass
+#-----------------------------------------------------------------------
+
+package My::Test::Visitor;
+use base 'Badger::Filesystem::Visitor';
+
+our $FILES       = qr/^good/;
+our $DIRS        = 0;
+our $IN_DIRS     = 1;
+our $NOT_IN_DIRS = ['.svn', 'tmp'];
+
+package main;
+
+@files = $vdir->collect( My::Test::Visitor->new );
+print STDERR "subclass files: \n", join("\n  ", @files), "\n" if $DEBUG;
+is( join(' ', sort map { $_->name } @files), 
+    'goodbye.bak goodbye.html goodbye.txt',
+    'got all subclass files' );
