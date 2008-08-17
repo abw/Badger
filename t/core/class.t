@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 107,
+    tests => 110,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -512,6 +512,17 @@ package main;
 
 is( Test::My::Filesystem->FS, 'Badger::Filesystem', 'FS loaded' );
 is( Test::My::Filesystem->VFS, 'Badger::Filesystem::Virtual', 'VFS loaded' );
+
+
+#-----------------------------------------------------------------------
+# test load() and maybe_load()
+#-----------------------------------------------------------------------
+
+is( class('No::Such::Module')->maybe_load, 0, 'cannot load No::Such::Module' );
+
+#$Badger::Class::DEBUG = 1;
+ok( ! eval { class('My::BadModule')->maybe_load }, 'maybe_load threw error' );
+like( $@, qr/^Can't locate object method/, "Can't locate object method error" );
 
 __END__
 #-----------------------------------------------------------------------

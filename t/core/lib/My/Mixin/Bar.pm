@@ -5,7 +5,7 @@ use Badger::Class
     debug   => 0,
     base    => 'Badger::Mixin',
 #    mixin   => 'Badger::Mixin::Messages';
-    utils     => 'UTILS',
+    utils     => 'xprintf',
     import    => 'class',
     constants => 'BLANK SPACE',
     mixins    => '$MESSAGES message warn_msg error_msg decline_msg 
@@ -21,7 +21,7 @@ sub message {
         || $self->fatal("message() called without format name");
     my $format = $self->class->hash_value( MESSAGES => $name )
         || $self->fatal("message() called with invalid message type: $name");
-    UTILS->xprintf($format, @_);
+    xprintf($format, @_);
 }
 
 sub warn_msg {
