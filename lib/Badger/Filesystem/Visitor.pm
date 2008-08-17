@@ -24,7 +24,14 @@ use Badger::Class
     };
 
 use Badger::Debug ':dump';
-our @FILTERS = qw( files dirs in_dirs no_files no_dirs not_in_dirs );
+our @FILTERS     = qw( files dirs in_dirs no_files no_dirs not_in_dirs );
+our $ALL         = 0;
+our $FILES       = 1;
+our $DIRS        = 1;
+our $IN_DIRS     = 0;
+our $NO_FILES    = 0;
+our $NO_DIRS     = 0;
+our $NOT_IN_DIRS = 0;
 
 *enter_dir      = \&enter_directory;
 *visit_dir      = \&visit_directory;
@@ -32,31 +39,27 @@ our @FILTERS = qw( files dirs in_dirs no_files no_dirs not_in_dirs );
 
 sub init {
     my ($self, $config) = @_;
+    my $class = $self->class;
+    my ($item, $long);
 
     $config->{ in_dirs } = 1
         if $config->{ recurse };
 
-    # allow 'directories' as alias for 'dirs'
-    $config->{ dirs } = $config->{ directories }
-        if exists $config->{ directories };
-    $config->{ no_dirs } = $config->{ no_directories }
-        if exists $config->{ no_directories };
-    $config->{ in_dirs } = $config->{ in_directories }
-        if exists $config->{ in_directories };
-    $config->{ not_in_dirs } = $config->{ not_in_directories }
-        if exists $config->{ not_in_directories };
+    foreach $item ('all', @FILTERS) {
+        # allow 'directories' as alias for 'dirs'
+        $long = $item;
+        $long =~ s/dirs/directories/;
+        # for those entries that don't contains 'dirs', the $item and $long
+        # will be the same, so we've got an unneccessary test or two, but 
+        # it keeps the code simple
+        $self->{ $item } 
+            = defined $config->{ $long }
+                    ? $config->{ $long }
+            : defined $config->{ $item }
+                    ? $config->{ $item }
+            : $class->any_var(uc $item);
+    }
     
-    for (qw( all recurse  in_dirs no_files no_dirs not_in_dirs )) {
-        $self->{ $_ } = $config->{ $_ } || 0;
-    }
-
-    # tread carefully because a value in $config is likely to be false
-    for (qw( files dirs )) {
-        $self->{ $_ } = defined $config->{ $_} 
-            ? $config->{ $_ }
-            : 1;
-    }
-
     $self->{ collect  } = [ ];
     $self->{ identify } = { };
         
@@ -107,7 +110,6 @@ sub init_filters {
         ) if $DEBUG;
     }
 }
-
 
 sub visit {
     my $self = shift;
@@ -427,7 +429,7 @@ This method applies any selection rules defined for the visitor to determine
 if a directory should be entered or not. It returns a true value if it should,
 or a false value if not.
 
-=head2 filter($type,$name,$method,$item)
+=head2 filter($type,$method,$item)
 
 This is a general purpose method which implements the selection algorithm 
 for the above methods.  For example, the L<accept_file()> method is 
