@@ -15,13 +15,13 @@ package Badger::Filesystem;
 use File::Spec;
 use Cwd 'getcwd';
 use Badger::Class
-    version     => 0.01,
-    debug       => 0,
-    base        => 'Badger::Prototype Badger::Exporter',
-    import      => 'class',
-    utils       => 'params is_object',
-    constants   => 'HASH ARRAY TRUE',
-    constant    => {
+    version   => 0.01,
+    debug     => 0,
+    base      => 'Badger::Prototype Badger::Exporter',
+    import    => 'class',
+    utils     => 'params is_object',
+    constants => 'HASH ARRAY TRUE',
+    constant  => {
         virtual     => 0,
         NO_FILENAME => 1,
         FILESPEC    => 'File::Spec',
@@ -35,13 +35,13 @@ use Badger::Class
         DIRECTORY   => 'Badger::Filesystem::Directory',
         VISITOR     => 'Badger::Filesystem::Visitor',
     },
-    exports     => {
-        any     => 'FS PATH FILE DIR DIRECTORY',
-        tags    => { 
+    exports   => {
+        any         => 'FS PATH FILE DIR DIRECTORY',
+        tags        => { 
             types   => 'Path File Dir Directory',
             dirs    => 'ROOTDIR UPDIR CURDIR',
         },
-        hooks   => {
+        hooks       => {
             VFS     => sub {
                 # load VFS module and call its export() method
                 class(shift->VFS)->load->pkg->export(shift, shift)
