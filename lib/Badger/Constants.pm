@@ -22,6 +22,7 @@ use constant {
     CONSTANTS       => __PACKAGE__,
     
     # various type classes
+    SCALAR          => 'SCALAR',
     ARRAY           => 'ARRAY',
     HASH            => 'HASH',
     CODE            => 'CODE',
@@ -56,7 +57,7 @@ CONSTANTS->export_any(qw(
 
 CONSTANTS->export_tags({
     types => [qw( 
-        ARRAY HASH CODE REGEX
+        SCALAR ARRAY HASH CODE REGEX
     )],
     values => [qw(
         FALSE TRUE OFF ON ALL NONE DEFAULT
