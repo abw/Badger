@@ -1730,10 +1730,10 @@ See the L<messages()> method and L<Badger::Base> for further details.
 
 =head2 utils
 
-This can be used to import symbols from the L<Badger::Utils> module.  This
-defines a number of its own utility methods, as well as providing access to
-a number of functions from L<Scalar::Util>.  (NOTE: only a limited number of 
-functions from Scalar::Util at present but I plan to make Badger::Utils 
+This can be used to import symbols from the L<Badger::Utils> module. This
+defines a number of its own utility functions, as well as providing access to
+a number of functions from L<Scalar::Util>. (NOTE: only a limited number of
+functions from Scalar::Util at present but I plan to make Badger::Utils
 delegate to any symbols in any of the *::Util modules).
 
     use Badger::Class
@@ -1742,12 +1742,10 @@ delegate to any symbols in any of the *::Util modules).
     sub welcome {
         my ($self, $name) = @_;
 
-        # blessed is a function
         $name = $name->get_name
             if blessed $name && $name->can('get_name');
         
-        # xprintf is a method
-        $self->xprintf('Hello %s!', $name);
+        xprintf('Hello %s!', $name);
     }
 
 See the L<utils()> method and L<Badger::Utils> for further details.

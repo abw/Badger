@@ -17,7 +17,6 @@ use Badger::Class
     version   => 0.01,
     debug     => 0,
     base      => 'Badger::Prototype',
-    utils     => 'UTILS',
     import    => 'class',
     constants => 'HASH ARRAY REFS PKG',
     words     => 'COMPONENTS DELEGATES COMP_CACHE DELG_CACHE',
@@ -101,7 +100,7 @@ sub generate_component_method {
     my $class = ref $self || $self;
     no strict REFS;
 
-    $LOADED->{ $name } ||= UTILS->load_module($comp);
+    $LOADED->{ $name } ||= class($comp)->load;
 
     unless (defined &{$class.PKG.$name}) {
         $class->debug("generating $name() in $class\n") if $DEBUG;
@@ -210,7 +209,7 @@ sub configure {
         || return $self->error_msg( no_module => $name );
 
     # load the module
-    UTILS->load_module($module);
+    class($module)->load;
 
     # add any extra arguments to the config hash
     $config = { %$config, %$args } if %$args;

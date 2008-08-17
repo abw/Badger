@@ -18,7 +18,7 @@ use Badger::Class
     debug     => 0,
     constants => 'CODE HASH ARRAY BLANK SPACE PKG REFS ONCE WARN NONE',
     import    => 'class classes',
-    utils     => 'UTILS blessed reftype',
+    utils     => 'blessed reftype xprintf',
     words     => 'ID EXCEPTION THROWS ERROR DECLINED before after',
     constant  => { 
         base_id => 'Badger',      # stripped from class name to make id
@@ -297,7 +297,7 @@ sub message {
         || $self->fatal("message() called without format name");
     my $format = $self->class->hash_value( MESSAGES => $name )
         || $self->fatal("message() called with invalid message type: $name");
-    UTILS->xprintf($format, @_);
+    xprintf($format, @_);
 }
 
 sub warn_msg {
