@@ -25,13 +25,11 @@ use constant {
 our $VERSION  = 0.01;
 our $DEBUG    = 0 unless defined $DEBUG;
 our $ERROR    = '';
-our $MESSAGES = {
-    no_module   => "Cannot load %s module (not found)",
-    load_failed => 'Failed to load module %s: %s',
-};
+our $MESSAGES = { };
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed reftype is_object params self_params load_module
+    UTILS blessed reftype is_object params self_params plural 
+    load_module xprintf
 ));
 
 __PACKAGE__->export_hooks(
@@ -55,19 +53,39 @@ sub self_params {
     (shift, @_ && ref $_[0] eq HASH ? shift : { @_ });
 }
 
+sub plural {
+    my $name = shift;
 
-#------------------------------------------------------------------------
-# module_file($module)
-#
-# Converts a module name, e.g. Foo::Bar to its corresponding file
-# name, e.g. Foo/Bar.pm
-#------------------------------------------------------------------------
+    if ($name =~ /(ss|sh|ch|x)$/) {
+        $name .= 'es';
+    }
+    elsif ($name =~ s/y$//) {
+        $name .= 'ies';
+    }
+    elsif ($name =~ /([^s\d\W])$/) {
+        $name .= 's';
+    }
+    return $name;
+}
 
 sub module_file {
-    my ($class, $file) = @_;
+    my $file = shift;
     $file  =~ s[::][/]g;
     $file .= '.pm';
 }
+
+sub xprintf {
+    my $format = shift;
+#    _debug(" input format: $format\n") if $DEBUG;
+    $format =~ s/<(\d+)(?::([#\-\+ ]?[\w\.]+))?>/'%' . $1 . '$' . ($2 || 's')/eg;
+#    _debug("output format: $format\n") if $DEBUG;
+    sprintf($format, @_);
+}
+
+
+#=======================================================================
+# TODO: make these subs, not methods.
+#=======================================================================
 
 
 #------------------------------------------------------------------------
@@ -76,30 +94,20 @@ sub module_file {
 # Load a Perl module.
 #------------------------------------------------------------------------
 
-sub load_module {
+sub OLD_load_module {
     my $class = shift;
     my $name  = $class->module_file(@_);
+    use Carp 'confess';
+    confess "Badger::Utils load_module is deprecated.  Use Badger::Class load() instead\n";
     require $name;
 }
 
-sub maybe_load_module {
+sub OLD_maybe_load_module {
     eval { shift->load_module(@_) } || 0;
 }
 
-sub xprintf {
-    my ($class, $format, @args) = @_;
-    $class->_debug(" input format: $format\n") if $DEBUG;
-    $format =~ s/<(\d+)(?::([#\-\+ ]?[\w\.]+))?>/'%' . $1 . '$' . ($2 || 's')/eg;
-    $class->_debug("output format: $format\n") if $DEBUG;
-    sprintf($format, @args);
-    # accept numerical flags like %0 %1 %2 as well as %s
-#    my $n = 0;
-#    $format =~ s/%(?:(s)|(\d+))/$1 ? $args[$n++] : $args[$2]/ge;
-#    return $format;
-}
 
 sub _debug {
-    my $self = shift;
     print STDERR @_;
 }
 
@@ -182,17 +190,75 @@ the argument list.
         # do something...
     }
 
-=head1 METHODS
+=head2 plural($noun)
 
-NOTE: I'm planning to change the class methods listed below to be exportable
-subroutines.
+The function makes a very naive attempt at pluralising the singular noun word
+passed as an argument. 
+
+If the C<$noun> word ends in C<ss>, C<sh>, C<ch> or C<x> then C<es> will be
+added to the end of it.
+
+    print plural('class');      # classes
+    print plural('hash');       # hashes
+    print plural('patch');      # patches 
+    print plural('box');        # boxes 
+
+If it ends in C<y> then it will be replaced with C<ies>.
+
+    print plural('party');      # parties
+
+In all other cases, C<s> will be added to the end of the word.
+
+    print plural('device');     # devices
+
+It will fail miserably on many common words.
+
+    print plural('woman');      # womans     FAIL!
+    print plural('child');      # childs     FAIL!
+    print plural('foot');       # foots      FAIL!
+
+This function should I<only> be used in cases where the singular noun is known
+in advance and has a regular form that can be pluralised correctly by the
+algorithm described above. For example, the L<Badger::Factory> module allows
+you to specify C<$ITEM> and C<$ITEMS> package variable to provide the singular
+and plural names of the items that the factory manages.
+
+    our $ITEM  = 'person';
+    our $ITEMS = 'people';
+
+If the singular noun is sufficiently regular then the C<$ITEMS> can be 
+omitted and the C<plural> function will be used.
+
+    our $ITEM  = 'codec';       # $ITEMS defaults to 'codecs'
+
+In this case we know that C<codec> will pluralise correctly to C<codecs> and
+can safely leave C<$ITEMS> undefined.
+
+For more robust pluralisation of English words, you should use the
+L<Lingua::EN::Inflect> module by Damian Conway. For further information on the
+difficulties of correctly pluralising English, and details of the
+implementation of L<Lingua::EN::Inflect>, see Damian's paper "An Algorithmic
+Approach to English Pluralization" at
+L<http://www.csse.monash.edu.au/~damian/papers/HTML/Plurals.html>
 
 =head2 module_file($name)
 
 Returns the module name passed as an argument as a relative filesystem path
 suitable for feeding into C<require()>
 
-    print UTILS->module_file('My::Module');     # My/Module.pm
+    print module_file('My::Module');     # My/Module.pm
+
+=head2 xprintf($format,@args)
+
+A wrapper around C<sprintf()> which provides some syntactic sugar for 
+embedding positional parameters.
+
+    xprintf('The <2> sat on the <1>', 'mat', 'cat');
+    xprintf('The <1> costs <2:%.2f>', 'widget', 11.99);
+
+=head1 METHODS
+
+NOTE: these are deprecated.  Use Badger::Class load() and maybe_load() instead.
 
 =head2 load_module($name)
 
@@ -214,14 +280,6 @@ or invalid modules and returns zero.
     else {
         print "no loaded\n";
     }
-
-=head2 xprintf($format,@args)
-
-A wrapper around C<sprintf()> which provides some syntactic sugar for 
-embedding positional parameters.
-
-    UTILS->xprintf('The <2> sat on the <1>', 'mat', 'cat');
-    UTILS->xprintf('The <1> costs <2:%.2f>', 'widget', 11.99);
 
 =head1 AUTHOR
 
