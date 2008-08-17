@@ -44,9 +44,12 @@ our $DEBUG      = 0 unless defined $DEBUG;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
     base uber mixin mixins version debug constant constants words exports 
-    throws messages utils codec codecs methods get_methods set_methods
-    filesystem
+    throws messages utils codec codecs filesystem 
+    methods accessors mutators get_methods set_methods
 );
+
+*get_methods = \&accessors;
+*set_methods = \&mutators;
 
 
 #-----------------------------------------------------------------------
@@ -653,6 +656,7 @@ sub codecs {
 }
 
 sub method {
+    # TODO: make this get/set method
     my ($self, $name, $code) = @_;
     no strict REFS;
     _debug("defining method: $self\::$name => $code\n") if $DEBUG;
@@ -673,7 +677,7 @@ sub methods {
     return $self;
 }
 
-sub get_methods {
+sub accessors {
     my ($self, $names) = @_;
     $names = [ $names ] unless ref $names eq ARRAY;
     $names = [ map { split DELIMITER } @$names ];
@@ -688,7 +692,7 @@ sub get_methods {
     return $self;
 }
 
-sub set_methods {
+sub mutators {
     my ($self, $names) = @_;
     $names = [ $names ] unless ref $names eq ARRAY;
     $names = [ map { split DELIMITER } @$names ];
@@ -734,23 +738,17 @@ sub loaded {
 
 sub load {
     my $self = shift;
-    no strict REFS;
-    
-    # CARGO CULT ALERT: I copied some of this code from Moose (I think)
-    # and then modified it without really thinking about what I was doing.
-    # Needs a careful check.
-    
-    unless ($self->loaded) {
-        local $SIG{__DIE__};                # Hmmm... why am I doing this?
-        my $module = $self->{ name };
-        eval "require $module";             # Hmmm... why not 'use'?
-        die $@ if $@;
-        ${ $module.PKG.LOADED } ||= 1;         # mark it with our scent
-    }
-    
+    _autoload($self->{ name });
     return $self;
 }
 
+sub maybe_load {
+    my $self = shift;
+    return eval { $self->load } || do {
+        die $@ if $@ && $@ !~ /^Can't locate .*? in \@INC/;
+        0;
+    }
+}
 
 #-----------------------------------------------------------------------
 # autoload($module)
@@ -762,9 +760,11 @@ sub load {
 sub _autoload {
     my $class = shift;
     my $v;
-    no strict REFS;
+    no strict   REFS;
+    no warnings ONCE;
     
     unless ( $LOADED->{ $class }
+#         || %{ $class.PKG } ) {            # not good enough
           || defined ${ $class.PKG.LOADED  } 
           || defined ${ $class.PKG.VERSION }
           || @{ $class.PKG.ISA }) {
@@ -773,7 +773,9 @@ sub _autoload {
         $v = ${ $class.PKG.VERSION } ||= 0;
         local $SIG{__DIE__};
         eval "use $class";
+#        _debug("autoload error: $@\n") if $DEBUG && $@;
         die $@ if $@;
+#        _debug("autoloaded successfully\n") if $DEBUG;
         ${ $class.PKG.LOADED } ||= 1;
 #        die $@
 #            if $@ && $@ !~ /^Can't locate .*? at \(eval /;
@@ -1806,23 +1808,33 @@ subroutines or methods into a class.
 
 See the L<methods> method for further details.
 
-=head2 get_methods 
+=head2 accessors / get_methods
 
 This can be used to define simple read-only accessor methods for a class.
 
     use Badger::Class
+        accessors => 'foo bar';
+
+You can use C<get_methods> as an alias for C<accessors> if you prefer.
+
+    use Badger::Class
         get_methods => 'foo bar';
 
-See the L<get_method()> method for further details.
+See the L<accessors()> method for further details.
 
-=head2 set_methods
+=head2 mutators / set_methods
 
 This can be used to define simple read/write mutator methods for a class.
 
     use Badger::Class
+        mutators => 'foo bar';
+
+You can use C<set_methods> as an alias for C<mutators> if you prefer.
+
+    use Badger::Class
         set_methods => 'foo bar';
 
-See the L<set_methods()> method for further details.
+See the L<mutators()> method for further details.
 
 =head2 filesystem
 
@@ -2232,7 +2244,7 @@ TODO
 
 TODO
 
-=head2 get_methods
+=head2 accessors / get_methods
 
 The code generated is equivalent to:
 
@@ -2242,7 +2254,7 @@ The code generated is equivalent to:
 
 TODO
 
-=head2 set_methods
+=head2 mutators / set_methods
 
 
 The code generated is efficient but terse (which is OK because you never
