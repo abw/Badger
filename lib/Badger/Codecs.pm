@@ -18,7 +18,7 @@ use Badger::Codec::Chain
 use Badger::Class
     version   => 0.01,
     debug     => 0,
-    base      => 'Badger::Prototype Badger::Exporter',
+    base      => 'Badger::Factory',
     utils     => 'UTILS',
     import    => 'class',
     words     => 'CODECS CODEC_BASE',
@@ -30,7 +30,8 @@ use Badger::Class
         ENCODING      => 'Badger::Codec::Encoding',
     };
 
-our $CODEC_BASE = ['Badger::Codec'];
+our $ITEM       = 'codec';
+our $CODEC_BASE = ['Badger::Codec', 'BadgerX::Codec'];
 our $CODECS     = {
     # any codecs with non-standard capitalisation can go here, but 
     # generally we grok the module name from the $CODEC_BASE, e.g.
@@ -47,74 +48,15 @@ our $CODECS     = {
     } qw( utf8 UTF8 UTF16BE UTF16LE UTF32BE UTF32LE )
 };
 
-sub init {
-    my ($self, $config) = @_;
-    my $class = $self->class;
-    my $base  = $config->{ base };
-    $base = [ $base ] if $base && ref $base ne 'ARRAY';
-    $self->{ base   } = $class->list_vars(CODEC_BASE, $base);
-    $self->{ codecs } = $class->hash_vars(CODECS, $config->{ codecs });
-    return $self;
-}
-    
-sub base {
-    my $self = shift->prototype;
-    return @_ 
-        ? ($self->{ base } = ref $_[0] eq ARRAY ? shift : [ @_ ])
-        :  $self->{ base };
-}
-
-sub codecs {
-    my $self   = shift->prototype;
-    my $codecs = $self->{ codecs };
-    if (@_) {
-        my $args = ref $_[0] eq HASH ? shift : { @_ };
-        @$codecs{ keys %$args } = values %$args;
-    }
-    return $codecs;
-}
+*codecs = __PACKAGE__->can('items');
 
 sub codec {
     my $self = shift->prototype;
-    my $type = shift;
-    
+
     # quick turn-around if we're handling chains
-    return $self->chain($type) if $type =~ CHAINED;
-    
-    my $config = @_ && ref $_[0] eq HASH ? shift : { @_ };
-    my $codecs = $self->codecs;
-
-    # massage $type to a canonical form
-    my $name  = lc $type;
-       $name  =~ s/\W//g;
-    my $codec = $codecs->{ $name };
-    
-    if (! defined $codec) {
-        # we haven't got an entry in the $CODECS table so let's try 
-        # autoloading some modules using the $CODEC_BASE
-        $codec = $self->load($type)
-            || return $self->error_msg( not_found => codec => $type );
-        $codec = $codec->new($config);
-    }
-    elsif (ref $codec eq ARRAY) {
-        # [$module, $class] pair
-        UTILS->load_module($codec->[0]);
-        $codec = $codec->[1]->new($config);
-    }
-    elsif (ref $codec) {
-        # if we've already got a codec object we can re-use it 
-        # unless we have config options, in which case we create
-        # a new object with the relevant configuration
-        $codec = $codec->new($config) if %$config;
-    }
-    else {
-        # otherwise we load the module and create a new codec object
-        UTILS->load_module($codec);
-        $codec = $codec->new($config);
-    }
-
-    # cache codec object and return
-    return ($codecs->{ $name } = $codec);
+    return $_[0] =~ CHAINED
+        ? $self->chain(@_)
+        : $self->item(@_);
 }
 
 sub chain {
@@ -122,29 +64,25 @@ sub chain {
     $self->debug("creating chain for $_[0]\n") if $DEBUG;
     return CHAIN->new(@_);
 }
+ 
+sub found {
+    my ($self, $name, $codec) = @_;
+    # cache codec object and return
+    $self->{ codecs }->{ $name } = $codec;
+    return $codec;
+}
 
-sub load {
-    my $self   = shift->prototype;
-    my $type   = shift;
-    my $bases  = $self->base;
-    my @names  = ($type, ucfirst $type, uc $type);   # foo, Foo, FOO
-    my $loaded = 0;
-    my $module;
-    
-    foreach my $base (@$bases) {
-        foreach my $name (@names) {
-            no strict 'refs';
-            $module = $base . '::' . $name;
-            $self->debug("maybe load $module ?\n") if $DEBUG;
-            # Some filesystems are case-insensitive (like Apple's HFS), so an 
-            # attempt to load Badger::Codec::foo may succeed, when the correct 
-            # package name is actually Badger::Codec::Foo
-            return $module 
-                if ($loaded || UTILS->maybe_load_module($module) && ++$loaded)
-                && @{$module . '::ISA'};
-        }
+sub found_ref {
+    my ($self, $item, $config) = @_;
+    if (blessed $item) {
+        # codecs are cached for reuse, but we always create a new one if
+        # configuation parameters are provided.
+        $item = $item->new($config) if %$config;
+        return $item;
     }
-    return $self->error_msg( not_found => codec => $type );
+    else {
+        $self->error_msg( bad_ref => codec => $item, ref $item );
+    }
 }
 
 sub encode {
