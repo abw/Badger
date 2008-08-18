@@ -21,10 +21,12 @@ use Badger::Class
         POD      => 'Badger::Pod',
         NODES    => 'Badger::Pod::Nodes',
         PARSER   => 'Badger::Pod::Parser',
+        BLOCKS   => 'Badger::Pod::Blocks',
         DOCUMENT => 'Badger::Pod::Document',
     },
     exports    => {
-        any => 'Pod Nodes Parser Document POD NODES PARSER DOCUMENT',
+        any => 'Pod Nodes Parser Blocks Document 
+                POD NODES PARSER Blocks DOCUMENT',
     };
 
 our $LOADED = { };
@@ -43,6 +45,13 @@ sub Parser {
     return @_ 
         ? POD->parser(@_)
         : PARSER
+}
+
+sub Blocks { 
+    POD->load_blocks unless $LOADED->{ BLOCKS };
+    return @_ 
+        ? POD->blocks(@_)
+        : BLOCKS
 }
 
 sub Document { 
@@ -67,6 +76,11 @@ sub parser {
     ($LOADED->{ PARSER } ||= $self->load_parser)->new(@_);
 }
 
+sub blocks {
+    my $self = shift;
+    ($LOADED->{ BLOCKS } ||= $self->load_blocks)->new(@_);
+}
+
 sub document {
     my $self  = shift;
     ($LOADED->{ DOCUMENT } ||= $self->load_document)->new(@_);
@@ -79,6 +93,7 @@ sub document {
 
 sub load_nodes    { class(shift->NODES)->load->name    }
 sub load_parser   { class(shift->PARSER)->load->name   }
+sub load_blocks   { class(shift->BLOCKS)->load->name   }
 sub load_document { class(shift->DOCUMENT)->load->name }
 
     
