@@ -16,9 +16,9 @@
 use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
-use Badger::Pod 'Pod';
+use Badger::Pod 'Pod Nodes';
 use Badger::Test
-    tests => 10,
+    tests => 12,
     debug => 'Badger::Pod::Parser Badger::Pod::Document',
     args  => \@ARGV;
     
@@ -44,13 +44,51 @@ This is another normal paragraph.
 EOF
 
 
+
+#-----------------------------------------------------------------------
+# subclass parser to save verbatim blocks only
+#-----------------------------------------------------------------------
+
+package My::Pod::Parser;
+
+use Badger::Class
+    base => 'Badger::Pod::Parser';
+    
+
+sub parse {
+    my $self = shift;
+    $self->{ nodes  } = main::Nodes->new;
+    $self->{ blocks } = [ ];
+    $self->parse_blocks(@_);
+}
+
+sub parse_verbatim {
+    my ($self, $text, $line) = @_;
+    my $node = $self->{ nodes }->node( verbatim => {
+        text => $text,
+        line => $line,
+    } );
+    push(@{ $self->{ blocks } }, $node);
+}
+
+sub blocks {
+    my $self = shift;
+    my $blocks = $self->{ blocks };
+    return wantarray
+        ? @$blocks
+        :  $blocks;
+}
+
+package main;
+
 #-----------------------------------------------------------------------
 # try first without mergin verbatim blocks
 #-----------------------------------------------------------------------
 
-$pod = Pod( text => $text );
+#$pod = Pod( text => $text, %config );
+$pod = My::Pod::Parser->new->parse($text);
 ok( $pod, 'parsed pod' );
-@blocks = $pod->verbatim;
+@blocks = $pod->blocks;
 is( scalar(@blocks), 3, 'got 3 verbatim blocks' );
 like( $blocks[0], qr/^\s*This is some verbatim text.*the next line$/s, 'first verbatim block' );
 like( $blocks[1], qr/^\s*This is the next block.*before it$/s, 'second verbatim block' );
@@ -61,9 +99,9 @@ like( $blocks[2], qr/^\s*This is the third block.*above it$/s, 'third verbatim b
 # this time merge them unconditionally
 #-----------------------------------------------------------------------
 
-$pod = Pod( text => $text, merge_verbatim => 1 );
+$pod = My::Pod::Parser->new( merge_verbatim => 1 )->parse($text);
 ok( $pod, 'parsed pod with verbatim merged' );
-@blocks = $pod->verbatim;
+@blocks = $pod->blocks;
 is( scalar(@blocks), 1, 'got 1 verbatim block' );
 like( $blocks[0], qr/^\s*This is some verbatim text.*above it$/s, 'one verbatim block' );
 
@@ -73,9 +111,9 @@ like( $blocks[0], qr/^\s*This is some verbatim text.*above it$/s, 'one verbatim 
 # paras that are separated by non-empty blank lines.
 #-----------------------------------------------------------------------
 
-$pod = Pod( text => $text, merge_verbatim => -1 );
+$pod = My::Pod::Parser->new( merge_verbatim => -1 )->parse($text);
 ok( $pod, 'parsed pod with merged padded verbatim blocks' );
-@blocks = $pod->verbatim;
+@blocks = $pod->blocks;
 is( scalar(@blocks), 2, 'got 2 merged verbatim blocks' );
 like( $blocks[0], qr/^\s*This is some verbatim text.*the next line$/s, 'first merged verbatim block' );
 like( $blocks[1], qr/^\s*This is the next block.*before it.*above it$/s, 'second merged verbatim block' );

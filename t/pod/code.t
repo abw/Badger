@@ -28,7 +28,7 @@ my $test_dir  = 'testfiles';
 my $test_file = 'code.pod';
 my $dir       = -d 't' ? FS->dir('t', 'pod', $test_dir) : FS->dir($test_dir);
 my $file      = $dir->file($test_file);
-my @blocks    = Pod( file => $file )->code;
+my @blocks    = Pod( file => $file )->blocks->code;
 is( scalar @blocks, 2, 'two code blocks' );
 is( $blocks[0], "This is the first code block\n\n", 'got first code block' );
 is( $blocks[1], "\nThis is the second code block\n", 'got second code block' );
