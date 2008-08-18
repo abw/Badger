@@ -18,7 +18,6 @@ use Badger::Class
     base      => 'Badger::Prototype Badger::Exporter',
     import    => 'class',
     utils     => 'plural',
-#   accessors => 'item items',
     words     => 'ITEM ITEMS ISA',
     constants => 'PKG ARRAY HASH REFS ONCE',
     constant  => {
@@ -133,21 +132,36 @@ sub params {
     return $params;
 }
 
+
+sub module_names {
+    my ($self, $base, $type) = @_;
+#    (ucfirst $type, $type, uc $type);   # Foo, foo, FOO
+
+    join( PKG,
+         $base,
+         map {
+             join( '',
+                   map { s/(.)/\U$1/; $_ }
+                   split('_')
+             );
+         }
+         split(/\./, $type)
+    );
+}
+
 sub load {
     my $self   = shift->prototype;
     my $type   = shift;
     my $bases  = $self->base;
-    my @names  = ($type, ucfirst $type, uc $type);   # foo, Foo, FOO
     my $loaded = 0;
     my $module;
     
     foreach my $base (@$bases) {
-        foreach my $name (@names) {
+        foreach $module ($self->module_names($base, $type)) {
             no strict REFS;
-            
+
             # TODO: handle multi-element names, e.g. foo.bar
             
-            $module = $base.PKG.$name;
             $self->debug("maybe load $module ?\n") if $DEBUG;
             # Some filesystems are case-insensitive (like Apple's HFS), so an 
             # attempt to load Badger::Example::foo may succeed, when the correct 
