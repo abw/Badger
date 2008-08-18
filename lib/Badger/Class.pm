@@ -2047,6 +2047,33 @@ Package variables that reference a list will have their contents merged in.
     package main;
     C->list_vars('THINGS');     # ['Wibble', 'Baz', 'Bam', 'Foo', 'Bar']
 
+Additional arguments may be passed which are merged into the start of the
+list. 
+
+    B->list_vars('THINGS', 10, 20); 
+                                # [10, 20, 'Baz', 'Bam', 'Foo', 'Bar']
+
+    B->list_vars('THINGS', [30, 40]); 
+                                # [30, 40, 'Baz', 'Bam', 'Foo', 'Bar']
+
+This is typically used in object initialisation methods to merge any values
+specified as configuration parameters with those defined in package variables.
+These "local" configuration value are assumed to take precedence over package
+variables. Hence they appear at the start of the list rather than the end.
+
+    sub init {
+        my ($self, $config) = @_;
+        
+        $self->{ things } = $self->class->list_vars( 
+            THINGS => $config->{ things } 
+        );
+    }
+
+An additional list reference of C<things> can now be passed to the 
+constructor method.
+
+    my $b = B->new( things => [10,20] );
+
 =head2 hash_vars($name)
 
 Works like L<list_vars()> but merges references to hash arrays into a 
@@ -2068,7 +2095,7 @@ the relevant package variables that don't reference hash arrays.
     package main;
     B->hash_vars('THINGS');
 
-The call to C<hash_vars('THIGNS')> in the example above will return a
+The call to C<hash_vars('THINGS')> in the example above will return a
 reference to a hash array containing the following items:
 
     { 
@@ -2080,6 +2107,37 @@ reference to a hash array containing the following items:
 Note how the value for C<bar> is taken from the C<B> package rather than 
 the C<A> package because C<B> is the more specialised class (i.e. closer
 in terms of the inheritance tree).
+
+Additional arguments may be passed which are merged into the hash array. A
+common idiom is to use this in an object constructor or initialisation method
+to merge the values in package variables with any specified as configuration
+parameters.  Values passed as argument will have precedence over those 
+defined in package variables.
+
+    sub init {
+        my ($self, $config) = @_;
+        
+        $self->{ things } = $self->class->hash_vars( 
+            THINGS => $config->{ things } 
+        );
+    }
+
+An additional hash reference of C<things> can now be passed to the 
+constructor method.
+
+    my $b = B->new( things => { 
+        foo => 'New Foo',
+        bam => 'Bam',
+    } );
+
+The composite hash returned by C<hash_vars> will contain:
+
+    { 
+        foo => 'New Foo',
+        bar => 'New Bar', 
+        baz => 'Baz',
+        bam => 'Bam',
+    }
 
 =head2 hash_value($name,$key,$default)
 
