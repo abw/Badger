@@ -77,42 +77,26 @@ sub exports {
 }
 
 sub export_all {
-    my $self  = shift;
-    my $class = ref $self || $self;
-    my $tags  = @_ == 1 ? shift : [ @_ ];
-    no strict REFS;
-
-    push(
-        # add to existing $EXPORT_ALL pkg var or a newly created list...
-        @{ ${$class.PKG.EXPORT_ALL} ||= [ ] }, 
-        # ...arguments passed as list/list ref, or split single string
-        ref $tags eq ARRAY ? @$tags : split(DELIMITER, $tags)
-    )
+    my $self = shift;
+    my $args = @_ == 1 ? shift : [ @_ ];
+    my $list = $self->export_variable( EXPORT_ALL => [ ] );
+    push( @$list, ref $args eq ARRAY ? @$args : split(DELIMITER, $args) );
 }
 
 sub export_any {
-    my $self  = shift;
-    my $class = ref $self || $self;
-    my $tags  = @_ == 1 ? shift : [ @_ ];
-    no strict REFS;
-
-    push(
-        # add to existing $EXPORT_ANY pkg var or a newly created list...
-        @{ ${$class.PKG.EXPORT_ANY} ||= [ ] }, 
-        # ...arguments passed as list/list ref, or split single string
-        ref $tags eq ARRAY ? @$tags : split(DELIMITER, $tags)
-    )
+    my $self = shift;
+    my $args = @_ == 1 ? shift : [ @_ ];
+    my $list = $self->export_variable( EXPORT_ANY => [ ] );
+    push( @$list, ref $args eq ARRAY ? @$args : split(DELIMITER, $args) );
 }
 
 sub export_tags {
-    my $self  = shift;
-    my $class = ref $self || $self;
-    my $tags  = (@_ == 1) && (ref $_[0] eq HASH) ? shift : { @_ };
-    no strict REFS;
+    my $self = shift;
+    my $args = (@_ == 1) && (ref $_[0] eq HASH) ? shift : { @_ };
+    my $tags = $self->export_variable( EXPORT_TAGS => { } );
 
     # add new tags into $EXPORT_TAGS hash ref
-    my $export_tags = ${ $class.PKG.EXPORT_TAGS } ||= { };
-    @$export_tags{ keys %$tags } = values %$tags;
+    @$tags{ keys %$args } = values %$args;
 
     # all symbols referenced in tagsets (except other tag sets) must be 
     # flagged as exportable
@@ -127,27 +111,18 @@ sub export_tags {
             ref $_ eq HASH  ? %$_ :
             split DELIMITER
         } 
-        values %$tags
+        values %$args
     );
     
-    return $export_tags;
+    return $tags;
 }
 
 sub export_hooks {
     my $self  = shift;
-    my $class = ref $self || $self;
-    my $hooks = (@_ == 1) && (ref $_[0] eq HASH) ? shift : { @_ };
-    no strict REFS;
-
-    # add new export hooks into $EXPORT_HOOK hash ref
-    my $table = ${$class.PKG.EXPORT_HOOKS};
-    if ($table) {
-        @$table{ keys %$hooks } = values %$hooks;
-    }
-    else {
-        $table = ${$class.PKG.EXPORT_HOOKS} = $hooks;
-    }
-    return $table;
+    my $args  = (@_ == 1) && (ref $_[0] eq HASH) ? shift : { @_ };
+    my $hooks = $self->export_variable( EXPORT_HOOKS => { } );
+    @$hooks{ keys %$args } = values %$args;
+    return $hooks;
 }
 
 sub export_fail {
@@ -420,6 +395,24 @@ sub export_symbol {
     no strict   REFS;
     no warnings ONCE;
     *{ $target.PKG.$symbol } = $coderef;
+}
+
+
+sub export_variable {
+    my ($self, $name, $default) = @_;
+    my $class = ref $self || $self;
+    my $var   = $class.PKG.$name;
+    my $item;
+    no strict REFS;
+
+    unless (defined ($item = ${$var})) {
+        # install the default value ref into the SCALAR $EXPORT_XXXX var
+        ${$var} = $item = $default;
+        # then poke the symbol table to make Perl notice it's defined
+        *{$var} = \${$var};
+    }
+    
+    return $item;
 }
 
 sub _debug {
