@@ -279,8 +279,6 @@ sub parse_command {
 }
 
 
-
-
 #-----------------------------------------------------------------------
 # specialised handlers for commands that require additional processing
 #-----------------------------------------------------------------------

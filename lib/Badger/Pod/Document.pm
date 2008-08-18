@@ -12,12 +12,12 @@
 
 package Badger::Pod::Document;
 
-use Badger::Pod 'Nodes Blocks';
+use Badger::Pod 'POD';
 use Badger::Debug ':dump';
 use Badger::Class
     version     => 0.01,
     debug       => 0,
-    base        => 'Badger::Pod::Parser',
+    base        => 'Badger::Base',
     filesystem  => 'File',
     get_methods => 'text file name nodes body',
     constants   => 'SCALAR LAST',
@@ -51,25 +51,24 @@ sub init {
         return $self->error_msg('no_input');
     }
     
-    $self->{ nodes  } = Nodes->new;
-    $self->{ body   } = $self->{ nodes }->node('body');
-    $self->{ stack  } = [ $self->{ body } ];
-    
-    $self->init_parser($config);
-    $self->parse_blocks($self->{ text });
+    $self->{ config } = $config;
+    return $self;
 }
 
 sub blocks {
     my $self = shift;
-    # method of convenience which used Badger::Pod::Blocks to parse source
-    # into simple code/pod blocks.
     $self->{ blocks } 
-        ||= Blocks->new($self->{ config })->parse($self->{ text });
+        ||= POD->blocks($self->{ config })->parse($self->{ text });
 }
 
-sub node {
-    shift->nodes->node(@_);
+sub model {
+    my $self = shift;
+    $self->{ model } 
+        ||= POD->model($self->{ config })->parse($self->{ text });
 }
+
+
+__END__
 
 sub focus {
     my $self = shift;
