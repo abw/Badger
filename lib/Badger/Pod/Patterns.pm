@@ -51,10 +51,10 @@ our $SCAN_TO_POD    = qr/ \G ( \A | .*? $BLANK_LINES) (=\w+) /smx;
 our $SCAN_TO_CUT    = qr/ \G ( \A | .*? $BLANK_LINES =cut $OPTION_LINE | .*) /smx;
 our $SCAN_TO_CODE   = qr/ ($SCAN_TO_CUT | $SCAN_TO_EOF) /x;
 our $SCAN_TO_END    = qr/ \G (.*? $BLANK_LINES) =end ($OPTION_LINE) /smx; 
-our $SCAN_COMMAND   = qr/ \G =(\w+) (.*?) $PARA_SEPARATOR /smx;
-our $SCAN_VERBATIM  = qr/ \G (\s+ .*?)    $PARA_SEPARATOR /smx;
-our $SCAN_PARAGRAPH = qr/ \G (.+?)        $PARA_SEPARATOR /smx;
-our $SCAN_FORMAT    = qr/ \G (.*?)        $FORMAT_TOKEN   /smx;
+our $SCAN_COMMAND   = qr/ \G =(\w+) (.*?)  $PARA_SEPARATOR /smx;
+our $SCAN_VERBATIM  = qr/ \G ($BLANK+ .*?) $PARA_SEPARATOR /smx;
+our $SCAN_PARAGRAPH = qr/ \G (.+?)         $PARA_SEPARATOR /smx;
+our $SCAN_FORMAT    = qr/ \G (.*?)         $FORMAT_TOKEN   /smx;
 
 
 

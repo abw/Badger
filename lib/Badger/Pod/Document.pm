@@ -54,6 +54,7 @@ sub init {
     $self->{ nodes  } = Nodes->new;
     $self->{ body   } = $self->{ nodes }->node('body');
     $self->{ stack  } = [ $self->{ body } ];
+    
     $self->init_parser($config);
     $self->parse_blocks($self->{ text });
 }
@@ -63,7 +64,7 @@ sub blocks {
     # method of convenience which used Badger::Pod::Blocks to parse source
     # into simple code/pod blocks.
     $self->{ blocks } 
-        ||= Blocks->parse($self->{ text });
+        ||= Blocks->new($self->{ config })->parse($self->{ text });
 }
 
 sub node {
