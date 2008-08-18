@@ -1,0 +1,33 @@
+This is not Pod
+
+=pod
+
+This is Pod
+
+=cut
+
+Back to non-Pod
+
+=pod   
+
+Back to Pod (BTW, there are three spaces after '=pod' above and '=cut' below)
+
+=cut   
+
+Back to non-Pod once more
+
+=pod with some extra text which is ignored
+
+In Pod again
+
+=cut with some other text which is also ignored
+
+Out of Pod
+
+=pod
+
+=cutting should not be recognised as =cut
+
+=cut
+
+Out of Pod.  The End.
