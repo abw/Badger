@@ -409,10 +409,12 @@ sub _dispatch_handlers {
         my $handler = $_;        # don't alias list items
         $self->debug("dispatch handler: $handler\n") if $DEBUG;
         if (! ref $handler) {
-            if ($handler eq WARN) {                 # 'warn'
-                CORE::warn @args;
+            if ($handler eq WARN) {         # 'warn' - we make sure that the 
+                my $msg = join('', @args);  # message is newline terminated
+                chomp($msg);                # to stop Perl from adding a line
+                CORE::warn $msg, "\n";      # number that'll be wrong.
             }
-            elsif ($handler eq NONE) {              # 0 - bail out
+            elsif ($handler eq NONE) {      # NONE/0 - bail out
                 last;
             }
             else {
