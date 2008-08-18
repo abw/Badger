@@ -12,13 +12,15 @@
 
 package Badger::Pod::Parser;
 
+use Badger::Pod::Patterns ':scan :misc $WHITE_LINES';
 use Badger::Class
     version   => 0.01,
     debug     => 0,
     base      => 'Badger::Base',
-    constants => 'OFF ON LAST',
+    utils     => 'self_params',
+    constants => 'OFF ON LAST CODE',
     constant  => {
-        PADDED => -1,
+        PADDED  => -1,
         FORMAT  => 0,
         LPAREN  => 1,
         RPAREN  => 2,
@@ -31,24 +33,20 @@ use Badger::Class
         },
     },
     messages  => {
-        cut_fail     => 'Failed to match to end of pod',
+        bad_cut      => 'Invalid =cut at the start of a POD section at line %s',
         mismatch     => "Format mismatch - opening '%s' does not match '%s' at line %s",
         unterminated => "Interminated %s%s format starting at line %s",
         unexpected   => "Unexpected '%s' at line %s",
+        bad_command  => 'Invalid handler for %s command: %s',
+        no_format    => 'No format specified for %s command at line %s',
+        bad_format   => "Format mismatch: '%s %s' at line %s does not match '%s %s' at line %s",
     };
 
-our $TAB_WIDTH      = 4;
-our $PARA_SEPARATOR = qr/ (\n (?: \s* \n )+ | \z) /smx;
-our $WHITE_LINES    = qr/ ^ \n (?: [ \t]+ \n )+ $ /x;
-our $FORMAT_START   = qr/ ([A-Z]) ( < (?: <+ \s )? ) /x; 
-our $FORMAT_END     = qr/ ( (?: \s >+ )? > ) /x; 
-our $FORMAT_TOKEN   = qr/ (?: $FORMAT_START | $FORMAT_END ) /x;
-our $SCAN_TO_POD    = qr/ \G (.*?) (^=\w+ | \z) /smx;
-our $SCAN_TO_CUT    = qr/ \G (.*?) (^=cut (?-s: \n | [ \t].*?\n ) | \z) /smx;
-our $SCAN_COMMAND   = qr/ \G =(\w+) (.*?) $PARA_SEPARATOR /smx;
-our $SCAN_VERBATIM  = qr/ \G (\s+ .*?)    $PARA_SEPARATOR /smx;
-our $SCAN_PARAGRAPH = qr/ \G (.+?)        $PARA_SEPARATOR /smx;
-our $SCAN_FORMAT    = qr/ \G (.*?)        $FORMAT_TOKEN   /smx;
+our $TAB_WIDTH  = 4;
+our $COMMANDS   = {
+    begin => 'parse_command_begin',     # requires special handling
+    cut   => 'parse_command_cut',     
+};
 
 *init  = \&init_parser;
 *parse = \&parse_blocks;
@@ -59,8 +57,39 @@ sub init_parser {
     $self->{ merge_verbatim } = $config->{ merge_verbatim } || 0;
     $self->{ expand_tabs    } = $config->{ expand_tabs    } || 0;
     $self->{ tab_width      } = $config->{ tab_width      } || $TAB_WIDTH;
-#   $self->{ untrimmed      } = $config->{ untrimmed      } || 0;
+    $self->init_commands(
+        $self->class->hash_vars( COMMANDS => $config->{ commands } )
+    );
+
+    # save rest of config for other methods to reference on demand
+    $self->{ config } = $config;
+    
     return $self;
+}
+
+sub init_commands {
+    my ($self, $cmds) = self_params(@_);
+    my $c;
+    
+    $self->{ commands } = {
+        # command handlers can be code refs or methods names
+        map {
+            $c = $cmds->{ $_ };
+            $c = $self->can($c) 
+              || $self->error_msg( bad_command => $_, $c )
+                 unless ref $c eq CODE;
+            $_ => $c;
+        }
+        keys %$cmds
+    };
+
+    $self->debug(
+        "command handlers: ", 
+        $self->dump_data($self->{ commands }), 
+        "\n"
+    ) if $DEBUG;
+
+    return $self->{ commands };
 }
 
 sub parse_blocks {
@@ -69,22 +98,24 @@ sub parse_blocks {
     $line ||= 1;
 
     # scan for a block of up to the first Pod command
-    while ($text =~ /$SCAN_TO_POD/g) {
+    while ($text =~ /$SCAN_TO_POD/cg) {
         ($code, $pod) = ($1, $2);
-        
+
         # leading text can be empty if Pod =cmd starts on the first character 
         if (length $code) {
             $self->parse_code($code, $line);
             $line += ($code =~ tr/\n//);
         }
         
-        # Pod block can be empty if the file ends with a non-Pod section
-        if (length $pod) {
-            $text =~ /$SCAN_TO_CUT/g || return $self->error_msg('cut_fail');
-            $pod .= $1 . $2;
-            $self->parse_pod($pod, $line);
-            $line += ($pod =~ tr/\n//);
-        }
+        $text =~ /$SCAN_TO_CODE/cg;
+        $pod .= $1;
+        $self->parse_pod($pod, $line);
+        $line += ($pod =~ tr/\n//);
+    }
+    
+    # consume any remaining text after the last (or no) pod command
+    if ($text =~ /$SCAN_TO_EOF/) {
+        $self->parse_code($1, $line) if length $1;
     }
 
     return $self;
@@ -97,19 +128,34 @@ sub parse_code {
 
 sub parse_pod {
     my ($self, $text, $line) = @_;
-    my ($type, $body, $gap);
+    my $cmds   = $self->{ commands };
     my $vmerge = $self->{ merge_verbatim } || 0;
     my $vtabs  = $self->{ expand_tabs };
     my $vtab   = ' ' x ($self->{ tab_width } || $TAB_WIDTH) if $vtabs;
+    my $para   = 1;     # paragaph count
+    my ($name, $body, $gap, $handler);
+    $line ||= 1;
 
     # TODO: handle first =pod cmd and last =cut command ?
+    # TODO: check for =cut as first command and throw error
 
     while (1) {
         if ($text =~ /$SCAN_COMMAND/cg) {
-            ($type, $body, $gap) = ($1, $2, $3);
-            $self->parse_command($type, $body, $line);
+            # a command is a paragraph starting with '=\w+'
+            ($name, $body, $gap) = ($1, $2, $3);
+            
+            # some commands (like =begin and =cut) define custom handlers, 
+            # otherwise we call the parse_command() method
+            if ($handler = $cmds->{ $name }) {
+                $self->debug("calling custom handler for $name command\n") if $DEBUG;
+                $handler->($self, $name, $body, $line, $para, $gap, \$text);
+            }
+            else {
+                $self->parse_command($name, $body, $line, $para, $gap, \$text);
+            }
         }
         elsif ($text =~ /$SCAN_VERBATIM/cg) {
+            # a verbatim block starts with whitespace
             ($body, $gap) = ($1, $2);
 
             if ($vmerge) {
@@ -128,11 +174,12 @@ sub parse_pod {
             # expand tabs if expand_tabs option set
             $body =~ s/\t/$vtab/g if $vtabs;
 
-            $self->parse_verbatim($body, $line);
+            $self->parse_verbatim($body, $line, $para, $gap, \$text);
         }
         elsif ($text =~ /$SCAN_PARAGRAPH/cg) {
+            # a regular paragraph is anything that isn't command or verbatim
             ($body, $gap) = ($1, $2);
-            $self->parse_paragraph($body, $line);
+            $self->parse_paragraph($body, $line, $para, $gap, \$text);
         }
         else {
             # the $SCAN_PARAGRAPH regex will gobble any remaining characters
@@ -140,24 +187,17 @@ sub parse_pod {
             last;
         }
 
-        # update line count
+        # update line count and paragraph count
         for ($body, $gap) {
             $line += ($_ =~ tr/\n//);
         }
+        $para++;
     }
 }
 
-sub parse_command {
-    my ($self, $type, $text, $line) = @_;
-}    
-
-sub parse_verbatim {
-    my ($self, $text, $line) = @_;
-}    
-
 sub parse_paragraph {
     my ($self, $text, $line) = @_;
-    my ($body, $type, $paren, $lparen, $rparen, $format, $where);
+    my ($body, $name, $paren, $lparen, $rparen, $format, $where);
     my @stack = ( 
         # format, lparen, rparen, $line, $content
         [ '', '', '', $line, [] ] 
@@ -166,21 +206,21 @@ sub parse_paragraph {
     $self->debug("parsing paragraph at line $line\n") if $DEBUG;
 
     while ($text =~ /$SCAN_FORMAT/g) {
-        ($body, $type, $lparen, $rparen) = ($1, $2, $3, $4);
+        ($body, $name, $lparen, $rparen) = ($1, $2, $3, $4);
         
         if (length $body) {
             push(@{ $stack[LAST]->[CONTENT] }, $body);
             $line += ($body =~ tr/\n//);
         }
 
-        if (defined $type) {
-            $self->debug("format start @ $line: $type$lparen\n") if $DEBUG;
+        if (defined $name) {
+            $self->debug("format start @ $line: $name$lparen\n") if $DEBUG;
             # construct right paren that we expect to match (without spaces)
             for ($rparen = $lparen) {
                 s/\s$//;
                 tr/</>/;
             }
-            push(@stack, [ $type, $lparen, $rparen, $line, [ ] ]);
+            push(@stack, [ $name, $lparen, $rparen, $line, [ ] ]);
         }
         elsif (defined $rparen) {
             $self->debug("format end @ $line: $rparen\n") if $DEBUG;
@@ -218,7 +258,7 @@ sub parse_paragraph {
             $self->parse_format(@$format)
         );
     }
-    $format = $stack[LAST];
+    $format = $stack[LAST]->[CONTENT];
 
     return wantarray
         ? @$format
@@ -226,34 +266,86 @@ sub parse_paragraph {
 }
 
 sub parse_format {
-    my ($self, $type, $lparen, $rparen, $line, $content) = @_;
-    return [$type, $lparen, $rparen, $line, $content];
+    my ($self, $name, $lparen, $rparen, $line, $content) = @_;
+    return [$name, $lparen, $rparen, $line, $content];
 }
+
+sub parse_verbatim {
+    shift;
+}    
+
+sub parse_command {
+    shift;
+}
+
+
+
+
+#-----------------------------------------------------------------------
+# specialised handlers for commands that require additional processing
+#-----------------------------------------------------------------------
+
+sub parse_command_cut {
+    my ($self, $name, $text, $line, $para, $gap, $podref) = @_;
+    
+    if ($para == 1) {
+        # =cut must not appear as the first command paragraph in a POD section
+        $self->warn_msg( bad_cut => $line );
+    }
+    else {
+        $self->parse_command($name, $text, $line, $para, $podref);
+    }
+}
+
+sub parse_command_begin {
+    my ($self, $name, $text, $line, $para, $gap, $podref) = @_;
+    my $lines = ($text =~ tr/\n//) + ($gap =~ tr/\n//);
+    my $format;
+
+    $self->debug("begin command: [$name] [$text]\n") if $DEBUG;
+    
+    if ($text =~ $COMMAND_FORMAT) {
+        $format = $1;
+        $self->debug("=begin $format") if $DEBUG;
+    }
+    else {
+        # =begin must have a format string defined
+        $self->warn_msg( no_format => '=' . $name, $line );
+        $format = '';
+    }
+    
+    if ($format =~ /^:/) {
+        # if the name of a begin/end format starts with ':' then the content
+        # is treated as regular pod
+        return $self->parse_command($name, $text, $line);
+    }
+    else {
+        # otherwise everything up to the =end is a raw code block - we scan
+        # ahead using the $podref text reference to update the global regex
+        # position - this effectively consumes the next block of text
+        $$podref =~ /$SCAN_TO_END/cg
+            || return $self->error('missing =end');     # TODO
+        
+        my ($code, $option) = ($1, $2);
+        my $code_line = $line + $lines;
+        $lines += ($code =~ tr/\n//);
+        if ($option =~ $COMMAND_FORMAT) {
+            $self->debug("=end $1") if $DEBUG;
+            $self->warn_msg( bad_format => '=begin', $format, $line, '=end', $1, $line + $lines)
+                unless $1 eq $format;
+        }
+        else {
+            $self->warn_msg( no_format => '=end', $line + $lines);
+        }
+
+        # generate three events to mark the =begin, intermediate code and =end
+        $self->parse_command( begin => $text, $line);
+        $self->parse_code($code, $code_line);
+        $self->parse_command( end => $text, $line);
+    }
+}
+
 
 1;
 
 __END__        
-
-while(@stack) {
-    $result = $stack[-1]->add($self, $type, $para);
-    if (! defined $result) {
-        $self->warning($stack[-1]->error(), $name, $$line);
-        last;
-    }
-    elsif (ref $result) {
-        push(@stack, $result);
-        last;
-    }
-    elsif ($result == REDUCE) {
-        pop @stack;
-        last;
-    }
-    elsif ($result == REJECT) {
-        $self->warning($stack[-1]->error(), $name, $$line);
-        pop @stack;
-    }
-    elsif (@stack == 1) {
-        $self->warning("unexpected $type", $name, $$line);
-        last;
-    }
-}

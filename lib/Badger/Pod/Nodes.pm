@@ -27,4 +27,44 @@ our $NODES     = {
 *node  = __PACKAGE__->can('item');
 *nodes = __PACKAGE__->can('items');
 
+
+#=======================================================================
+# Badger::Pod::Node::* subclasses
+#=======================================================================
+
+package Badger::Pod::Node::Code;
+
+use Badger::Class
+    base     => 'Badger::Pod::Node',
+    constant => { type => 'code' };
+
+
+package Badger::Pod::Node::Verbatim;
+
+use Badger::Class
+    base      => 'Badger::Pod::Node',
+    accessors => 'name',
+    constant  => { type => 'verbatim' };
+
+
+package Badger::Pod::Node::Command;
+
+use Badger::Class
+    base      => 'Badger::Pod::Node::Body',
+    accessors => 'name',
+    constant  => { type => 'command' };
+
+sub init {
+    my ($self, $config) = @_;
+    $self->{ name } = $config->{ name };
+    $self->SUPER::init($config);
+}
+
+
+package Badger::Pod::Node::Paragraph;
+
+use Badger::Class
+    base     => 'Badger::Pod::Node::Body',
+    constant => { type => 'paragraph' };
+
 1;

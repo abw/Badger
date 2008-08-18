@@ -13,13 +13,14 @@
 package Badger::Pod::Document;
 
 use Badger::Pod 'Nodes';
+use Badger::Debug ':dump';
 use Badger::Class
     version     => 0.01,
     debug       => 0,
     base        => 'Badger::Pod::Parser',
     filesystem  => 'File',
-    get_methods => 'text file name',
-    constants   => 'SCALAR',
+    get_methods => 'text file name nodes body',
+    constants   => 'SCALAR LAST',
     constant    => {
         TEXT_NAME => '<input text>',
     },
@@ -27,12 +28,12 @@ use Badger::Class
         no_input => 'No text or file parameter specified',
     };
 
-
 our $TEXT_NAME = '<input text>';
+
 
 sub init {
     my ($self, $config) = @_;
-    my ($text, $file, $name);
+    my ($text, $file, $name, $nodes);
     
     if ($file = $config->{ file }) {
         $file = File($file);
@@ -50,68 +51,109 @@ sub init {
         return $self->error_msg('no_input');
     }
     
-    $self->{ nodes } = Nodes->new;
-
-    return $self->init_parser($config);
-}
-
-sub content {
-    my $self = shift;
-    return $self->{ content } 
-       ||= $self->parse_blocks($self->{ text });
+    $self->{ nodes  } = Nodes->new;
+    $self->{ body   } = $self->{ nodes }->node('body');
+    $self->{ stack  } = [ $self->{ body } ];
+    $self->init_parser($config);
+    $self->parse_blocks($self->{ text });
 }
 
 sub blocks {
-    shift->content->blocks;
+    shift->{ body }->body;
 }
 
-sub parse_blocks {
-    my $self   = shift;
-    my @blocks;
-    $self->{ blocks } = \@blocks;
-    $self->SUPER::parse_blocks(@_);
-    $self->{ nodes }->node( list => { content => \@blocks } );
-}    
+sub code {
+    # TODO: must find code blocks embedded inside begin/end and for cmds
+    shift->body->body_type('code');
+}
+
+sub pod {
+    shift->body->body_type('pod');
+}
+
+sub paragraph {
+    shift->body->body_type_each( pod => 'paragraph' );
+}
+
+sub verbatim {
+    shift->body->body_type_each( pod => 'verbatim' );
+}
+
+sub node {
+    shift->nodes->node(@_);
+}
+
+sub focus {
+    my $self = shift;
+    push(@{ $self->{ stack } }, @_) if @_;
+    return $self->{ stack }->[LAST];
+}
+
+sub add_focus {
+    my $self  = shift;
+    my $stack = $self->{ stack };
+    my $node  = $stack->[LAST]->add(@_);
+    push(@$stack, $node);
+    return $node;
+}
+
+sub blur {
+    pop(@{ $_[0]->{ stack } });
+}
 
 sub parse_code {
     my ($self, $text, $line) = @_;
     $self->debug("<pod:code\@$line>$text</pod:code>\n") if $DEBUG;
-    push(
-        @{ $self->{ blocks } }, 
-        $self->{ nodes }->node( code => { text => $text, line => $line } )
+    $self->focus->add(
+        code => { 
+            text => $text, 
+            line => $line 
+        } 
     );
-}
-
-sub parse_pod {
-    my ($self, $text, $line) = @_;
-    $self->debug("<pod:pod\@$line>$text</pod:pod>\n") if $DEBUG;
-    push(
-        @{ $self->{ blocks } }, 
-        $self->{ nodes }->node( pod => { text => $text, line => $line } )
-    );
-    $self->SUPER::parse_pod($text, $line);
 }
 
 sub parse_command {
-    my ($self, $type, $text, $line) = @_;
-    $self->debug("<pod:command\@$line>=$type$text</pod:command>\n") if $DEBUG;
+    my ($self, $name, $text, $line) = @_;
+    $self->debug("<pod:command\@$line>=$name$text</pod:command>\n") if $DEBUG;
+    my $body = $self->SUPER::parse_paragraph($text, $line);
+    $self->focus->add(
+        command => {
+            name => $name,
+            text => '=' . $name . $text, 
+            line => $line,
+            body => $body,
+        } 
+    );
 }
 
 sub parse_verbatim {
     my ($self, $text, $line) = @_;
     $self->debug("<pod:verbatim\@$line>$text</pod:verbatim>\n") if $DEBUG;
+    $self->focus->add(
+        verbatim => {
+            text => $text, 
+            line => $line,
+        } 
+    );
 }    
 
 sub parse_paragraph {
     my ($self, $text, $line) = @_;
     $self->debug("<pod:paragraph\@$line>$text</pod:paragraph>\n") if $DEBUG;
     my $body = $self->SUPER::parse_paragraph($text, $line);
+    $self->focus->add(
+        paragraph => { 
+            text => $text, 
+            line => $line,
+            body => $body,
+        } 
+    );
 }
 
 sub parse_format {
-    my ($self, $type, $lparen, $rparen, $line, $content) = @_;
-    $self->debug("<pod:format\@$line>$type$lparen...$rparen</pod:format>\n") if $DEBUG;
-    return [$type, $lparen, $rparen, $line, $content];
+    my ($self, $name, $lparen, $rparen, $line, $content) = @_;
+    $self->debug("<pod:format\@$line>$name$lparen...$rparen</pod:format>\n") if $DEBUG;
+    return [$name, $lparen, $rparen, $line, $content];
 }
 
 1;

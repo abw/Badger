@@ -20,6 +20,9 @@ use Badger::Class
     constants   => 'TRUE',
     constant    => {
         type    => 'node',
+    },
+    messages    => {
+        bad_add => 'Elements cannot be added to a Pod %s',
     };
 
 use overload
@@ -32,8 +35,13 @@ sub init {
     $self->{ nodes } = $config->{ nodes };
     $self->{ text  } = $config->{ text };
     $self->{ line  } = $config->{ line } || 0;
-    $self->debug("got nodes: $self->{ nodes }\n");
     return $self;
 }
 
+sub add {
+    my $self = shift;
+    $self->error_msg( bad_add => $self->type );
+}
+
+    
 1;
