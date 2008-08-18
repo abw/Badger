@@ -22,7 +22,6 @@ Badger::Codec
 --------------
 
 * encoded()/decoded() methods (e.g. for utf8)
-* codec path should include BadgerX::Codec
 
 
 Badger::Debug
@@ -100,6 +99,23 @@ Badger::Utils
 
 * look into merging load_module() with Badger::Class::_autoload
 
+Badger::Factory
+---------------
+
+* have it bind fetch methods to item/items if undefined, e.g
+  node => item, nodes => items.
+
+* support multi-element names, e.g. node.foo.bar
+
+
+BadgerX
+-------
+
+* add path to any bases missing it
+
+* document
+
+
 
 Longer Terms Goals / Larger Projects
 ------------------------------------
@@ -107,7 +123,7 @@ Longer Terms Goals / Larger Projects
 * incorporate re-write of AppConfig into Badger::Config
 
 * consider doing the same with Pod::POM into Badger::Pod and combining
-  with Badger::Docs.
+  with Badger::Docs.  (update: doing now)
 
 * Finish cleaning Badger-Web and release
 
