@@ -12,7 +12,7 @@
 
 package Badger::Pod::Document;
 
-use Badger::Pod 'Nodes';
+use Badger::Pod 'Nodes Blocks';
 use Badger::Debug ':dump';
 use Badger::Class
     version     => 0.01,
@@ -59,24 +59,11 @@ sub init {
 }
 
 sub blocks {
-    shift->{ body }->body;
-}
-
-sub code {
-    # TODO: must find code blocks embedded inside begin/end and for cmds
-    shift->body->body_type('code');
-}
-
-sub pod {
-    shift->body->body_type('pod');
-}
-
-sub paragraph {
-    shift->body->body_type_each( pod => 'paragraph' );
-}
-
-sub verbatim {
-    shift->body->body_type_each( pod => 'verbatim' );
+    my $self = shift;
+    # method of convenience which used Badger::Pod::Blocks to parse source
+    # into simple code/pod blocks.
+    $self->{ blocks } 
+        ||= Blocks->parse($self->{ text });
 }
 
 sub node {
