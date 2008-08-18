@@ -18,7 +18,7 @@ use Badger::Class
     debug   => 0,
     exports => {
         any => [qw( 
-            debug debug_caller
+            debug debug_up debug_caller
         )],
         tags => {
             dump => 'dump dump_data dump_data_inline 
@@ -35,9 +35,10 @@ use Badger::Rainbow
     
 our $PAD       = '    ';
 our $TEXTLEN   = 32;
-our $MAX_DEPTH = 2;    # prevent runaways in debug/dump
+our $MAX_DEPTH = 2;     # prevent runaways in debug/dump
 our $FORMAT    = "[<class> line <line>] <msg>"  
     unless defined $FORMAT;
+our $CALLER_UP = 0;     # hackola to allow debug() to use a different caller
 
 
 #-----------------------------------------------------------------------
@@ -51,7 +52,7 @@ sub debug {
     my $msg    = join('', @_),
     my $class  = ref $self || $self;
     my $format = $FORMAT;
-    my ($pkg, $file, $line) = caller();
+    my ($pkg, $file, $line) = caller($CALLER_UP);
     $class .= " ($pkg)" unless $class eq $pkg;
     my $data = {
         msg   => $msg,
@@ -61,6 +62,12 @@ sub debug {
     };
     $format =~ s/<(\w+)>/defined $data->{ $1 } ? $data->{ $1 } : "<$1 undef>"/eg;
     print STDERR $format;
+}
+
+sub debug_up {
+    my $self = shift;
+    local $CALLER_UP = shift;
+    $self->debug(@_);
 }
 
 
@@ -250,9 +257,52 @@ This mixin module implements a number of methods for debugging.
 
 =head2 debug($msg1, $msg2, ...)
 
-At present this method simply prints all arguments to STDERR, prefixed 
-by an object identifier.  This should eventually provide alternatives,
-allowing custom debug handlers to be defined, etc.
+This method can be used to generate debugging messages.
+
+    $object->debug("Hello ", "World\n");
+
+It prints all argument to STDERR with a prefix indicating the 
+class name, file name and line number from where the C<debug()> method
+was called.
+
+    [Badger::Example line 42] Hello World
+
+At some point in the future this will be extended to allow you to tie 
+debug hooks in, e.g. to forward to a logging module.
+
+=head2 debug_up($n, $msg1, $msg2, ...)
+
+The L<debug()> method generates a message showing the file and line number
+from where the method was called.  The C<debug_up()> method can be used
+to report the error from somewhere higher up the call stack.
+
+For example, your module may have its own method which generates debugging
+messages.  In this trivial example, we have a C<debug_time()> method which
+adds the current system time to the end of the message.
+
+    sub wibble {
+        my $self = shift;
+        $self->debug_time("in wibble()");
+    }
+    
+    sub debug_time {
+        my $self = shift;
+        $self->debug(@_, ' at ', time);
+    }
+
+In this case, the debug messages will all be reported as originating in 
+the C<debug_time()> method which probably isn't what you want.  If you 
+instead use the C<debug_up()> method with a first argument of C<1>, then
+the message will be reported from the perspective of the caller of 
+C<debug_alt()>, which in this case is the C<wibble()> method.
+
+    sub debug_time {
+        my $self = shift;
+        $self->debug_up(1, @_, ');
+    }
+
+Use a higher value than C<1> if you want to jump further up the caller
+stack.
 
 =head2 debug_caller()
 
