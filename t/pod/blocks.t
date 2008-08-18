@@ -2,7 +2,8 @@
 #
 # t/pod/blocks.t
 #
-# Test the Badger::Pod::Document module in its ability to parse blocks.
+# Test the Badger::Pod::Blocks module which splits a Pod document into 
+# code blocks and Pod sections.
 #
 # Written by Andy Wardley <abw@wardley.org>
 #
@@ -16,13 +17,12 @@
 use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
-use Badger::Pod 'Pod POD';
+use Badger::Pod 'Pod';
 use Badger::Filesystem 'FS';
 use Badger::Debug ':dump';
 use Badger::Test
     tests => 52,
-#    debug => 'Badger::Pod Badger::Pod::Document Badger::Pod::Node::Body',
-    debug => 'Badger::Pod::Node::Body',
+    debug => 'Badger::Pod::Blocks',
     args  => \@ARGV;
     
 my $tfd    = 'testfiles';
@@ -30,8 +30,8 @@ my $dir    = -d 't' ? FS->dir('t', 'pod', $tfd) : FS->dir($tfd);
 my $file   = "blocks_\n.pod";     # let Perl insert platform-specific ending
    $file   =~ s/\012/lf/g;        # then translate it to letters: cr lf crlf
    $file   =~ s/\015/cr/g;
-my $pod    = Pod( file => $dir->file($file) );
-my @blocks = $pod->blocks;
+my $pod    = $dir->file($file);
+my @blocks = Badger::Pod::Blocks->parse($pod->text)->blocks;
 my @lines  = (1, 3, 8, 11, 16, 19, 24, 27, 32);
 my @expect = (
     "This is not Pod\n\n", 
@@ -61,14 +61,14 @@ foreach my $n (0..$#expect) {
 
 $pod = Pod( text => "=head1 hello world\n\n" );
 ok( $pod, 'got pod in first line' );
-@blocks = $pod->blocks;
+@blocks = $pod->blocks->all;
 is( scalar(@blocks), 1, 'got one block' );
 is( $blocks[0]->type, 'pod', 'got pod block' );
 is( $blocks[0]->text, "=head1 hello world\n\n", 'got hello world block' );
 
 $pod = Pod( text => "=head1 hello world\n\n=head1 hello badger" );
 ok( $pod, 'got pod with a badger on the end' );
-@blocks = $pod->blocks;
+@blocks = $pod->blocks->all;
 is( scalar(@blocks), 1, 'got one badgery block' );
 is( $blocks[0]->type, 'pod', 'got badgery pod block' );
 is( $blocks[0]->text, "=head1 hello world\n\n=head1 hello badger", 'got hello badger block' );
@@ -80,7 +80,7 @@ is( $blocks[0]->text, "=head1 hello world\n\n=head1 hello badger", 'got hello ba
 
 $pod = Pod( text => "=head1 hello world" );
 ok( $pod, 'got pod in single line' );
-@blocks = $pod->blocks;
+@blocks = $pod->blocks->all;
 is( scalar(@blocks), 1, 'got one block in single line' );
 is( $blocks[0]->type, 'pod', 'got pod block in single line' );
 is( $blocks[0]->text, "=head1 hello world", 'got hello world single line block' );
@@ -92,7 +92,7 @@ is( $blocks[0]->text, "=head1 hello world", 'got hello world single line block' 
 
 $pod = Pod( text => "some code\n=head1 hello world\nmore code" );
 ok( $pod, 'got pod code without blank lines' );
-@blocks = $pod->blocks;
+@blocks = $pod->blocks->all;
 is( scalar(@blocks), 1, 'got one block in code without blank lines' );
 is( $blocks[0]->type, 'code', 'got code block without blank lines' );
 is( $blocks[0]->text, "some code\n=head1 hello world\nmore code", 'got code block without blank lines' );
@@ -104,7 +104,7 @@ is( $blocks[0]->text, "some code\n=head1 hello world\nmore code", 'got code bloc
 
 $pod = Pod( text => "some code\n=head1 hello world\n\nmore code" );
 ok( $pod, 'got pod code for blank line before' );
-@blocks = $pod->blocks;
+@blocks = $pod->blocks->all;
 is( scalar(@blocks), 1, 'got one blocks for blank line before' );
 is( $blocks[0]->type, 'code', 'got code block without blank lines' );
 is( $blocks[0]->text, "some code\n=head1 hello world\n\nmore code", 'got code block without blank lines' );
@@ -116,7 +116,7 @@ is( $blocks[0]->text, "some code\n=head1 hello world\n\nmore code", 'got code bl
 
 $pod = Pod( text => "=begin test\n\nThis is in the begin block\n\n=end test" );
 ok( $pod, 'I get bored thinking up test names' );
-@blocks = $pod->blocks;
+@blocks = $pod->blocks->all;
 is( scalar(@blocks), 1, 'got one pod block, as if anyone cares' );
 is( $blocks[0]->type, 'pod', 'yeah, it was a pod block' );
 like( $blocks[0]->text, qr/^=begin test.*?=end test$/s, 'begin to end test' );
