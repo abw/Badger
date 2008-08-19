@@ -44,9 +44,13 @@ our $DEBUG      = 0 unless defined $DEBUG;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
     base uber mixin mixins version debug constant constants words exports 
-    throws messages utils codec codecs filesystem 
+    throws messages utils codec codecs filesystem hooks
     methods accessors mutators get_methods set_methods
 );
+our $HOOKS = { 
+    map { $_ => $_ }
+    @HOOKS
+};
 
 *get_methods = \&accessors;
 *set_methods = \&mutators;
@@ -121,13 +125,25 @@ CLASS->export_hooks({
     @HOOKS
 });
 
+CLASS->export_fail(\&_export_fail);
+
 sub _export_hook {
-    my ($class, $target, $key, $symbols, $import) = @_;
+    my ($class, $target, $key, $symbols) = @_;
     croak "You didn't specify a value for the '$key' load option."
         unless @$symbols;
     # make sure we forward the $class to class() so this module can 
     # be subclassed (e.g. Badger::Web::Class)
     class($target, $class)->$key(shift @$symbols);
+}
+
+# define catch-all which allows sub-classes to declare hooks via $HOOKS
+sub _export_fail {
+    my ($class, $target, $key, $symbols, $import) = @_;
+#    _debug("_export_fail($class, $target, $key, $symbols)\n");
+    my $hook = class($class)->hash_value( HOOKS => $key ) || return;
+    croak "You didn't specify a value for the '$key' load option."
+        unless @$symbols;
+    class($target, $class)->$hook(shift @$symbols);
 }
     
 sub export {
@@ -405,14 +421,6 @@ sub base {
     return $self;
 }
 
-sub uber {
-    my ($self, $base) = @_;
-    my $pkg = $self->{ name };
-    $self->base($base);
-    $pkg->UBER;
-    return $self;
-}
-
 sub mixin {
     my $self   = shift;
     my $mixins = @_ == 1 ? shift : [ @_ ];
@@ -620,7 +628,7 @@ sub messages {
 
 sub utils {
     my $self = shift;
-    my $syms = @_ == 1 ? shift : { @_ };
+    my $syms = @_ == 1 ? shift : [ @_ ];
     my $pkg  = $self->{ name };
 
     $syms = [ split(DELIMITER, $syms) ] 
@@ -749,6 +757,45 @@ sub maybe_load {
         0;
     }
 }
+
+
+#-----------------------------------------------------------------------
+# methods for building Badger::Class subclasses
+#-----------------------------------------------------------------------
+
+sub uber {
+    my ($self, $base) = @_;
+    my $pkg = $self->{ name };
+    $self->base($base);
+    $pkg->UBER;
+    return $self;
+}
+
+sub hooks {
+    my $self  = shift;
+    my $args  = @_ == 1 ? shift : { @_ };
+    my $hooks = $self->var_default( HOOKS => { } );
+
+    # split string into list ref
+    $args = [ split(DELIMITER, $args) ] 
+        unless ref $args;
+
+    # map list ref to hash ref
+    $args = {
+        map { $_ => $_ }
+        @$args
+    } if ref $args eq ARRAY;
+        
+    croak("Invalid hooks specified: $args")
+        unless ref $args eq HASH;
+        
+    _debug("merging $self->{ name } hooks: ", join(', ', keys %$args), "\n") if $DEBUG;
+
+    @$hooks{ keys %$args } = values %$args;
+    
+    return $self;
+}
+
 
 #-----------------------------------------------------------------------
 # autoload($module)
