@@ -40,8 +40,8 @@ our $MESSAGES  = {
     missing_to      => 'No %s specified to %s',
     missing         => 'No %s specified',
     todo            => '%s is TODO %s',
-    location        => 'in %s at line %s',
-    at_line         => 'at line %s',
+    at_line         => '%s at line %s',
+    at_file_line    => '%s in %s at line %s',
 };
 
 
