@@ -86,8 +86,8 @@ sub items {
 
 sub item {
     my $self   = shift->prototype;
-    my $type   = shift;
-    my $config = $self->params(@_);
+    my ($type, @args) = $self->type_args(@_);
+#    my $config = $self->params(@_);
     my $items  = $self->{ $self->{ items } };
     
     # massage $type to a canonical form
@@ -104,7 +104,7 @@ sub item {
         # autoloading some modules using the $CODEC_BASE
         $item = $self->load($type)
             || return $self->error_msg( not_found => $self->{ item }, $type );
-        $item = $item->new($config);
+        $item = $item->new(@args);
     }
     elsif ($iref = ref $item) {
         my $method 
@@ -112,20 +112,28 @@ sub item {
             || $self->can(FOUND_REF)
             || return $self->error_msg( bad_ref => $self->{ item }, $type, $iref );
             
-        $item = $method->($self, $item, $config) 
+        $item = $method->($self, $item, @args) 
             || return;
     }
     else {
         # otherwise we load the module and create a new object
         class($item)->load unless $LOADED{ $item }++;
-        $item = $item->new($config);
+        $item = $item->new(@args);
     }
 
     return $self->found( $name => $item );
 #    return $item;
 }
 
-sub params {
+sub type_args {
+    my $self   = shift;
+    my $type   = shift;
+    my $params = @_ && ref $_[0] eq HASH ? shift : { @_ };
+    $params->{ $self->{ items } } ||= $self;
+    return ($type, $params);
+}
+
+sub OLD_params {
     my $self   = shift;
     my $params = @_ && ref $_[0] eq HASH ? shift : { @_ };
     $params->{ $self->{ items } } ||= $self;
