@@ -18,19 +18,19 @@ use Badger::Class
     base       => 'Badger::Base Badger::Exporter',
     import     => 'class',
     constant   => {
-        POD      => 'Badger::Pod',
-        NODES    => 'Badger::Pod::Nodes',
-        MODEL    => 'Badger::Pod::Model',
-        BLOCKS   => 'Badger::Pod::Blocks',
-        PARSER   => 'Badger::Pod::Parser',
-        DOCUMENT => 'Badger::Pod::Document',
+        POD          => 'Badger::Pod',
+        DOCUMENT     => 'Badger::Pod::Document',
+        NODES        => 'Badger::Pod::Nodes',
+        PARSER       => 'Badger::Pod::Parser',
+        MODEL_PARSER => 'Badger::Pod::Parser::Model',
+        BLOCK_PARSER => 'Badger::Pod::Parser::Blocks',
     },
     exports    => {
         any    => 'Pod POD',    # we'll add to this below
     };
 
 our $LOADED     = { };
-our @COMPONENTS = qw( document parser blocks model nodes );
+our @COMPONENTS = qw( document nodes parser block_parser model_parser );
 
 *Pod = \&Document;
 
@@ -51,7 +51,7 @@ class->methods({
 
         # e.g. Nodes()
         $Name => sub {
-            POD->$load unless $LOADED->{ $NAME };
+            $LOADED->{ $NAME } ||= $class->load->name;
             return @_ 
                 ? POD->$name(@_)
                 : $pkg;
@@ -60,12 +60,12 @@ class->methods({
         # e.g. nodes()
         $name => sub {
             my $self = shift;
-            ($LOADED->{ $NAME } ||= $self->$load)->new(@_);
+            ($LOADED->{ $NAME } || $self->$load)->new(@_);
         },
         
         # e.g. load_nodes()
         $load => sub {
-            $class->load->name,
+            $LOADED->{ $NAME } = $class->load->name
         }
     }
     @COMPONENTS

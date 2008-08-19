@@ -1,6 +1,6 @@
 #========================================================================
 #
-# Badger::Pod::Blocks
+# Badger::Pod::Parser::Blocks
 #
 # DESCRIPTION
 #   Subclass of Badger::Pod::Parser which splits a source document into
@@ -11,7 +11,7 @@
 #
 #========================================================================
 
-package Badger::Pod::Blocks;
+package Badger::Pod::Parser::Blocks;
 
 use Badger::Class
     version   => 0.01,

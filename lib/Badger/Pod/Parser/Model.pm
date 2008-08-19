@@ -1,6 +1,6 @@
 #========================================================================
 #
-# Badger::Pod::Model
+# Badger::Pod::Parser::Model
 #
 # DESCRIPTION
 #   Subclass of Badger::Pod::Parser which parser a Pod document into a 
@@ -11,7 +11,7 @@
 #
 #========================================================================
 
-package Badger::Pod::Model;
+package Badger::Pod::Parser::Model;
 
 use Badger::Class
     version   => 0.01,

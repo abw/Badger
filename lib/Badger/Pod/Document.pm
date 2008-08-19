@@ -59,14 +59,14 @@ sub init {
 sub blocks {
     my $self = shift;
     $self->{ blocks } 
-        ||= POD->blocks($self->{ config })
+        ||= POD->block_parser($self->{ config })
                ->parse(@$self{ qw( text name ) });
 }
 
 sub model {
     my $self = shift;
     $self->{ model } 
-        ||= POD->model($self->{ config })
+        ||= POD->model_parser($self->{ config })
                ->parse(@$self{ qw( text name ) });
 }
 
