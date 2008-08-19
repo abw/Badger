@@ -59,7 +59,7 @@ sub blur {
 
 sub parse_code {
     my ($self, $text, $line) = @_;
-    $self->debug_extract( code => $text, $line );
+    $self->debug_extract( code => $text, $line ) if $DEBUG;
     $self->focus->add(
         code => { 
             text => $text, 
@@ -70,7 +70,7 @@ sub parse_code {
 
 sub parse_command {
     my ($self, $name, $text, $line) = @_;
-    $self->debug_extract( command => "=$name$text", $line );
+    $self->debug_extract( command => "=$name$text", $line ) if $DEBUG;
     my $body = $self->SUPER::parse_paragraph($text, $line);
     $self->focus->add(
         command => {
@@ -112,11 +112,5 @@ sub parse_format {
     return [$name, $lparen, $rparen, $line, $content];
 }
 
-sub debug_extract {
-    my ($self, $type, $text, $line) = @_;
-    $text =~ s/\n/\\n/g;
-    $text = substr($text, 0, 61) . '...' if length $text > 64;
-    $self->debug_up(1, "[$type\@$line|$text]\n");
-}
     
 1;

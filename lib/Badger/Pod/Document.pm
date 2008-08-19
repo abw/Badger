@@ -19,7 +19,7 @@ use Badger::Class
     debug       => 0,
     base        => 'Badger::Base',
     filesystem  => 'File',
-    get_methods => 'text file name nodes body',
+    get_methods => 'text file name',
     constants   => 'SCALAR LAST',
     constant    => {
         TEXT_NAME => '<input text>',
@@ -50,8 +50,11 @@ sub init {
     else {
         return $self->error_msg('no_input');
     }
-    
+
+    # augment and store the config so we can pass it to parsers later
+    $config->{ name } = $self->{ name };
     $self->{ config } = $config;
+    
     return $self;
 }
 

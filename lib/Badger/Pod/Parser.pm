@@ -43,8 +43,8 @@ use Badger::Class
     };
 
 our $TAB_WIDTH  = 4;
-our $COMMANDS   = {
-    begin => 'parse_command_begin',     # requires special handling
+our $COMMANDS   = {         # commands that require special handling
+    begin => 'parse_command_begin',
     cut   => 'parse_command_cut',     
 };
 
@@ -134,10 +134,9 @@ sub parse_pod {
     my $vtab   = ' ' x ($self->{ tab_width } || $TAB_WIDTH) if $vtabs;
     my $para   = 1;     # paragaph count
     my ($name, $body, $gap, $handler);
-    $line ||= 1;
 
-    # TODO: handle first =pod cmd and last =cut command ?
-    # TODO: check for =cut as first command and throw error
+    $line ||= 1;
+    $text =~ s/\s+$//g;
 
     while (1) {
         if ($text =~ /$SCAN_COMMAND/cg) {
@@ -341,6 +340,14 @@ sub parse_command_begin {
         $self->parse_code($code, $code_line);
         $self->parse_command( end => $text, $line);
     }
+}
+
+
+sub debug_extract {
+    my ($self, $type, $text, $line) = @_;
+    $text =~ s/\n/\\n/g;
+    $text = substr($text, 0, 61) . '...' if length $text > 64;
+    $self->debug_up(1, "[$type\@$line|$text]\n");
 }
 
 

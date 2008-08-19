@@ -49,7 +49,7 @@ sub pod {
 
 sub parse_code {
     my ($self, $text, $line) = @_;
-    $self->debug("<pod:code\@$line>$text</pod:code>\n") if $DEBUG;
+    $self->debug_extract( code => $text, $line ) if $DEBUG;
     $self->body->add(
         code => { 
             text => $text, 
@@ -60,7 +60,7 @@ sub parse_code {
 
 sub parse_pod {
     my ($self, $text, $line) = @_;
-    $self->debug("<pod:pod\@$line>$text</pod:pod>\n") if $DEBUG;
+    $self->debug_extract( pod => $text, $line ) if $DEBUG;
     $self->body->add(
         pod => { 
             text => $text, 

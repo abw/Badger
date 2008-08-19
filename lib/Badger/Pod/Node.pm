@@ -13,15 +13,15 @@
 package Badger::Pod::Node;
 
 use Badger::Class
-    version     => 0.01,
-    debug       => 1,
-    base        => 'Badger::Base',
-    get_methods => 'document text line',
-    constants   => 'TRUE',
-    constant    => {
-        type    => 'node',
+    version   => 0.01,
+    debug     => 1,
+    base      => 'Badger::Base',
+    accessors => 'document text line nodes',
+    constants => 'TRUE',
+    constant  => {
+        type  => 'node',
     },
-    messages    => {
+    messages  => {
         bad_add => 'Elements cannot be added to a Pod %s',
     };
 
