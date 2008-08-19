@@ -47,7 +47,7 @@ ok( $doc, 'created Pod document' );
 
 my $blocks = $doc->blocks;
 ok( $blocks, 'got document blocks' );
-is( ref $blocks, 'Badger::Pod::Blocks', 'isa Badger::Pod::Blocks' );
+is( ref $blocks, 'Badger::Pod::Node::Blocks', 'isa Badger::Pod::Node::Blocks' );
 
 
 #-----------------------------------------------------------------------
@@ -56,4 +56,4 @@ is( ref $blocks, 'Badger::Pod::Blocks', 'isa Badger::Pod::Blocks' );
 
 my $model = $doc->model;
 ok( $model, 'got document model' );
-is( ref $model, 'Badger::Pod::Model', 'isa Badger::Pod::Model' );
+is( ref $model, 'Badger::Pod::Node::Body', 'isa Badger::Pod::Node::Body' );

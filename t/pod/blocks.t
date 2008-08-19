@@ -18,6 +18,7 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Pod 'Pod';
+use Badger::Pod::Parser::Blocks;
 use Badger::Filesystem 'FS';
 use Badger::Debug ':dump';
 use Badger::Test
@@ -31,7 +32,7 @@ my $file   = "blocks_\n.pod";     # let Perl insert platform-specific ending
    $file   =~ s/\012/lf/g;        # then translate it to letters: cr lf crlf
    $file   =~ s/\015/cr/g;
 my $pod    = $dir->file($file);
-my @blocks = Badger::Pod::Blocks->parse($pod->text)->blocks;
+my @blocks = Badger::Pod::Parser::Blocks->parse($pod->text)->each;
 my @lines  = (1, 3, 8, 11, 16, 19, 24, 27, 32);
 my @expect = (
     "This is not Pod\n\n", 
@@ -61,14 +62,14 @@ foreach my $n (0..$#expect) {
 
 $pod = Pod( text => "=head1 hello world\n\n" );
 ok( $pod, 'got pod in first line' );
-@blocks = $pod->blocks->all;
+@blocks = $pod->blocks->each;
 is( scalar(@blocks), 1, 'got one block' );
 is( $blocks[0]->type, 'pod', 'got pod block' );
 is( $blocks[0]->text, "=head1 hello world\n\n", 'got hello world block' );
 
 $pod = Pod( text => "=head1 hello world\n\n=head1 hello badger" );
 ok( $pod, 'got pod with a badger on the end' );
-@blocks = $pod->blocks->all;
+@blocks = $pod->blocks->each;
 is( scalar(@blocks), 1, 'got one badgery block' );
 is( $blocks[0]->type, 'pod', 'got badgery pod block' );
 is( $blocks[0]->text, "=head1 hello world\n\n=head1 hello badger", 'got hello badger block' );
