@@ -28,7 +28,7 @@ our $NODES      = {
 our $LIST_NODES = {
     # nodes which are list-based require custom handling of config args
     map { $_ => 1 }
-    qw( list )              # Badger::Node::List
+    qw( list blocks )           # Badger::Node::List, Blocks
 };
 
 # map node() and nodes() to base class item() and items() methods
@@ -59,38 +59,33 @@ sub type_args {
 #=======================================================================
 
 package Badger::Pod::Node::Code;
-
-use Badger::Class
-    base     => 'Badger::Pod::Node',
-    constant => { type => 'code' };
+use Badger::Pod::Node::Class
+    base => 'Badger::Pod::Node',
+    type => 'code';
 
 
 package Badger::Pod::Node::Verbatim;
+use Badger::Pod::Node::Class
+    base => 'Badger::Pod::Node',
+    type => 'verbatim';
 
-use Badger::Class
-    base      => 'Badger::Pod::Node',
-    accessors => 'name',
-    constant  => { type => 'verbatim' };
+
+package Badger::Pod::Node::Pod;
+use Badger::Pod::Node::Class
+    base => 'Badger::Pod::Node::Body',
+    type => 'pod';
 
 
 package Badger::Pod::Node::Command;
-
-use Badger::Class
-    base      => 'Badger::Pod::Node::Body',
-    accessors => 'name',
-    constant  => { type => 'command' };
-
-sub init {
-    my ($self, $config) = @_;
-    $self->{ name } = $config->{ name };
-    $self->SUPER::init($config);
-}
+use Badger::Pod::Node::Class
+    base => 'Badger::Pod::Node::Body',
+    type => 'command';
 
 
 package Badger::Pod::Node::Paragraph;
+use Badger::Pod::Node::Class
+    base => 'Badger::Pod::Node::Body',
+    type => 'paragraph';
 
-use Badger::Class
-    base     => 'Badger::Pod::Node::Body',
-    constant => { type => 'paragraph' };
 
 1;

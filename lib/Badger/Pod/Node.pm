@@ -16,6 +16,7 @@ use Badger::Class
     version   => 0.01,
     debug     => 1,
     base      => 'Badger::Base',
+    import    => 'class',
     accessors => 'document text line nodes',
     constants => 'TRUE',
     constant  => {
@@ -24,6 +25,8 @@ use Badger::Class
     messages  => {
         bad_add => 'Elements cannot be added to a Pod %s',
     };
+
+our @NODE_TYPES = qw( code pod command verbatim paragraph format );
 
 use overload
     '""'     => \&text,
@@ -43,5 +46,15 @@ sub add {
     $self->error_msg( bad_add => $self->type );
 }
 
-    
+# define nullary methods for code(), pod(), etc., that subclasses can 
+# redefine to return themselves and/or their matching children 
+
+class->methods(
+    map { $_ => \&nothing }
+    @NODE_TYPES,
+);
+
+sub nothing { ( ) }
+
+
 1;

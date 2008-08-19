@@ -13,30 +13,20 @@
 
 package Badger::Pod::Model;
 
-use Badger::Pod 'Nodes';
 use Badger::Class
     version   => 0.01,
     debug     => 0,
     base      => 'Badger::Pod::Parser',
     constants => 'LAST',
-    accessors => 'nodes body';
+    accessors => 'body';
 
-sub init {
-    my ($self, $config) = @_;
-    $self->{ nodes } = Nodes->new;
-    $self->{ body  } = $self->{ nodes }->node('body');
-    $self->{ stack } = [ $self->{ body } ];
-    $self->init_parser($config);
-}
 
 sub parse {
-    my $self = shift;
-    $self = $self->new unless ref $self;
-    $self->parse_blocks(@_);
-}
-
-sub node {
-    shift->nodes->node(@_);
+    my $self = shift->prototype;
+    local $self->{ body  } = $self->node('body');
+    local $self->{ stack } = [ $self->{ body } ];
+    $self->SUPER::parse(@_);
+    return $self->{ body };
 }
 
 sub focus {

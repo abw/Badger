@@ -13,10 +13,11 @@
 package Badger::Pod::Parser;
 
 use Badger::Pod::Patterns ':scan :misc $WHITE_LINES';
+use Badger::Pod 'Nodes';
 use Badger::Class
     version   => 0.01,
     debug     => 0,
-    base      => 'Badger::Base',
+    base      => 'Badger::Prototype',
     utils     => 'self_params',
     constants => 'OFF ON LAST CODE',
     constant  => {
@@ -33,23 +34,22 @@ use Badger::Class
         },
     },
     messages  => {
-        bad_cut      => 'Invalid =cut at the start of a POD section at line %s',
-        mismatch     => "Format mismatch - opening '%s' does not match '%s' at line %s",
-        unterminated => "Interminated %s%s format starting at line %s",
-        unexpected   => "Unexpected '%s' at line %s",
+        bad_cut      => 'Invalid =cut at the start of a POD section',
         bad_command  => 'Invalid handler for %s command: %s',
-        no_format    => 'No format specified for %s command at line %s',
         bad_format   => "Format mismatch: '%s %s' at line %s does not match '%s %s' at line %s",
+        no_format    => 'No format specified for %s command',
+        mismatch     => "Format mismatch - opening '%s' does not match '%s'",
+        unterminated => "Interminated %s%s format",
+        unexpected   => "Unexpected '%s'",
     };
 
 our $TAB_WIDTH  = 4;
-our $COMMANDS   = {         # commands that require special handling
+our $COMMANDS   = {         # commands that require custom handlers
     begin => 'parse_command_begin',
     cut   => 'parse_command_cut',     
 };
 
 *init  = \&init_parser;
-*parse = \&parse_blocks;
 
 
 sub init_parser {
@@ -90,6 +90,22 @@ sub init_commands {
     ) if $DEBUG;
 
     return $self->{ commands };
+}
+
+sub nodes {
+    my $self = shift->prototype;
+    $self->{ nodes } ||= Nodes->new($self->{ config });
+}
+
+sub node {
+    shift->nodes->node(@_);
+}
+
+sub parse {
+    my ($self, $text, $name, $line) = @_;
+    $self = $self->prototype unless ref $self;
+    local $self->{ name } = $name;
+    $self->parse_blocks($text, $line);
 }
 
 sub parse_blocks {
@@ -237,12 +253,12 @@ sub parse_paragraph {
                 # ...but we also have to warn for lparen/rparen mismatch
                 $where  = $stack[LAST]->[LINE];
                 $where .= '-' . $line unless $line == $where;
-                $self->warn_msg( mismatch => $stack[LAST]->[LPAREN], $rparen, $where );
+                $self->warning( mismatch => $stack[LAST]->[LPAREN], $rparen, $where );
                 $format = $rparen;
             }
             else {
                 # ...or if we get an end-of-format marker before any start
-                $self->warn_msg( unexepected => $rparen, $line );
+                $self->warning( unexepected => $rparen, $line );
                 $format = $rparen;
             }
             push(@{ $stack[LAST]->[CONTENT] }, $format);
@@ -251,7 +267,7 @@ sub parse_paragraph {
 
     while (@stack > 1) {
         $format = pop @stack;
-        $self->warn_msg( unterminated => @$format[FORMAT, LPAREN, LINE] );
+        $self->warning( unterminated => @$format[FORMAT, LPAREN, LINE] );
         push(
             @{ $stack[-1]->[CONTENT] }, 
             $self->parse_format(@$format)
@@ -287,7 +303,7 @@ sub parse_command_cut {
     
     if ($para == 1) {
         # =cut must not appear as the first command paragraph in a POD section
-        $self->warn_msg( bad_cut => $line );
+        $self->warning( bad_cut => $line );
     }
     else {
         $self->parse_command($name, $text, $line, $para, $podref);
@@ -307,7 +323,7 @@ sub parse_command_begin {
     }
     else {
         # =begin must have a format string defined
-        $self->warn_msg( no_format => '=' . $name, $line );
+        $self->warning( no_format => '=' . $name, $line );
         $format = '';
     }
     
@@ -332,7 +348,7 @@ sub parse_command_begin {
                 unless $1 eq $format;
         }
         else {
-            $self->warn_msg( no_format => '=end', $line + $lines);
+            $self->warning( no_format => '=end', $line + $lines);
         }
 
         # generate three events to mark the =begin, intermediate code and =end
@@ -342,6 +358,20 @@ sub parse_command_begin {
     }
 }
 
+
+#-----------------------------------------------------------------------
+# methods for error handling and debugging
+#-----------------------------------------------------------------------
+
+sub warning {
+    my $self = shift;
+    my $line = pop;     # $line is last argument
+    my $text = $self->message(@_);
+    my $name = $self->{ name };
+    return $name
+        ? $self->warn_msg( at_file_line => $text, $name, $line )
+        : $self->warn_msg( at_line => $text, $line );
+}
 
 sub debug_extract {
     my ($self, $type, $text, $line) = @_;

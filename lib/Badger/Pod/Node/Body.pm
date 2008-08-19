@@ -17,6 +17,7 @@ use Badger::Class
     version     => 0.01,
     debug       => 0,
     base        => 'Badger::Pod::Node',
+    accessors   => 'name',
     constants   => 'LAST CODE',
     constant    => {
         type => 'body',
@@ -26,6 +27,7 @@ sub init {
     my ($self, $config) = @_;
     $self->SUPER::init($config);
     $self->{ body } = $config->{ body } || [ ];
+    $self->{ name } = $config->{ name };
     return $self;
 }
 

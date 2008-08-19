@@ -22,6 +22,7 @@ use Badger::Class
         type => 'body',
     };
 
+# cache for inspector methods created by inspector() and used by each()
 our $INSPECTORS;
 
 # We want to use the CORE push/pop/shift/unshift functions in this module
@@ -113,40 +114,3 @@ sub inspector {
 1;
 
 __END__
-
-sub body_type {
-    my ($self, $type) = @_;
-    my @items = 
-        grep { $_->type eq $type } 
-        @{ $self->{ body } };
-        
-    return wantarray 
-        ?  @items
-        : \@items;
-}
-
-sub body_each {
-    my ($self, $method, @args) = @_;
-    my @items = 
-        map { $_->$method(@args) } 
-        @{ $self->{ body } };
-    
-    return wantarray 
-        ?  @items
-        : \@items;
-}
-
-sub body_type_each {
-    my ($self, $type, $method, @args) = @_;
-    my $code  = $method if ref $method eq CODE;
-    my @items = 
-        map { $code ? $code->($_, @args) : $_->$method(@args) } 
-        grep { $_->type eq $type } 
-        @{ $self->{ body } };
-        
-    return wantarray 
-        ?  @items
-        : \@items;
-}
-
-1;
