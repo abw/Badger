@@ -18,15 +18,15 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Pod::Parser',
     constants => 'LAST',
-    accessors => 'body';
+    accessors => 'model';
 
 
 sub parse {
     my $self = shift->prototype;
-    local $self->{ body  } = $self->node('body');
-    local $self->{ stack } = [ $self->{ body } ];
+    local $self->{ model } = $self->node('model');
+    local $self->{ stack } = [ $self->{ model } ];
     $self->SUPER::parse(@_);
-    return $self->{ body };
+    return $self->{ model };
 }
 
 sub focus {

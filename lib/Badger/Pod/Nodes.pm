@@ -13,6 +13,7 @@
 
 package Badger::Pod::Nodes;
 
+use Badger::Debug 'debug_caller';
 use Badger::Class
     version   => 0.01,
     debug     => 0,
@@ -42,7 +43,6 @@ our $LIST_NODES = {
 sub type_args {
     my $self   = shift;
     my $type   = shift;
-    $self->debug("node type: $type ", join(', ', @_), "\n") if $DEBUG;
     if ($LIST_NODES->{ $type }) {
         return ($type, @_);
     }
@@ -55,7 +55,7 @@ sub type_args {
 
 
 #=======================================================================
-# Badger::Pod::Node::* subclasses
+# Badger::Pod::Node::* subclasses - first the basic block elements...
 #=======================================================================
 
 package Badger::Pod::Node::Code;
@@ -63,29 +63,36 @@ use Badger::Pod::Node::Class
     base => 'Badger::Pod::Node',
     type => 'code';
 
-
 package Badger::Pod::Node::Verbatim;
 use Badger::Pod::Node::Class
     base => 'Badger::Pod::Node',
     type => 'verbatim';
 
-
 package Badger::Pod::Node::Pod;
 use Badger::Pod::Node::Class
-    base => 'Badger::Pod::Node::Body',
+    base => 'Badger::Pod::Node',
     type => 'pod';
-
 
 package Badger::Pod::Node::Command;
 use Badger::Pod::Node::Class
-    base => 'Badger::Pod::Node::Body',
+    base => 'Badger::Pod::Node',
     type => 'command';
-
 
 package Badger::Pod::Node::Paragraph;
 use Badger::Pod::Node::Class
-    base => 'Badger::Pod::Node::Body',
+    base => 'Badger::Pod::Node',
     type => 'paragraph';
+
+
+
+#=======================================================================
+# ...then then individual model elements
+#=======================================================================
+
+package Badger::Pod::Node::Model;
+use Badger::Pod::Node::Class
+    base => 'Badger::Pod::Node::Body',
+    type => 'model';
 
 
 1;

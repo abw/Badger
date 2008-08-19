@@ -12,6 +12,8 @@
 
 package Badger::Pod::Node;
 
+use Badger::Pod 'Nodes';
+use Badger::Debug 'debug_caller';
 use Badger::Class
     version   => 0.01,
     debug     => 1,
@@ -35,10 +37,16 @@ use overload
 
 sub init {
     my ($self, $config) = @_;
-    $self->{ nodes } = $config->{ nodes };
+    $self->{ nodes } = $config->{ nodes } || Nodes;
     $self->{ text  } = $config->{ text };
     $self->{ line  } = $config->{ line } || 0;
     return $self;
+}
+
+sub node {
+#    $_[0]->debug("--- node(", join(', ', @_), ")\n");
+#    $_[0]->debug_caller;
+    shift->nodes->node(@_);
 }
 
 sub add {

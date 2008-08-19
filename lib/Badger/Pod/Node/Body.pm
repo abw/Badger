@@ -26,22 +26,17 @@ use Badger::Class
 sub init {
     my ($self, $config) = @_;
     $self->SUPER::init($config);
-    $self->{ body } = $config->{ body } || [ ];
+    $self->{ body } = $config->{ body } || $self->node('list');
     $self->{ name } = $config->{ name };
     return $self;
-}
-
-sub push {
-    my $self = shift;
-    CORE::push(@{ $self->{ body } }, @_);
 }
 
 sub add {
     my $self = shift;
     my $type = shift;
-    my $node = $self->{ nodes }->node($type, @_);
+    my $node = $self->node($type, @_);
     $self->debug("adding $type to ", $self->type, "\n") if $DEBUG;
-    CORE::push(@{ $self->{ body } }, $node);
+    $self->{ body }->push($node);
     return $node;
 }
 
@@ -49,13 +44,17 @@ sub last {
     $_[0]->{ body }->[LAST];
 }
 
-sub body {
-    my $self = shift;
-    my $body = $self->{ body };
-    return wantarray
-        ? @$body
-        :  $body;
+sub push {
+    shift->{ body }->push(@_);
 }
+
+sub each {
+    shift->body->each(@_);
+}
+
+1;
+
+__END__
 
 sub body_type {
     my ($self, $type) = @_;
