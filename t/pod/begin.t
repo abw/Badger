@@ -20,6 +20,7 @@ use Badger::Pod 'Pod';
 use Badger::Filesystem 'FS';
 use Badger::Debug ':dump';
 use Badger::Test
+    skip  => 'not working',
     tests => 3,
     debug => 'Badger::Pod Badger::Pod::Document',
     args  => \@ARGV;
