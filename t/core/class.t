@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 110,
+    tests => 113,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -484,18 +484,24 @@ package Test::My::Class;
 
 use My::Class
     version   => 11,
-    constants => 'black none';
+    import    => 'class',
+    constants => 'black none',
+    wibble    => 'This is mic number one',
+    wobble    => "Isn't this a lot of fun?";
     
 sub colour {
     black 
 }
 
 main::is( $VERSION, 11, 'inside version 11' );
+main::is( ref class(), 'My::Class', 'class returns My::Class object' );
 
 package main;
 is( $Test::My::Class::VERSION, 11, 'outside version 11' );
 is( Test::My::Class->colour, 'black', 'How much more black could this be?' );
 is( Test::My::Class->none, 'none', 'None, none more black' );
+is( Test::My::Class->wibble, 'wibble: This is mic number one', 'wibble hook worked' );
+is( Test::My::Class->wobble, "wobble: Isn't this a lot of fun?", 'wobble hook worked' );
 
 
 #-----------------------------------------------------------------------
