@@ -29,8 +29,8 @@ use Badger::Class
         any    => 'Pod POD',    # we'll add to this below
     };
 
-our $LOADED     = { };
 our @COMPONENTS = qw( document nodes parser block_parser model_parser );
+our $LOADED     = { };
 
 *Pod = \&Document;
 

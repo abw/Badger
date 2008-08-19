@@ -85,15 +85,14 @@ sub items {
 }
 
 sub item {
-    my $self   = shift->prototype;
+    my $self = shift->prototype;
     my ($type, @args) = $self->type_args(@_);
-#    my $config = $self->params(@_);
-    my $items  = $self->{ $self->{ items } };
+    my $items = $self->{ $self->{ items } };
     
     # massage $type to a canonical form
-    my $name  = lc $type;
-       $name  =~ s/\W//g;
-    my $item  = $items->{ $name };
+    my $name = lc $type;
+       $name =~ s/\W//g;
+    my $item = $items->{ $name };
     my $iref;
     
     # TODO: add $self to $config - but this breaks if %$config check
