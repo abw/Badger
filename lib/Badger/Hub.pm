@@ -27,6 +27,7 @@ use Badger::Class
 use Badger::Config;
 our $CONFIG     = 'Badger::Config';
 our $COMPONENTS = {
+    pod        => 'Badger::Pod',
     codecs     => 'Badger::Codecs',
     filesystem => 'Badger::Filesystem',
 };
@@ -35,6 +36,7 @@ our $DELEGATES  = {
     directory => 'filesystem',
     dir       => 'filesystem',
     codec     => 'codecs',
+    pod       => 'pod',
 };
 our $LOADED     = { };
 our $AUTOLOAD;
