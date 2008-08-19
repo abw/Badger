@@ -16,7 +16,11 @@ Badger::Class
 * make debug hook work better: allow import of other items, e.g.
   debug => ':dump'.  Also generate DEBUG constant using any existing
   value of $DEBUG.
+
+* Document hooks() method and hook.  Create new section on subclassing
+  Badger::Class
   
+* add 'hook' subroutine attribute
 
 Badger::Codec
 --------------
