@@ -33,7 +33,7 @@ sub on_warn {
 # =cut is not allowed as the first command in a POD section
 #-----------------------------------------------------------------------
 
-$pod = Pod( text => <<EOF, on_warn => \&on_warn );
+$pod = Pod( text => <<EOF, on_warn => \&on_warn )->model;
 This is some code
 
 =cut This is Not Allowed
@@ -51,7 +51,7 @@ is( $errs[0], 'Invalid =cut at the start of a POD section at line 3', 'got bad c
 #-----------------------------------------------------------------------
 
 @errs = ();
-$pod = Pod( text => <<EOF, on_warn => \&on_warn );
+$pod = Pod( text => <<EOF, on_warn => \&on_warn )->model;
 This is some code
 
 =begin
@@ -72,7 +72,7 @@ is( $errs[1], 'No format specified for =end command at line 7', 'got bad end err
 #-----------------------------------------------------------------------
 
 @errs = ();
-$pod = Pod( text => <<EOF, on_warn => \&on_warn );
+$pod = Pod( text => <<EOF, on_warn => \&on_warn )->model;
 =begin cheese
 
 This is in the begin block
