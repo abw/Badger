@@ -38,21 +38,23 @@ use constant {
     DEFAULT         => 'default',
     
     # misc constants used internally
-    LAST            => -1,                  # last item in a list
+    FIRST           =>  0,                  # first and last items in a list
+    LAST            => -1,
     CRLF            => "\015\012",          # unambiguous CR+LF sequence
-    PKG             => '::',                
-    REFS            => 'refs',
-    ONCE            => 'once',
-    WARN            => 'warn',
-    BLANK           => '',
-    SPACE           => ' ',
+    PKG             => '::',                # for joining pkg names
+    REFS            => 'refs',              # no strict REFS
+    ONCE            => 'once',              # use warnings ONCE
+    WARN            => 'warn',              # default warning handler
+    BLANK           => '',                  # how much more blank could this be?
+    SPACE           => ' ',                 # and the answer is none, none more blank
     DELIMITER       => qr/(?:,\s*)|\s+/,    # match a comma or whitespace
     WILDCARD        => qr/[\*\?]/,          # wildcards: *.html foo??.txt
 
 };
 
 CONSTANTS->export_any(qw( 
-    CONSTANTS LAST BLANK SPACE CRLF DELIMITER WILDCARD PKG REFS ONCE WARN
+    CONSTANTS FIRST LAST CRLF PKG REFS ONCE WARN BLANK SPACE 
+    DELIMITER WILDCARD 
 ));
 
 CONSTANTS->export_tags({
