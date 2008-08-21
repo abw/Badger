@@ -22,7 +22,7 @@ use Badger::Class
     constants => 'PKG ARRAY HASH REFS ONCE',
     constant  => {
         FOUND_REF    => 'found_ref',
-        BASE_SUFFIX  => '_BASE',
+        PATH_SUFFIX  => '_PATH',
     },
     messages  => {
         no_item => 'No item(s) specified for factory to manage',
@@ -34,7 +34,7 @@ our %LOADED;
 sub init {
     my ($self, $config) = @_;
     my $class = $self->class;
-    my ($item, $items, $base);
+    my ($item, $items, $path);
 
     # 'item' and 'items' can be specified as config params or we look for
     # $ITEM and $ITEMS variables in the current package or those of any 
@@ -50,16 +50,15 @@ sub init {
             }
         }
     }
-    # TODO: or use $class->id ?
     return $self->error_msg('no_item')
         unless $item;
 
     # use 'items' in config, or grokked from $ITEMS, or guess plural
     $items = $config->{ items } || $items || plural($item);
 
-    $base = $config->{ base };
-    $base = [ $base ] if $base && ref $base ne ARRAY;
-    $self->{ base   } = $class->list_vars(uc $item . BASE_SUFFIX, $base);
+    $path = $config->{ path };
+    $path = [ $path ] if $path && ref $path ne ARRAY;
+    $self->{ path   } = $class->list_vars(uc $item . PATH_SUFFIX, $path);
     $self->{ $items } = $class->hash_vars(uc $items, $config->{ $items });
     $self->{ items  } = $items;
     $self->{ item   } = $item;
@@ -67,11 +66,11 @@ sub init {
     return $self;
 }
 
-sub base {
+sub path {
     my $self = shift->prototype;
     return @_ 
-        ? ($self->{ base } = ref $_[0] eq ARRAY ? shift : [ @_ ])
-        :  $self->{ base };
+        ? ($self->{ path } = ref $_[0] eq ARRAY ? shift : [ @_ ])
+        :  $self->{ path };
 }
 
 sub items {
@@ -100,7 +99,7 @@ sub item {
     
     if (! defined $item) {
         # we haven't got an entry in the $CODECS table so let's try 
-        # autoloading some modules using the $CODEC_BASE
+        # autoloading some modules using the $CODEC_B
         $item = $self->load($type)
             || return $self->error_msg( not_found => $self->{ item }, $type );
         $item = $item->new(@args);
@@ -132,13 +131,6 @@ sub type_args {
     return ($type, $params);
 }
 
-sub OLD_params {
-    my $self   = shift;
-    my $params = @_ && ref $_[0] eq HASH ? shift : { @_ };
-    $params->{ $self->{ items } } ||= $self;
-    return $params;
-}
-
 
 sub module_names {
     my ($self, $base, $type) = @_;
@@ -159,7 +151,7 @@ sub module_names {
 sub load {
     my $self   = shift->prototype;
     my $type   = shift;
-    my $bases  = $self->base;
+    my $bases  = $self->path;
     my $loaded = 0;
     my $module;
     
