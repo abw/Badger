@@ -45,7 +45,7 @@ our $LOADED     = { };
 our @HOOKS      = qw( 
     base uber mixin mixins version debug constant constants words exports 
     throws messages utils codec codecs filesystem hooks
-    methods accessors mutators get_methods set_methods
+    methods slots accessors mutators get_methods set_methods
 );
 our $HOOKS = { 
     map { $_ => $_ }
@@ -664,25 +664,58 @@ sub codecs {
 }
 
 sub method {
-    # TODO: make this get/set method
-    my ($self, $name, $code) = @_;
+    my $self = shift;
+    my $name = shift;
     no strict REFS;
+
+    # method($name) can be used to fetch a method/sub
+    return $self->{ name }->can($name)
+        unless @_;
+    
+    # method($name => $code) or $method($name => $value) to define method
+    my $code = shift;
     _debug("defining method: $self\::$name => $code\n") if $DEBUG;
-    *{ $self->{name}.PKG.$name } = $code;
+
+    *{ $self->{name}.PKG.$name } = ref $code eq CODE
+        ? $code
+        : sub { $code };        # constant method returns value
+
     return $self;
 }
 
 sub methods {
     my $self = shift;
     my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
+    my $pkg  = $self->{ name };
     no strict REFS;
 
     while (my ($name, $code) = each %$args) {
         _debug("defining method: $self\::$name => $code\n") if $DEBUG;
-        *{ $self->{name}.PKG.$name } 
+        *{ $pkg.PKG.$name } 
             = ref $code eq CODE ? $code : sub { $code };
     }
     return $self;
+}
+
+sub slots {
+    my ($self, $slots) = @_;
+    my $args = @_ && ref $_[0] eq HASH ? shift : [ @_ ];
+    my $pkg  = $self->{ name };
+    no strict REFS;
+
+    # slots can be a list of names or delimited string
+    $slots = [ split(DELIMITER, $slots) ]
+        unless ref $slots eq ARRAY;
+
+    my $index = 0;
+    foreach my $slot (@$slots) {
+        my $i = $index++;     # new lexical variable to bind in closure
+        *{ $pkg.PKG.$slot } = sub {
+            return @_ > 1
+                ? ($_[0]->[$i] = $_[1])
+                :  $_[0]->[$i];
+        };
+    }
 }
 
 sub accessors {
@@ -1853,6 +1886,26 @@ subroutines or methods into a class.
 
 See the L<methods> method for further details.
 
+=head2 slots
+
+This can be used to define methods for list-based objects.
+
+    use Badger::Class
+        slots => 'size colour object';
+    
+    sub new {
+        my ($class, @stuff) = @_;
+        bless \@stuff, $class;
+    }
+    
+    package main;
+    my $bus = Badger::Test::Slots->new(qw(big red bus));
+    print $bus->size;       # big
+    print $bus->colour;     # red
+    print $bus->object;     # bus
+
+See the L<slots> method for further details.
+
 =head2 accessors / get_methods
 
 This can be used to define simple read-only accessor methods for a class.
@@ -2304,64 +2357,101 @@ variable for the class.  Here's how you would typically use it.
 
 =head2 constants
 
-This method is used to declare what symbols the module can export.  It
-delegates to the L<exports()|Badger::Exporter/export()> method in 
+TODO: load constants from Badger::Constants
 
 =head2 constant
 
-TODO
+TODO: define some constant 
 
 =head2 words
 
-TODO
+TODO: define single word constants.  Only really makes sense as an import
+hook.
 
 =head2 exports
 
-TODO
+TODO: define exports - adds Badger::Exporter as base() class and calls
+exports() method.
+
+This method is used to declare what symbols the module can export.  It
+delegates to the L<exports()|Badger::Exporter/export()> method in 
 
 =head2 throws
 
-TODO
+TODO: set $THROWS - see Badger::Base error() method
 
 =head2 messages
 
-TODO
+TODO: define some $MESSAGES - see Badger::Base
 
 =head2 utils
 
-TODO
+TODO: load some utils from Badger::Utils
 
 =head2 codecs
 
-TODO
+TODO: load one or more codecs
 
 =head2 codec
 
-TODO
+TODO: load a codec
 
 =head2 method
 
-TODO
+TODO: method to install a single method in a class.
 
-=head2 methods
+    class->methods( 
+        foo => sub { ... }, 
+        bar => sub { ... },
+    )       
 
-TODO
+TODO: can also be called with a single argument to fetch a method by calling
+can() on the target package.
 
-=head2 accessors / get_methods
+=head2 methods(\%methods)
 
-The code generated is equivalent to:
+TODO: method to install methods in a class.
+
+    class->methods( 
+        foo => sub { ... }, 
+        bar => sub { ... },
+    )       
+
+=head2 accessors($name) / get_methods($name)
+
+This method can be used to generate accessor (read-only) methods for a class.
+You can pass a list, reference to a list, or a whitespace delimited string
+of method names as arguments.  
+
+    # these all do the same thing
+    class->accessors('foo bar');
+    class->accessors('foo', 'bar');
+    class->accessors(['foo', 'bar']);
+
+A method will be generated in the target class for each that returns the
+object member data of the same name. The code generated for each method is
+equivalent to this:
 
     sub foo {
         $_[0]->{ foo };
     }
 
-TODO
-
 =head2 mutators / set_methods
 
+This method can be used to generate mutator (read/write) methods for a class.
+You can pass a list, reference to a list, or a whitespace delimited string
+of method names as arguments.  
 
-The code generated is efficient but terse (which is OK because you never
-have to look at it).  It is equivalent to:
+    # these all do the same thing
+    class->accessors('foo bar');
+    class->accessors('foo', 'bar');
+    class->accessors(['foo', 'bar']);
+
+A method will be generated in the target class for each that returns the
+object member data of the same name. If an argument is passed then the 
+member data is updated and the new value returned.
+
+The code generated is equivalent to this:
 
     sub foo {
         @_ == 2 
@@ -2369,8 +2459,10 @@ have to look at it).  It is equivalent to:
             :  $_[0]->{ foo };
     }
 
-Of course you wouldn't ever write a method like that unless efficiency was
-really important.  You would write it something like this:
+Ugly isn't it?   But of course you wouldn't ever write it like that, being 
+a conscientious Perl programmer concerned about the future readability and
+maintainability of your code.  Instead you might write it something like
+this:
 
     sub foo {
         my $self = shift;
@@ -2384,8 +2476,67 @@ really important.  You would write it something like this:
         }
     }
 
-Using an automatic method generate gives you the best of both worlds -
-efficient code without the hassle of maintaining it.
+Or perhaps like this:
+
+    sub foo {
+        my $self = shift;
+        # update value if an argument was passed
+        $self->{ foo } = shift if @_;
+        return $self->{ foo };
+    }
+
+Or even like this (my personal favourite):
+
+    sub foo {
+        my $self = shift;
+        return @_
+            ? ($self->{ foo } = shift)
+            :  $self->{ foo };
+    }
+
+Whichever way you do it is a waste of time, both for you and anyone who has to
+read your code at a later. Seriously, give it up! Let us generate the methods
+for you. We'll not only save you the effort of typing pages of code that
+no-one will ever read (or want to read), but we'll also generate the most
+efficient code for you. The kind that you wouldn't normally want to handle by
+yourself.
+
+So in summary, using this method will keep your code clean, your code 
+efficient, and will free up the rest of the afternoon so you can go out 
+skateboarding.  Tell your boss I said it was OK.
+
+=head2 slots($names)
+
+This method can be used to define methods for list-based object classes.
+A list, reference to a list, or string of whitespace delimited method
+names should be passed an argument(s).  A method will be generated for
+each item specified.  The first method will reference the first (0th) item
+in the list, the second method will reference the second (1st), and so on.
+
+    package Badger::Example;
+    
+    use Badger::Class
+        slots => 'size colour object';
+    
+    sub new {
+        my ($class, @stuff) = @_;
+        bless \@stuff, $class;
+    }
+
+The above example defines a simple list-based object class with three
+slots: C<size>, C<colour> and C<object>.  You can use it like this:
+
+    my $bus = Badger::Test::Slots->new(qw( big red bus ));
+    
+    print $bus->size;       # big
+    print $bus->colour;     # red
+    print $bus->object;     # bus
+
+The methods generated are mutators.  That is, you can pass an argument
+to update the slot value.
+
+    $bus->size('large');
+
 
 =head2 filesystem(@symbols)
 
