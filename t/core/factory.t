@@ -30,7 +30,7 @@ use Badger::Class
     base => 'Badger::Factory';
 
 our $ITEM       = 'thing';
-our $THING_BASE = ['My', 'Your'];
+our $THING_PATH = ['My', 'Your'];
 our $THINGS     = {
     dangly  =>  'My::Extra::Wudget',
     spangly => ['My::Extra::Wudget', 'My::Extra::Wudgetola'],
@@ -55,7 +55,7 @@ sub init {
         
 
 #-----------------------------------------------------------------------
-# test it with modules loaded from $THING_BASE
+# test it with modules loaded from $THING_PATH
 #-----------------------------------------------------------------------
 
 package main;
