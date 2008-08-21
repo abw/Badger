@@ -13,15 +13,13 @@
 package Badger::Codecs;
 
 use Carp;
-use Badger::Codec::Chain 
-    qw( CHAIN CHAINED );
-use Badger::Class
+use Badger::Codec::Chain 'CHAIN CHAINED';
+use Badger::Factory::Class
     version   => 0.01,
     debug     => 0,
-    base      => 'Badger::Factory',
-    utils     => 'UTILS',
+    item      => 'codec',
+    path      => 'Badger::Codec BadgerX::Codec',
     import    => 'class',
-    words     => 'CODECS CODEC_BASE',
     constants => 'HASH ARRAY DELIMITER PKG',
     constant  => {
         CODEC_METHOD  => 'codec',
@@ -30,25 +28,18 @@ use Badger::Class
         ENCODING      => 'Badger::Codec::Encoding',
     };
 
-our $ITEM       = 'codec';
-our $CODEC_BASE = ['Badger::Codec', 'BadgerX::Codec'];
 our $CODECS     = {
     # any codecs with non-standard capitalisation can go here, but 
-    # generally we grok the module name from the $CODEC_BASE, e.g.
+    # generally we grok the module name from the $CODEC_PATH, e.g.
     url      => 'Badger::Codec::URL',
     yaml     => 'Badger::Codec::YAML',
     json     => 'Badger::Codec::JSON',
-    base64   => 'Badger::Codec::Base64',
-    encode   => 'Badger::Codec::Encode',
-    unicode  => 'Badger::Codec::Unicode',
-    storable => 'Badger::Codec::Storable',
     map {
         my $name = $_; $name =~ s/\W//g;
         $_ => [ENCODING, ENCODING.PKG.$name],
     } qw( utf8 UTF8 UTF16BE UTF16LE UTF32BE UTF32LE )
 };
 
-*codecs = __PACKAGE__->can('items');
 
 sub codec {
     my $self = shift->prototype;
