@@ -65,12 +65,27 @@ sub init {
     $self->{ item   } = $item;
 
     # map item-specific methods (e.g. widget()/widgets()) to item()/items()
-    unless ($MAPPED{ ref $self }) {
+    unless ($MAPPED{ ref $self }++) {
+        if ($DEBUG) {
+            $self->debug(
+                $self->can($item)
+                    ? "$self already has $item method\n"
+                    : "mapping $item to item()\n"
+            );
+            $self->debug(
+                $self->can($items)
+                    ? "$self already has $items method\n"
+                    : "mapping $items to items()\n"
+            );
+        }
+        
         $class->method( $item => $self->can('item') )
             unless $self->can($item);
+
         $class->method( $items => $self->can('items') )
-            unless $self->can($item);
+            unless $self->can($items);
     }
+
 
     return $self;
 }
@@ -177,6 +192,8 @@ sub load {
             return $module 
                 if ($loaded || class($module)->maybe_load && ++$loaded)
                 && @{ $module.PKG.ISA };
+                
+            $self->debug("failed to load $module\n") if $DEBUG;
         }
     }
     return $self->error_msg( not_found => $self->{ item } => $type );
