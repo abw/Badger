@@ -787,6 +787,7 @@ sub load {
 sub maybe_load {
     my $self = shift;
     return eval { $self->load } || do {
+        _debug("maybe_load($self) caught error: $@\n") if $DEBUG;
         die $@ if $@ && $@ !~ /^Can't locate .*? in \@INC/;
         0;
     }
