@@ -16,7 +16,7 @@ use warnings;
 
 use lib qw( core/lib t/core/lib ./lib ../lib ../../lib );
 use Badger::Test 
-    tests => 16,
+    tests => 20,
     debug => 'Badger::Factory',
     args  => \@ARGV;
 
@@ -105,6 +105,29 @@ is( $sparkly->name, 'Sparkly', 'sparkly name' );
 
 my $dotted = My::Factory->item( 'extra.wudget' => { name => 'Dotted' } );
 ok( $dotted, 'got dotted object' );
+
+
+#-----------------------------------------------------------------------
+# test Badger::Factory::Class
+#-----------------------------------------------------------------------
+
+package My::Widgets;
+
+use Badger::Factory::Class
+    item    => 'widget',
+    path    => 'My You',
+    widgets => {
+        dangly  =>  'My::Extra::Wudget',
+        spangly => ['My::Extra::Wudget', 'My::Extra::Wudgetola'],
+    };
+
+package main;
+
+my $widgets = My::Widgets->new;
+ok( $widget, 'created widgets factory' );
+ok( $widgets->widget('widget'), 'got widget from class constructed factory' );
+ok( $widgets->widget('wodget'), 'got wodget from class constructed factory' );
+ok( $widgets->widget('dangly'), 'got dangly from class constructed factory' );
 
 
 __END__
