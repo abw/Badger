@@ -30,6 +30,7 @@ use Badger::Class
     };
 
 our %LOADED;
+our %MAPPED;
 
 sub init {
     my ($self, $config) = @_;
@@ -56,13 +57,21 @@ sub init {
     # use 'items' in config, or grokked from $ITEMS, or guess plural
     $items = $config->{ items } || $items || plural($item);
 
-    $path = $config->{ path };
+    $path = $config->{ $item.'_path' } || $config->{ path };
     $path = [ $path ] if $path && ref $path ne ARRAY;
     $self->{ path   } = $class->list_vars(uc $item . PATH_SUFFIX, $path);
     $self->{ $items } = $class->hash_vars(uc $items, $config->{ $items });
     $self->{ items  } = $items;
     $self->{ item   } = $item;
-    
+
+    # map item-specific methods (e.g. widget()/widgets()) to item()/items()
+    unless ($MAPPED{ ref $self }) {
+        $class->method( $item => $self->can('item') )
+            unless $self->can($item);
+        $class->method( $items => $self->can('items') )
+            unless $self->can($item);
+    }
+
     return $self;
 }
 
@@ -186,6 +195,149 @@ sub found_ref_ARRAY {
 sub found {
     return $_[2];
 }
+
+
+1;
+
+__END__
+
+=head1 NAME
+
+Badger::Factory - base class factory module
+
+=head1 SYNOPSIS
+
+This module is designed to be subclassed to create factory classes that
+automatically load modules and instantiate objects on demand.
+
+    package My::Widgets;
+    use base 'Badger::Factory';
+    
+    # tell the base class factory what we create
+    our $ITEM        = 'widget';
+    our $ITEMS       = 'widgets';
+    
+    # define module search path for widgets
+    our $WIDGET_PATH = ['My::Widget', 'Your::Widget'];
+    
+    # lookup table for any non-standard spellings/capitalisations/paths
+    our $WIDGETS     = {
+        url   => 'My::Widget::URL',       # non-standard capitalisation
+        color => 'My::Widget::Colour',    # different spelling
+        amp   => 'Nigels::Amplifier',     # different path
+    };
+
+You can then use it like this:
+
+    use My::Widgets;
+    
+    # class methods (note: widget() is singular)
+    $w = My::Widgets->widget( foo => { msg => 'Hello World' } );
+    
+    # same as:
+    use My::Widget::Foo;
+    $w = My::Widget::Foo({ msg => 'Hello World' });
+
+    # add/update widgets lookup table (note: widgets() is plural)
+    My::Widgets->widgets(
+        extra => 'Another::Widget::Module',
+        super => 'Golly::Gosh',
+    );
+    
+    # now load and instantiate new widget modules
+    $w = My::Widgets->widget( extra => { msg => 'Hello Badger' } );
+
+You can also create factory objects:
+
+    my $factory = My::Widgets->new(
+        widget_path => ['His::Widget', 'Her::Widget'],
+        widgets     => {
+            extra => 'Another::Widget::Module',
+            super => 'Golly::Gosh',
+        }
+    );
+    
+    $w = $factory->widget( foo => { msg => 'Hello World' } );
+
+The L<Badger::Factory::Class> module can be used to simplify the process
+of defining factory subclasses.
+
+    package My::Widgets;
+
+    use Badger::Factory::Class
+        item    => 'widget',
+        path    => 'My::Widget Your::Widget';
+        widgets => {
+            extra => 'Another::Widget::Module',
+            super => 'Golly::Gosh',
+        };
+
+=head1 DESCRIPTION
+
+This module implements a base class factory object for loading modules
+and instantiating objects on demand.
+
+TODO: the rest of the documentation
+
+=head1 METHODS
+
+=head2 path($path)
+
+Mutator method to get/set the factory module path.
+
+TODO: examples
+
+=head2 items(%items)
+
+TODO: Method to fetch or update the lookup table for mapping names to modules
+
+=head2 item($name, %params)
+
+TODO: Method to load a module and insantiate an object.
+
+=head2 type_args(@args)
+
+TODO: Method to perform any manipulation on the argument list before passing 
+to object constructor
+
+=head2 load($type)
+
+TODO: Method to load a module for an object type
+
+=head2 module_names($type)
+
+TODO: Method to expand an object type into a candidate list of module names.
+
+=head2 found($item, $config)
+
+TODO: Method hook to perform any post-processing (e.g. caching) after an
+item has been found and instantiated.
+
+=head1 AUTHOR
+
+Andy Wardley L<http://wardley.org/>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2006-2008 Andy Wardley.  All Rights Reserved.
+
+This module is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+L<Badger::Factory::Class>, L<Badger::Codecs>.
+
+=cut
+
+# Local Variables:
+# mode: perl
+# perl-indent-level: 4
+# indent-tabs-mode: nil
+# End:
+#
+# vim: expandtab shiftwidth=4:
+
 
 
 1;
