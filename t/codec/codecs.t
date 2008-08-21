@@ -62,11 +62,11 @@ is( $dec->{ author }, $data->{ author }, 'name transcoded' );
 
 
 #-----------------------------------------------------------------------
-# test base option
+# test path option
 #-----------------------------------------------------------------------
 
 $codecs  = Badger::Codecs->new(
-    base => 'My::Codec',
+    path => 'My::Codec',
 );
 
 is( $codecs->encode( foo => 'hello' ), 'FOO:hello', 'encoded foo via codecs' );
@@ -78,11 +78,11 @@ is( $codec->decode('FOO:world'), 'world', 'decoded foo via codec' );
 
 
 #-----------------------------------------------------------------------
-# test base option with list ref
+# test path option with list ref
 #-----------------------------------------------------------------------
 
 $codecs  = Badger::Codecs->new(
-    base => ['Badger::Code', 'No::Such::Codec', 'My::Codec' ],
+    path => ['Badger::Code', 'No::Such::Codec', 'My::Codec' ],
 );
 
 is( $codecs->decode( Base64 => $codecs->encode( Base64 => $hello ) ), 
