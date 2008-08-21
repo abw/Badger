@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 113,
+    tests => 119,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -411,6 +411,28 @@ is( $t2->dang, 'Ding-A-Ling', 'get dang' );
 
 
 #-----------------------------------------------------------------------
+# test generation of slot methods for list based objects
+#-----------------------------------------------------------------------
+
+package Badger::Test::Slots;
+use Badger::Class 
+    slots => 'size colour object';
+
+sub new {
+    my ($class, @stuff) = @_;
+    bless \@stuff, $class;
+}
+
+package main;
+my $bus = Badger::Test::Slots->new(qw(big red bus));
+ok( $bus, 'Created slot test object' );
+is( $bus->size,   'big', 'big slot' );
+is( $bus->colour, 'red', 'red slot' );
+is( $bus->object, 'bus', 'bus slot' );
+
+
+
+#-----------------------------------------------------------------------
 # test words
 #-----------------------------------------------------------------------
 
@@ -446,6 +468,9 @@ my $amp2 = class('Nigels::Guitar::Amplifier')
 
 is( $amp2->about, 'This amp goes up to 11', $amp2->about );
     
+my $method = $amp2->class->method('about');
+ok( $method, 'got about() method' );
+is( $method->($amp2), 'This amp goes up to 11', 'method reference call' );
 
 
 
