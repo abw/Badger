@@ -50,6 +50,7 @@ our $COMMANDS   = {         # commands that require custom handlers
 };
 
 *init  = \&init_parser;
+*parse_paragraph = \&parse_formatted;
 
 
 sub init_parser {
@@ -113,7 +114,7 @@ sub parse_blocks {
     my ($code, $pod);
     $line ||= 1;
 
-    # scan for a block of up to the first Pod command
+    # scan for a block of text up to the first Pod command
     while ($text =~ /$SCAN_TO_POD/cg) {
         ($code, $pod) = ($1, $2);
 
@@ -210,7 +211,7 @@ sub parse_pod {
     }
 }
 
-sub parse_paragraph {
+sub parse_formatted {
     my ($self, $text, $line) = @_;
     my ($body, $name, $paren, $lparen, $rparen, $format, $where);
     my @stack = ( 
@@ -377,7 +378,7 @@ sub debug_extract {
     my ($self, $type, $text, $line) = @_;
     $text =~ s/\n/\\n/g;
     $text = substr($text, 0, 61) . '...' if length $text > 64;
-    $self->debug_up(1, "[$type\@$line|$text]\n");
+    $self->debug_up(2, "[$type\@$line|$text]\n");
 }
 
 
