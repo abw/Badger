@@ -132,7 +132,8 @@ sub _export_hook {
     croak "You didn't specify a value for the '$key' load option."
         unless @$symbols;
     # make sure we forward the $class to class() so this module can 
-    # be subclassed (e.g. Badger::Web::Class)
+    # be subclassed (e.g. Badger::Web::Class).  NOTE: I'm pretty sure
+    # this isn't required any more since I added the UBER method - must check
     class($target, $class)->$key(shift @$symbols);
 }
 
