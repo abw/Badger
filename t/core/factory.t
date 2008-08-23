@@ -16,7 +16,7 @@ use warnings;
 
 use lib qw( core/lib t/core/lib ./lib ../lib ../../lib );
 use Badger::Test 
-    tests => 20,
+    tests => 22,
     debug => 'Badger::Factory',
     args  => \@ARGV;
 
@@ -128,6 +128,14 @@ ok( $widget, 'created widgets factory' );
 ok( $widgets->widget('widget'), 'got widget from class constructed factory' );
 ok( $widgets->widget('wodget'), 'got wodget from class constructed factory' );
 ok( $widgets->widget('dangly'), 'got dangly from class constructed factory' );
+
+
+#-----------------------------------------------------------------------
+# test AUTOLOAD spits out warnings
+#-----------------------------------------------------------------------
+
+ok( ! $widgets->try( answer => 42 ), 'cannot answer' );
+like( $widgets->reason, qr/^Can't locate object method "answer" via package "My::Widgets" at/, 'Error message'  );
 
 
 __END__
