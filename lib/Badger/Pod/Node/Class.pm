@@ -13,21 +13,54 @@
 
 package Badger::Pod::Node::Class;
 
+use Carp;
 use Badger::Class
-    version => 0.01,
-    uber    => 'Badger::Class',
-    hooks   => 'type';
+    version   => 0.01,
+    uber      => 'Badger::Class',
+    hooks     => 'type accept expect',
+    constants => 'DELIMITER ARRAY HASH';
 
 sub self { $_[0] }
 
 sub type {
     my ($self, $type) = @_;
+    my $visit = 'visit_' . $type;
 
     $self->methods( 
-        type  => sub { $type },     # $obj->type    ==> $type
         $type => \&self,            # $obj->$type   ==> $obj
+        type  => sub { $type },     # $obj->type    ==> $type
+        visit => sub {
+            my ($this, $visitor, @args) = @_;
+            $visitor->$visit($this, @args);
+        }
     );
 }
+
+sub accept {
+    my ($self, $nodes) = @_;
+    my $accept = $self->var_default( ACCEPT => { } );
+
+    $nodes = [ split(DELIMITER, $nodes) ]
+        unless ref $nodes;
+    
+    $nodes = {
+        map { $_ => $_ }
+        @$nodes
+    } if ref $nodes eq ARRAY;
+
+    croak("Invalid list of accept nodes specified: $nodes")
+        unless ref $nodes eq HASH;
+
+    @$accept{ keys %$nodes } = values %$nodes;
+    
+    return $self;
+}
+
+sub expect {
+    my ($self, $node) = @_;
+    $self->var( EXPECT => $node );
+}
+
 
 =head1 NAME
 

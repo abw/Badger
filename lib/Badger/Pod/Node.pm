@@ -28,7 +28,7 @@ use Badger::Class
         bad_add => 'Elements cannot be added to a Pod %s',
     };
 
-our @NODE_TYPES = qw( code pod command verbatim paragraph format );
+our @NODE_TYPES = qw( pod code data command verbatim paragraph format plain );
 
 use overload
     '""'     => \&text,
@@ -44,14 +44,17 @@ sub init {
 }
 
 sub node {
-#    $_[0]->debug("--- node(", join(', ', @_), ")\n");
-#    $_[0]->debug_caller;
     shift->nodes->node(@_);
 }
 
 sub add {
+    return 0;
     my $self = shift;
     $self->error_msg( bad_add => $self->type );
+}
+
+sub prepare {
+    # for subclasses to do something useful
 }
 
 # define nullary methods for code(), pod(), etc., that subclasses can 

@@ -21,6 +21,7 @@ use Badger::Class
         POD          => 'Badger::Pod',
         DOCUMENT     => 'Badger::Pod::Document',
         NODES        => 'Badger::Pod::Nodes',
+        VIEWS        => 'Badger::Pod::Views',
         PARSER       => 'Badger::Pod::Parser',
         MODEL_PARSER => 'Badger::Pod::Parser::Model',
         BLOCK_PARSER => 'Badger::Pod::Parser::Blocks',
@@ -29,7 +30,7 @@ use Badger::Class
         any    => 'Pod POD',    # we'll add to this below
     };
 
-our @COMPONENTS = qw( document nodes parser block_parser model_parser );
+our @COMPONENTS = qw( document nodes parser block_parser model_parser views );
 our $LOADED     = { };
 
 *Pod = \&Document;

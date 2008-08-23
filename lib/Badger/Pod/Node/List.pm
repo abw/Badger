@@ -17,13 +17,22 @@ use Badger::Class
     debug       => 0,
     base        => 'Badger::Base',
     utils       => 'blessed',
-    constants   => 'FIRST LAST CODE',
+    constants   => 'FIRST LAST CODE TRUE',
     constant    => {
         type => 'body',
+    },
+    messages => {
+        not_blessed => "Cannot call %s method on unblessed item: %s",
+        no_method   => "Cannot call %s method on object: %s",
     };
 
 # cache for inspector methods created by inspector() and used by each()
 our $INSPECTORS;
+
+use overload
+    '""'     => \&text,
+    bool     => sub { shift },
+    fallback => 1;
 
 # We want to use the CORE push/pop/shift/unshift functions in this module
 # without having to explicitly scope them as CORE::shift, etc., which gets
@@ -100,16 +109,24 @@ sub inspector {
         my $item = shift;
         my $method;
 
-        $self->error( not_blessed => $item )
+        $self->error_msg( not_blessed => $name, $item )
             unless blessed $item;
 
-        $self->error( no_method => $name, ref $item )
+        $self->error_msg( no_method => $name, ref $item )
             unless ($method = $item->can($name));
 
         $method->($item, @_);
     };
 }
 
+sub visit {
+    my ($self, $visitor, @args) = @_;
+    map { $_->visit($visitor, @args) } @$self;
+}
+
+sub text {
+    join('', shift->each('text'));
+}
 
 1;
 
