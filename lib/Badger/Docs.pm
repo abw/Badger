@@ -47,7 +47,7 @@ sub visitor {
 sub visit {
     my $self  = shift;
     return $self->{ visit }
-       ||= $self->{ vfs   }->visit( $self->visitor );
+       ||= $self->{ vfs }->visit($self->visitor);
 }
 
 1;
