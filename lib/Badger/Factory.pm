@@ -25,10 +25,12 @@ use Badger::Class
         PATH_SUFFIX  => '_PATH',
     },
     messages  => {
-        no_item => 'No item(s) specified for factory to manage',
-        bad_ref => 'Invalid reference for %s factory item %s: %s',
+        no_item    => 'No item(s) specified for factory to manage',
+        bad_ref    => 'Invalid reference for %s factory item %s: %s',
+        bad_method => qq{Can't locate object method "%s" via package "%s" at %s line %s},
     };
 
+our $AUTOLOAD;
 our %LOADED;
 our %MAPPED;
 
@@ -63,29 +65,6 @@ sub init {
     $self->{ $items } = $class->hash_vars(uc $items, $config->{ $items });
     $self->{ items  } = $items;
     $self->{ item   } = $item;
-
-    # map item-specific methods (e.g. widget()/widgets()) to item()/items()
-    unless ($MAPPED{ ref $self }++) {
-        if ($DEBUG) {
-            $self->debug(
-                $self->can($item)
-                    ? "$self already has $item method\n"
-                    : "mapping $item to item()\n"
-            );
-            $self->debug(
-                $self->can($items)
-                    ? "$self already has $items method\n"
-                    : "mapping $items to items()\n"
-            );
-        }
-        
-        $class->method( $item => $self->can('item') )
-            unless $self->can($item);
-
-        $class->method( $items => $self->can('items') )
-            unless $self->can($items);
-    }
-
 
     return $self;
 }
@@ -123,7 +102,7 @@ sub item {
     
     if (! defined $item) {
         # we haven't got an entry in the $CODECS table so let's try 
-        # autoloading some modules using the $CODEC_B
+        # autoloading some modules using the $CODEC_PATH
         $item = $self->load($type)
             || return $self->error_msg( not_found => $self->{ item }, $type );
         $item = $item->new(@args);
@@ -211,6 +190,49 @@ sub found_ref_ARRAY {
 
 sub found {
     return $_[2];
+}
+
+sub can {
+    my ($self, $name) = @_;
+
+    # upgrade class methods to calls on prototype
+    $self = $self->prototype unless ref $self;
+    
+    if ($name eq $self->{ item }) {
+        return $self->can('item');
+    }
+    elsif ($name eq $self->{ items }) {
+        return $self->can('items');
+    }
+    else {
+        return $self->SUPER::can($name);
+    }
+}
+
+sub AUTOLOAD {
+    my ($self, @args) = @_;
+    my ($name) = ($AUTOLOAD =~ /([^:]+)$/ );
+    return if $name eq 'DESTROY';
+
+    $self->debug("AUTOLOAD $name\n") if $DEBUG;
+
+    # upgrade class methods to calls on prototype
+    $self = $self->prototype unless ref $self;
+    
+    if ($name eq $self->{ item }) {
+        $self->class->method( $name => $self->can('item') );
+    }
+    elsif ($name eq $self->{ items }) {
+        $self->class->method( $name => $self->can('items') )
+    }
+    else {
+        my ($pkg, $file, $line) = caller;
+        my $class = ref $self || $self;
+        die $self->message( bad_method => $name, $class, $file, $line ), "\n";
+    }
+    
+    # should be installed now
+    $self->$name(@args);
 }
 
 
@@ -354,7 +376,3 @@ L<Badger::Factory::Class>, L<Badger::Codecs>.
 # End:
 #
 # vim: expandtab shiftwidth=4:
-
-
-
-1;
