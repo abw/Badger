@@ -118,7 +118,7 @@ sub is_relative {
 sub absolute {
     my $self = shift;
     return $self->is_absolute
-         ? $self
+         ? $self->{ path }
          : $self->filesystem->absolute($self->{ path });
 }
 
@@ -226,9 +226,21 @@ sub exists {
 
 sub must_exist {
     my $self = shift;
-    return $self->exists
-        ? $self
-        : $self->error_msg( no_exist => $self->type, $self->{ path } );
+
+    unless ($self->exists) {
+        if (@_ && $_[0]) {
+            # true flag to attempt
+            $self->create;
+        }
+        else {
+            return $self->error_msg( no_exist => $self->type, $self->{ path } );
+        }
+    }
+    return $self;
+}
+
+sub create {
+    shift->not_implemented;
 }
 
 sub stat {
@@ -273,6 +285,11 @@ sub visit {
 
 sub collect {
     shift->visit(@_)->collect;
+}
+
+sub enter {
+    # enter() is a custom accept() method for the entry point of a visitor
+    shift->accept;
 }
 
 sub accept {

@@ -84,6 +84,20 @@ sub delete {
     $self->filesystem->delete_directory($self->{ path }, @_);
 }
 
+sub mkdir {
+    my $self = shift;
+    return @_
+        ? $self->directory(@_)->create
+        : $self->create;
+}
+
+sub rmdir {
+    my $self = shift;
+    return @_
+        ? $self->directory(@_)->delete
+        : $self->delete;
+}
+
 sub open { 
     my $self = shift;
     $self->filesystem->open_directory($self->{ path }, @_);
@@ -112,12 +126,20 @@ sub directories {
     return wantarray ? @dirs : \@dirs;
 }
 
-sub visit {
+sub OLD_visit {
     my $self    = shift;
     my $visitor = $self->filesystem->visitor(@_);
     # directory doesn't visit self, but instead visits all children
     $visitor->visit_directory_children($self);
     return $visitor;
+}
+
+# Custom entry handler for the special case when a visitor starts visiting
+# at a directory - in this case we move straight onto visiting the children
+# of the directory rather than making a callback for the root directory.
+
+sub enter {
+    $_[1]->visit_directory_children($_[0]);
 }
 
 sub accept {

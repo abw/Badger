@@ -114,7 +114,7 @@ sub init_filters {
 sub visit {
     my $self = shift;
     my $node = shift || return $self->error_msg( no_node => 'visit' );
-    $node->accept($self);
+    $node->enter($self);
 }
 
 sub visit_path {
