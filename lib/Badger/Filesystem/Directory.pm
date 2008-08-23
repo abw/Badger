@@ -126,12 +126,8 @@ sub directories {
     return wantarray ? @dirs : \@dirs;
 }
 
-sub OLD_visit {
-    my $self    = shift;
-    my $visitor = $self->filesystem->visitor(@_);
-    # directory doesn't visit self, but instead visits all children
-    $visitor->visit_directory_children($self);
-    return $visitor;
+sub accept {
+    $_[1]->visit_directory($_[0]);
 }
 
 # Custom entry handler for the special case when a visitor starts visiting
@@ -142,9 +138,6 @@ sub enter {
     $_[1]->visit_directory_children($_[0]);
 }
 
-sub accept {
-    $_[1]->visit_directory($_[0]);
-}
 
 1;
 
@@ -296,6 +289,28 @@ This method can be used to create the directory if it doesn't already exist.
 
 This method deletes the directory permanently.  Use it wisely.
 
+=head2 mkdir($subdir)
+
+This method can be used to create a sub-directory.
+
+    $dir->mkdir('subdir');
+
+When called without an argument it has the same effect as L<create()> in
+creating itself.
+
+    $dir->mkdir;        # same as $dir->create
+
+=head2 rmdir($subdir);
+
+This does the opposite of L<mkdir()> but works in the same way.  It can be
+used to delete a sub-directory:
+
+    $dir->rmdir('subdir');
+
+Or the directory itself when called without an argument:
+
+    $dir->rmdir;
+
 =head2 open()
 
 This method opens the directory and returns an L<IO::Dir> handle to it.
@@ -369,9 +384,8 @@ default configuration.
     $dir->visit({ in_dirs => 1});
 
 The method then calls the visitor
-L<visit_directory_children()|Badger::Filesystem::Visitor/visit_directory_children()>
-passing C<$self> as an argument to begin visiting the files and
-sub-directories contained in this directory.
+L<visit()|Badger::Filesystem::Visitor/visit()>
+passing C<$self> as an argument to begin visiting the directory.
 
 =head2 accept($visitor)
 
@@ -379,6 +393,16 @@ This method is called to dispatch a visitor to the correct method for a
 filesystem object. In the L<Badger::Filesystem::Directory> class, it calls the
 visitor L<visit_directory()|Badger::Filesystem::Visitor/visit_directory()>
 method, passing the C<$self> object reference as an argument.
+
+=head2 enter($visitor)
+
+This is a custom variant of the L<accept()> method which is called by a
+visitor when it first enters a filesystem. Instead of calling the visitor
+L<visit_directory()|Badger::Filesystem::Visitor/visit_directory()> method, it
+calls
+L<visit_directory_children()|Badger::Filesystem::Visitor/visit_directory_children()>
+passing C<$self> as an argument to begin visiting the files and
+sub-directories contained in this directory.
 
 =head1 AUTHOR
 

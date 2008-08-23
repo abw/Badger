@@ -1246,7 +1246,7 @@ for your application.
         utils     => 'wibble frusset pouch'; # imported from My::Utils
 
 TODO: you might also want to define your own metaprogramming methods and/or
-import hooks.
+import hooks.  See the L<hooks> hook and L<hooks()> method.
 
 =head1 EXPORTABLE SUBROUTINES
 
@@ -1536,18 +1536,6 @@ mean.
         base => 'My::Base,Your::Base, Another::Base';
 
 See the L<base()> method for further details.
-
-=head2 uber
-
-This is a special case of the L<base> hook which should be used when 
-subclassing a C<Badger::Class> class. 
-
-    package Your::Class;
-    
-    use Badger::Class
-        uber => 'Badger::Class';
-
-See the L<uber()> method for further details.
 
 =head2 mixin
 
@@ -1948,6 +1936,31 @@ module.
 
 See the L<filesystem()> method for further details.
 
+=head2 uber
+
+This is a special case of the L<base> hook which should be used when 
+subclassing a C<Badger::Class> class. 
+
+    package Your::Class;
+    
+    use Badger::Class
+        uber => 'Badger::Class';
+
+See the L<uber()> method for further details.
+
+=head2 hooks
+
+This can be used by C<Badger::Class> subclasses to define their own
+import hooks.
+
+    package Your::Class;
+    
+    use Badger::Class
+        uber  => 'Badger::Class',
+        hooks => 'foo bar';
+    
+See the L<hooks()> method for further details.
+
 =head1 METHODS
 
 =head2 new($package)
@@ -2018,6 +2031,13 @@ Returns true or false to indicate if the module class is loaded or not.
 =head2 load()
 
 Loads the module class if not already loaded.
+
+=head2 maybe_load()
+
+A wrapper around L<load()> which catches any errors raised by the module
+not being found.  It returns the module name if it was loaded correctly,
+a false value (0) if not.  If the module was found but contained syntax
+errors then these will be throw as errors as usual.
 
 =head1 CLASS VARIABLE METHODS
 
@@ -2268,6 +2288,10 @@ no relevant entries are found.
 =head1 CLASS CONFIGURATION METHODS
 
 These methods can be used to perform various class metaprogramming tasks.
+They all return a C<$self> reference allowing them to be chained together,
+e.g.
+
+    $object->base($b)->version($v)->debug($d);
 
 =head2 base(\@classes)
 
@@ -2281,14 +2305,6 @@ This method can be called via the L<base> import hook.
 
     use Badger::Class
         base => 'Your::Base::Module';
-
-=head2 uber($class)
-
-This method is used when creating a subclass of the C<Badger::Class> module
-(or another subclass of it). It does the same thing as the L<base()> module in
-adding the C<$class> to the C<@ISA> package variable. It then calls the
-internal L<UBER()> method to generate the L<class> and L<classes> subroutines
-in the subclass.
 
 =head2 version($n)
 
@@ -2357,62 +2373,146 @@ variable for the class.  Here's how you would typically use it.
     $obj->debugging(1);     # sets $DEBUG to 1
     $obj->do_something;     # generates debugging message
 
-=head2 constants
+=head2 constants($names)
 
-TODO: load constants from Badger::Constants
+This method can be used to import one or more symbols from the
+L<Badger::Constants> module (or a constants module of your choosing if you
+subclass C<Badger::Class> as described above in L<SUBCLASSING Badger::Class>).
 
-=head2 constant
+    class->constants('ARRAY TRUE');
 
-TODO: define some constant 
+Although you I<can> call it manually as a method from inside your code, 
+you'll probably want to access it via the L<constants> import hook so that
+the symbols are imported at compile time.
 
-=head2 words
+    use Badger::Class
+        constants => 'ARRAY TRUE FALSE';
+    
+    sub is_this_an_array_ref {
+        my $thingy = shift;
+        return ref $thingy eq ARRAY ? TRUE : FALSE;
+    }
 
-TODO: define single word constants.  Only really makes sense as an import
-hook.
+See L<Badger::Constants> for further details.
 
-=head2 exports
+=head2 constant(\%constants)
 
-TODO: define exports - adds Badger::Exporter as base() class and calls
-exports() method.
+A method to define constants, just like the C<constant.pm> module.  As
+with L<constants()>, you probably want to call this via the L<constant>
+import hook so that the constants are defined at compile time.
+
+    package Your::Module;
+    
+    use Badger::Class
+        constant => {
+            name => 'Badger',
+            food => 'Nuts and Berries',
+        };
+
+=head2 words($words)
+
+This method is used to define a set of constant words.  As with L<constants()>
+and L<constant()>, it generally only make sense to do this via the 
+L<words> import hook.
+
+    use Badger::Class
+        words => 'yes no';
+    
+    print yes;          # yes
+    print no;           # no
+
+=head2 exports($symbols)
 
 This method is used to declare what symbols the module can export.  It
 delegates to the L<exports()|Badger::Exporter/export()> method in 
+L<Badger::Exporter>.
 
-=head2 throws
+You can provide a reference to a hash array or a list of named parameters.
+Each name should be one of C<any>, C<all>, C<tags>, C<hooks> or C<fail>.
 
-TODO: set $THROWS - see Badger::Base error() method
+    # list of named parameters
+    class->exports( any => '$FOO $BAR $BAZ' );
 
-=head2 messages
+    # reference to hash of named parameters
+    class->exports({
+        any  => '$FOO $BAR $BAZ',
+        all  => 'wiz bang',
+        tags => {
+            wam => '$ONE @TWO',
+            bam => '$THREE %FOUR',
+        },
+        hooks => {
+            ding => sub { ... },
+            dong => sub { ... },
+        },
+    });
 
-TODO: define some $MESSAGES - see Badger::Base
+=head2 throws($type)
 
-=head2 utils
+This methods sets the C<$THROWS> package variable in the target class to
+the value passed as an argument.  This is used by the L<Badger::Base>
+error handling mechanism.  See the L<throws()|Badger::Base/throws()> method
+for further details
 
-TODO: load some utils from Badger::Utils
+=head2 messages(\%messages)
 
-=head2 codecs
+This method can be used to update the C<$MESSAGES> package variable in the 
+target class to include the messages passed as arguments, either as a list
+or reference to a hash array of named paramters.
 
-TODO: load one or more codecs
+    # define new class message
+    class->messages( careful => 'Careful with that %s %s!' );
+    
+    # method which warns; Careful with that axe Eugene!
+    sub some_method {
+        my $self = shift;
+        $self->warning_msg( careful => axe => 'Eugene' );
+    }
 
-=head2 codec
+The new messages will be merged into any existing C<$MESSAGES> hash reference
+or a new one will be created.
 
-TODO: load a codec
+=head2 utils($imports)
 
-=head2 method
+This method can be use to load symbols from L<Badger::Utils>. As with other
+methods that load compile-time constants, it should generally be called via
+the L<utils> import hook.
 
-TODO: method to install a single method in a class.
+=head2 codecs($names)
 
-    class->methods( 
+This method can be use to load codecs from L<Badger::Codecs>. As with other
+methods that load compile-time constants, it should generally be called via
+the L<codecs> import hook.
+
+See L<Badger::Codecs> for further information.
+
+=head2 codec($name)
+
+A method to load a single codec from L<Badger::Codecs>.  As with L<codecs()>,
+it should be called via the L<code> import hook.
+
+See L<Badger::Codecs> for further information.
+
+=head2 method($name,$code)
+
+This method can be used to get or set a method in the target class.  If a
+single argument is specified then it behaves just like the inbuilt C<can()>
+method (which it calls).  It returns a CODE reference for the method either
+from the class itself or one of its subclasses, or undef if the method is
+not implemented by the target class.
+
+    my $method = class->method('foo');
+
+The method can be called with two arguments to define a new method in the
+target class.
+
+    class->method( 
         foo => sub { ... }, 
-        bar => sub { ... },
     )       
-
-TODO: can also be called with a single argument to fetch a method by calling
-can() on the target package.
 
 =head2 methods(\%methods)
 
-TODO: method to install methods in a class.
+This method can be used to define new methods in the target class.
 
     class->methods( 
         foo => sub { ... }, 
@@ -2539,10 +2639,35 @@ to update the slot value.
 
     $bus->size('large');
 
-
 =head2 filesystem(@symbols)
 
-TODO
+This method can be used to load symbols from L<Badger::Filesystem>.  It
+should generally be used via the L<filesystem> hook.
+
+=head2 uber($class)
+
+This method is used when creating a subclass of the C<Badger::Class> module
+(or another subclass of it). It does the same thing as the L<base()> module in
+adding the C<$class> to the C<@ISA> package variable. It then calls the
+internal L<UBER()> method to generate the L<class> and L<classes> subroutines
+in the subclass.
+
+=head2 hooks($names)
+
+This can be used by C<Badger::Class> subclasses to define their own
+import hooks.  For example, an import hook to set a C<$FOO> package
+variable could be implemented like this.
+
+    package Your::Class;
+    
+    use Badger::Class
+        uber  => 'Badger::Class',
+        hooks => 'foo';
+    
+    sub foo {
+        my ($self, $value) = @_;
+        $self->var( FOO => $value );
+    }
 
 =head1 INTERNAL METHODS
 

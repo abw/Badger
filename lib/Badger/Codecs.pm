@@ -543,6 +543,16 @@ name of the module implementing the codec.
 
     print Badger::Codecs->load('base64');       # Badger::Codec::Base64
 
+=head2 found($name,$codec)
+
+This is an internal method called by the base class L<Badger::Factory>
+module when a codec is located and loaded.
+
+=head2 found_ref($name,$codec)
+
+This is an internal method called by the base class L<Badger::Factory>
+module when a codec is located which is defined as a reference value.
+    
 =head1 AUTHOR
 
 Andy Wardley E<lt>abw@wardley.orgE<gt>

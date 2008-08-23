@@ -82,31 +82,6 @@ sub xprintf {
     sprintf($format, @_);
 }
 
-
-#=======================================================================
-# TODO: make these subs, not methods.
-#=======================================================================
-
-
-#------------------------------------------------------------------------
-# load_module($name)
-#
-# Load a Perl module.
-#------------------------------------------------------------------------
-
-sub OLD_load_module {
-    my $class = shift;
-    my $name  = $class->module_file(@_);
-    use Carp 'confess';
-    confess "Badger::Utils load_module is deprecated.  Use Badger::Class load() instead\n";
-    require $name;
-}
-
-sub OLD_maybe_load_module {
-    eval { shift->load_module(@_) } || 0;
-}
-
-
 sub _debug {
     print STDERR @_;
 }

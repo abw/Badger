@@ -596,7 +596,7 @@ which will be returned (e.g. '/path/to/current/dir').
 
 Returns any file extension portion following the final C<.> in the path.
 
-=head2 exists
+=head2 exists()
 
 Returns true if the path exists in the filesystem (e.g. as a file, directory,
 or some other entry), or false if not.
@@ -609,14 +609,32 @@ or some other entry), or false if not.
         # ...etc...
     }
 
-=head2 must_exist
+=head2 must_exist($create)
 
 Checks that the path exists (by calling L<exists()>) and throws an error
 if it doesn't.
 
     $path->must_exist;                      # no need to check return value
 
-=head2 stat
+The C<$create> flag can be set to have it attempt to L<create()> itself if it
+doesn't already exist.  However, this only makes sense for file and directory
+subclasses and not base class paths.
+
+    $dir->must_exist(1);                    # create if it doesn't
+
+=head2 create() 
+
+In the base class this will method will throw an error. You can't physically
+create an abstract path unless you know what kind of concrete entity (e.g.
+file or directory) it maps onto. In other words, the L<create()> method will
+only work for the L<Badger::Filesystem::File> and
+L<Badger::Filesystem::Directory> subclasses.
+
+    $path->create;                          # FAIL
+    $dir->create;                           # OK
+    $file->create;                          # OK
+
+=head2 stat()
 
 Performs a filesystem C<stat> on the path and returns a list (in list
 context), or a reference to a list (in scalar context) containing the 13 
@@ -688,6 +706,14 @@ filesystem object. In the L<Badger::Filesystem::Path> base class, it calls the
 visitor L<visit_path()|Badger::Filesystem::Visitor/visit_path()> method,
 passing the C<$self> object reference as an argument. Subclasses redefine this
 method to call other visitor methods.
+
+=head2 enter($visitor)
+
+This is a special case of the L<accept()> method which subclasses (e.g.
+L<directory|Badger::Filesystem:Directory>) use to differentiate between the
+initial entry point of a visitor and subsequent visits to directories 
+contained therein.  In the base class it simply delegates to the L<accept()>
+method.
 
 =head2 collect(\%params)
 

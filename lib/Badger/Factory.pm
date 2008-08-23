@@ -347,10 +347,28 @@ TODO: Method to load a module for an object type
 
 TODO: Method to expand an object type into a candidate list of module names.
 
+=head2 found_ref_ARRAY($item,\@array)
+
+TODO: Method hook to handle the case of a factory entry defined as an 
+array reference.  It is assumed to be C<[$module, $class]>.  The C<$module>
+is loaded and the C<$class> instantiated.
+
+Subclasses can re-define this to change this behaviour.
+
 =head2 found($item, $config)
 
 TODO: Method hook to perform any post-processing (e.g. caching) after an
 item has been found and instantiated.
+
+=head2 can($method)
+
+TODO: Implements the magix to ensure that the item-specific accessor methods
+(e.g. widget()/widgets()) are generated on demand.
+
+=head2 AUTOLOAD(@args)
+
+TODO: Implements the AUTOLOAD magic to generate the item-specific accessor
+methods (e.g. widget()/widgets()) on demand.
 
 =head1 AUTHOR
 
