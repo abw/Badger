@@ -35,7 +35,7 @@ use Badger::Rainbow
     
 our $PAD       = '    ';
 our $TEXTLEN   = 32;
-our $MAX_DEPTH = 2;     # prevent runaways in debug/dump
+our $MAX_DEPTH = 3;     # prevent runaways in debug/dump
 our $FORMAT    = "[<class> line <line>] <msg>"  
     unless defined $FORMAT;
 our $CALLER_UP = 0;     # hackola to allow debug() to use a different caller
