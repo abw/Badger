@@ -18,7 +18,7 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Pod 'Pod';
 use Badger::Test
-    tests => 10,
+    tests => 13,
     debug => 'Badger::Pod::Parser Badger::Pod::Document',
     args  => \@ARGV;
     
@@ -85,4 +85,26 @@ is( scalar(@errs), 1, 'one errors for bad begin/end' );
 is( $errs[0], "Format mismatch: '=begin cheese' at line 1 does not match '=end crackers' at line 5",
     'got bad begin/end error' );
 
+
+#-----------------------------------------------------------------------
+# missing =back for =over
+#-----------------------------------------------------------------------
+
+@errs = ();
+$pod = Pod( text => <<EOF, on_warn => \&on_warn )->model;
+=over hello
+
+=item one
+
+This is item one
+
+=head1 cheese
+
+Not allowed
+EOF
+
+ok( $pod, 'parsed pod with missing back' );
+is( scalar(@errs), 1, 'one errors for missing back' );
+is( $errs[0], "Missing =back to terminate =over at line 7",
+    'got missing back error' );
 

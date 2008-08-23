@@ -20,15 +20,16 @@ use Badger::Pod 'Pod';
 use Badger::Filesystem 'FS';
 use Badger::Debug ':dump';
 use Badger::Test
-    skip  => 'not working',
+#    skip  => 'not working',
     tests => 3,
-    debug => 'Badger::Pod Badger::Pod::Document',
+    debug => 'Badger::Pod::Parser Badger::Pod::Parser::Blocks',
     args  => \@ARGV;
     
 my $test_dir  = 'testfiles';
 my $test_file = 'begin.pod';
 my $dir       = -d 't' ? FS->dir('t', 'pod', $test_dir) : FS->dir($test_dir);
 my $file      = $dir->file($test_file);
-my @blocks    = Pod( file => $file )->blocks->code;
-is( scalar @blocks, 1, 'one code blocks' );
-like( $blocks[0], qr/This is a code block .*? This is not pod/, 'got begin code block' );
+my @blocks    = Pod( file => $file )->model;
+
+#is( scalar @blocks, 1, 'one code blocks' );
+#like( $blocks[0], qr/This is a code block .*? This is not pod/, 'got begin code block' );

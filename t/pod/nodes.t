@@ -18,12 +18,15 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Pod 'Nodes';
 use Badger::Test
-    tests => 11,
+    tests => 17,
     debug => 'Badger::Pod::Nodes Badger::Factory Badger::Class',
     args  => \@ARGV;
     
 my $nodes = Nodes;
 ok( $nodes, 'got nodes class' );
+
+ok( $nodes->can('node'), 'nodes can do node()' );
+ok( $nodes->can('nodes'), 'nodes can do nodes()' );
 
 # named parameters
 my $code  = $nodes->node( code => text => 'example' );
@@ -40,4 +43,11 @@ ok( $list, 'created list node' );
 is( $list->shift, 'a', 'shifted first item off list node' );
 is( $list->first, 'b', 'got first item in list node' );
 is( $list->last, 'c', 'got last item in list node' );
+
+# model node
+my $model = $nodes->node('model');
+ok( $model, 'got model node' );
+ok( $model->accept->{ head1 }, 'model accepts head1 via hash' );
+ok( $model->accept('head1'), 'model accepts head1 via sub' );
+ok( ! $model->accept('head99'), 'model does not accept head99' );
 

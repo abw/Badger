@@ -16,3 +16,12 @@ This is more of the raw text.  This is not pod
 =end codeblocks
 
 This is a regular paragraph
+
+=begin :podblocks
+
+This is a normal Pod section
+
+    This is a normal verbatim section
+
+=end :podblocks
+
