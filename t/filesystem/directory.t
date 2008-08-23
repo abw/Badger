@@ -17,7 +17,7 @@ use warnings;
 use Badger::Filesystem::Directory;
 use Badger::Filesystem::Virtual;
 use Badger::Test 
-    tests => 48,
+    tests => 58,
     debug => 'Badger::Filesystem::Directory',
     args  => \@ARGV;
 
@@ -163,3 +163,30 @@ ok( $newfile->append("this line was appended afterward\n"), 'appended another li
 
 $text = $newfile->text;
 like( $text, qr/^this file was also.*this line was appended/s, 'checked appended text' );
+
+
+#-----------------------------------------------------------------------
+# create/delete directory
+#-----------------------------------------------------------------------
+
+my $newdir = $testdir->dir('newdir1');
+
+# clean up from previous test that might have aborted
+if ($newdir->exists) {
+    ok( $newdir->delete, "cleanup deleting $newdir" );
+    ok( ! $newdir->exists, "cleanup deleted $newdir" );
+}
+else {
+    pass( "If you go down to the woods today..." );
+    pass( "...be sure to forage for nuts and berries" );
+}
+
+ok( $newdir->create, "creating $newdir" );
+ok( $newdir->exists, "created $newdir" );
+ok( $newdir->must_exist, "$newdir must exist" );
+ok( $newdir->delete, "deleting $newdir" );
+ok( ! $newdir->exists, "deleted $newdir" );
+ok( $newdir->must_exist(1), "$newdir must exist, create if not" );
+ok( $newdir->exists, "$newdir does exist" );
+ok( $newdir->delete, "final cleanup of $newdir" );
+
