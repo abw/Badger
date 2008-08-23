@@ -77,16 +77,17 @@ sub args {
     # quick hack until Badger::Config is done
     while (@$args && $args->[0] =~ /^-/) {
         $arg =  shift @$args;
-        if ($arg =~ /^-c|--colou?r/) {
+        if ($arg =~ /^(-c|--colou?r)$/) {
             $self->colour(1);
         }
-        elsif ($arg =~ /^-d|--debug/) {
+        elsif ($arg =~ /^(-d|--debug)$/) {
             $self->debugging(1);
         }
-        elsif ($arg =~ /^-s|--summary/) {
+        elsif ($arg =~ /^(-s|--summary)$/) {
             $self->summary(1);
         }
         else {
+            unshift(@$args, $arg);
             last;
         }
      }  
@@ -104,14 +105,13 @@ sub debug {
 
 sub debugging {
     my $self  = shift;
-    my $flag  = shift || 1;
-    my $debug = $self->class->var('DEBUG');
+    my $flag  = $DEBUGGING = shift || 1;
+    my $debug = $self->class->var('DEBUG') || return;
     $debug = [ split(DELIMITER, $debug) ] unless ref $debug eq ARRAY;
     
     foreach my $pkg (@$debug) {
         class($pkg)->load->var( DEBUG => $flag );
     }
-    $DEBUGGING = $flag;
 }
 
 class->methods(
