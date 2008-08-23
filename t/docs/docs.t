@@ -32,16 +32,17 @@ my $docs = Badger::Docs->new(
     root     => $lib, 
     uri_base => '/docs',
     verbose  => $DEBUG,
+    dry_run  => 1,
 );
 ok( $docs, 'created Badger::Docs object' );
 
 my $visitor = $docs->visit;
-ok( $visitor, 'created visitor' );
+ok( $visitor, 'visited documentation tree' );
 
-
-#print "\n\nINDEX:\n", main->dump_data($visitor->index);
+exit() unless $DEBUG;
+print "\n\nINDEX:\n", main->dump_data($visitor->index);
 #print main->dump_data($visitor->sections), "\n\n";
-#print "\n\nCONTENT:\n", main->dump_data($visitor->content);
+print "\n\nCONTENT:\n", main->dump_data($visitor->content);
 
 #print $visitor->dump($pages);
 
