@@ -36,9 +36,9 @@ use Badger::Class
         VISITOR     => 'Badger::Filesystem::Visitor',
     },
     exports   => {
-        any         => 'FS PATH FILE DIR DIRECTORY',
+        any         => 'FS PATH FILE DIR DIRECTORY CWD getcwd',
         tags        => { 
-            types   => 'Path File Dir Directory',
+            types   => 'Path File Dir Directory Cwd',
             dirs    => 'ROOTDIR UPDIR CURDIR',
         },
         hooks       => {
@@ -105,6 +105,8 @@ use Badger::Filesystem::Directory;
 sub Path      { return @_ ? FS->path(@_)      : PATH      }
 sub File      { return @_ ? FS->file(@_)      : FILE      }
 sub Directory { return @_ ? FS->directory(@_) : DIRECTORY }
+sub Cwd       { FS->directory }
+*CWD = \&getcwd;
 
 
 #-----------------------------------------------------------------------
@@ -496,10 +498,20 @@ Badger::Filesystem - filesystem functionality
 
 =head1 SYNOPSIS
 
-    # using Path/File/Dir constructor subroutines
-    use Badger::Filesystem 'Path File Dir Directory';
+The C<Badger::Filesystem> module defines a number of importable constructor
+functions for creating objects that represents files, directories and generic
+paths in a filesystem.
+
+    use Badger::Filesystem 'CWD Cwd Path File Dir Directory';
+    use Badger::Filesystem 'CWD :types';        # same thing
     
-    # use native OS-specific paths:
+    # CWD returns current working directory as text string, 
+    # Cwd as a Badger::Filesystem::Directory object
+    print CWD;                                  # /path/to/cwd
+    print Cwd->parent;                          # /path/to
+    
+    # create Badger::Filesystem::Path/File/Directory objects using
+    # native OS-specific paths:
     $path = Path('/path/to/file/or/dir');
     $file = File('/path/to/file');
     $dir  = Dir('/path/to/directory');           # short name
@@ -511,7 +523,9 @@ Badger::Filesystem - filesystem functionality
     $dir  = Dir('path', 'to', 'directory');
     $dir  = Directory('path', 'to', 'directory');
 
-    # calling class methods
+These constructor functions are simply shortcuts to C<Badger::Filesystem>
+class methods.
+
     use Badger::Filesystem;
     
     # we'll just show native paths from now on for brevity
@@ -526,25 +540,13 @@ Badger::Filesystem - filesystem functionality
     $file = FS->file('/path/to/file');
     $dir  = FS->dir('/path/to/directory');
 
-    # calling object methods
+You can also create C<Badger::Filesystem> objects.
+
     my $fs = Badger::Filesystem->new;
     
     $path = $fs->path('/path/to/file/or/dir');
     $file = $fs->file('/path/to/file');
     $dir  = $fs->dir('/path/to/directory');
-
-    # filesystem options
-    my $fs = Badger::Filesystem->new(
-        root      => '/path/to/my/web/site',
-        separator => '/',     # path separator
-        rootdir   => '/',     # root directory
-        curdir    => '.',     # current directory
-        updir     => '..',    # parent directory
-    );
-    
-    $path = $fs->path('/index.html');     # relative to f/s root
-    print $path->absolute;                # /index.html
-    print $path->definitive;              # /path/to/my/web/site/index.html
 
 =head1 INTRODUCTION
 
@@ -562,16 +564,13 @@ The L<File()> and L<Dir()> subroutines are used to create
 L<Badger::Filesystem::File> and L<Badger::Filesystem::Directory> objects. You
 should read the documentation for those modules first as they cover pretty
 much everything you need to know about working with files and directories for
-simple day-to-day tasks.
+simple day-to-day tasks.  In fact, you should start with the documentation
+for L<Badger::Filesystem::Path> because that's the base class for both of
+them.
 
 If you want to do something a little more involved than inspecting, reading
 and writing files, or if you want to find out more about the filesystem
 functionality hidden behind the file and directory objects, then read on!
-
-NOTE: The C<root> configuration option has been removed, along with all
-the virtual file system functionality.  This is now implemented in the
-L<Badger::Filesystem::Virtual> module.  This documentation has not yet
-been updated to reflect the fact.
 
 =head1 DESCRIPTION
 
@@ -619,7 +618,8 @@ I<flyweight> objects that call back to the C<Badger::Filesystem> to perform
 any filesystem operations. This gives us a more control over restricting
 certain filesystem operations (e.g. writing files) and more flexibility in
 what we define a filesystem to be (e.g. allowing virtually mounted and/or
-composite file systems - more on that later).
+composite file systems - see L<Badger::Filesystem::Virtual> for further
+details).
 
     use Badger::Filesystem 'FS';
     
@@ -770,6 +770,37 @@ path as a single string or list of path components.
 
     $dir = Dir('/path/to/dir');
     $dir = Dir('path', 'to', 'dir');
+
+=head2 Cwd()
+
+This returns a L<Badger::Filesystem::Directory> object for the current
+working directory.
+
+    use Badger::Filesystem Cwd;
+    
+    print Cwd;              # /foraging/for/nuts/and/berries
+    print Cwd->parent;      # /foraging/for/nuts/and
+
+=head2 CWD
+
+This returns a simple text string representing the current working directory.
+It is a direct alias to the C<getcwd> function in L<Cwd>.
+
+=head2 getcwd
+
+This is also a direct alias to the C<getcwd> function in L<Cwd>.
+
+=head2 :types
+
+Specifying this an an import option will export all of the L<Path()>, 
+L<File>, L<Dir>, L<Directory> and L<Cwd> subroutines to the caller.
+
+    use Badger::Filesystem ':types';
+    
+    my $path   = Path('/some/where');
+    my $dir    = Dir('/over/there');
+    my $file   = File('example.html');
+    my $parent = Cwd->parent;
 
 =head1 CONSTRUCTOR METHODS
 

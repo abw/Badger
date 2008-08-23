@@ -15,9 +15,9 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use File::Spec;
-use Badger::Filesystem qw( FS VFS :types :dirs );
+use Badger::Filesystem qw( FS VFS :types :dirs CWD getcwd );
 use Badger::Test 
-    tests => 36,
+    tests => 43,
     debug => 'Badger::Filesystem',
     args  => \@ARGV;
 
@@ -146,4 +146,18 @@ is( $file1->filesystem, $file2->filesystem,
 
 is( $file1->filesystem, $fs, 
     'matches our filesystem: ' . $fs );
+
+
+#-----------------------------------------------------------------------
+# current working directory
+#-----------------------------------------------------------------------
+
+ok( CWD, 'got CWD: ' . CWD );
+ok( getcwd, 'got getcwd: ' . getcwd );
+$cwd = Cwd;
+ok( $cwd, 'got Cwd' );
+is( ref $cwd, 'Badger::Filesystem::Directory', 'got Cwd directory object' );
+is( $cwd, getcwd, 'getcwd matches one way' );
+is( $cwd, CWD, 'CWD matches the other way' );
+is( $cwd, $fs->cwd, 'fs->cwd matches in the other other way' );
 
