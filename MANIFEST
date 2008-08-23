@@ -16,6 +16,8 @@ lib/Badger/Constants.pm
 lib/Badger/Debug.pm
 lib/Badger/Exception.pm
 lib/Badger/Exporter.pm
+lib/Badger/Factory.pm
+lib/Badger/Factory/Class.pm
 lib/Badger/Filesystem.pm
 lib/Badger/Filesystem/Directory.pm
 lib/Badger/Filesystem/File.pm
@@ -47,10 +49,12 @@ t/core/constants.t
 t/core/debug.t
 t/core/exception.t
 t/core/exporter.t
+t/core/factory.t
 t/core/hub.t
 t/core/lib/Class/Bottom.pm
 t/core/lib/Class/Middle.pm
 t/core/lib/Class/Top.pm
+t/core/lib/My/BadModule.pm
 t/core/lib/My/Class.pm
 t/core/lib/My/Constants.pm
 t/core/lib/My/Exporter/Base1.pm
@@ -64,10 +68,12 @@ t/core/lib/My/Exporter6.pm
 t/core/lib/My/Exporter7.pm
 t/core/lib/My/Exporter8.pm
 t/core/lib/My/Exporter9.pm
+t/core/lib/My/Extra/Wudget.pm
 t/core/lib/My/Mixin/Bar.pm
 t/core/lib/My/Mixin/Baz.pm
 t/core/lib/My/Mixin/Foo.pm
 t/core/lib/My/Widget.pm
+t/core/lib/My/Wodget.pm
 t/core/mixin.t
 t/core/prototype.t
 t/core/rainbow.t
@@ -104,6 +110,7 @@ t/filesystem/testfiles/visitor/two/hello.html
 t/filesystem/testfiles/visitor/two/hello.txt
 t/filesystem/virtual.t
 t/filesystem/visitor.t
-t/pod/quality.t
-t/pod/quantity.t
+t/misc/moose.t
+t/pod/coverage.t
+t/pod/kwalitee.t
 TODO
