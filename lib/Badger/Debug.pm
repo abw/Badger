@@ -242,8 +242,9 @@ Badger::Debug - base class mixin module implement debugging methods
 =head1 SYNOPSIS
 
     package Badger::Whatever;
+    
     use Badger::Debug 'debug';
-
+    
     sub some_method {
         my $self = shift;
         $self->debug("This is a debug message\n");
@@ -273,36 +274,32 @@ debug hooks in, e.g. to forward to a logging module.
 =head2 debug_up($n, $msg1, $msg2, ...)
 
 The L<debug()> method generates a message showing the file and line number
-from where the method was called.  The C<debug_up()> method can be used
-to report the error from somewhere higher up the call stack.
+from where the method was called. The C<debug_up()> method can be used to
+report the error from somewhere higher up the call stack. This is typically
+used when you create your own debugging methods, as shown in the following
+example.
 
-For example, your module may have its own method which generates debugging
-messages.  In this trivial example, we have a C<debug_time()> method which
-adds the current system time to the end of the message.
-
-    sub wibble {
+    sub parse {
         my $self = shift;
-        $self->debug_time("in wibble()");
+        
+        while (my ($foo, $bar) = $self->get_foo_bar) {
+            $self->trace($foo, $bar);               # here
+            # do something
+        }
     }
     
-    sub debug_time {
-        my $self = shift;
-        $self->debug(@_, ' at ', time);
+    sub trace {
+        my ($self, $foo, $bar) = @_;
+        $self->debug_up(2, "foo: $foo  bar: $bar"); # not here
     }
 
-In this case, the debug messages will all be reported as originating in 
-the C<debug_time()> method which probably isn't what you want.  If you 
-instead use the C<debug_up()> method with a first argument of C<1>, then
-the message will be reported from the perspective of the caller of 
-C<debug_alt()>, which in this case is the C<wibble()> method.
-
-    sub debug_time {
-        my $self = shift;
-        $self->debug_up(1, @_, ');
-    }
-
-Use a higher value than C<1> if you want to jump further up the caller
-stack.
+The L<trace()> method calls the L<debug_up()> method telling it to look I<two>
+levels up in the caller stack instead of the usual I<one> (thus
+C<debug_up(1,...)> has the same effect as C<debug(...)>).  So instead of 
+reporting the line number in the C<trace()> subroutine (which would be the
+case if we called C<debug(...)> or C<debug_up(1,...)>), it will correctly
+reporting the line number of the call to C<trace()> in the C<parse()> 
+method.
 
 =head2 debug_caller()
 
@@ -336,7 +333,7 @@ passed by reference as the first argument.
 =head2 dump_text($text)
 
 Debugging method which returns a truncated and sanitised representation of the 
-text string passed (directly or by references) as the first argument.
+text string passed (directly or by reference) as the first argument.
 
     print STDERR $object->dump_text($text);
 
