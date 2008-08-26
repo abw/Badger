@@ -28,11 +28,16 @@ Badger::Class
 * Remove class($class, $target) second argument in export hooks
   because UBER should now handle that - needs testing
 
+* Make CLASS static
+
 
 Badger::Codec
 --------------
 
 * encoded()/decoded() methods (e.g. for utf8)
+
+* update docs to clarify the fact that utf8, etc., are available as named
+  codecs via Encode/Encoding modules.
 
 
 Badger::Debug
@@ -154,3 +159,8 @@ Longer Terms Goals / Larger Projects
 * Finish refactoring Badger-Database and release
 
 
+
+docs
+----
+links sections
+Badger::Factory
