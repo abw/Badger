@@ -249,6 +249,17 @@ sub collapse_directory {
     $self->join_directory(@path);
 }
 
+sub slash_directory {
+    my $self  = shift->prototype;
+    my $path  = $self->absolute(shift);
+    my $slash = $self->{ slashed } ||= do { 
+        my $sep = quotemeta $self->{ separator };
+        qr/$sep$/;
+    };
+    $path .= $self->{ separator } unless $path =~ $slash;
+    return $path;
+}
+
 
 #-----------------------------------------------------------------------
 # absolute and relative path tests and transmogrifiers
@@ -928,6 +939,14 @@ on those platforms.
 
 C<collapse_dir()> is a direct alias of C<collapse_directory()> to save on 
 typing.
+
+=head2 slash_directory($path)
+
+Returns the directory L<$path> with a trailing C</> appended (or whatever
+the directory separator is for your filesystem) if it doesn't already 
+have one.
+
+    print $fs->slash_directory('foo');      # foo/
 
 =head1 PATH INSPECTION METHODS
 

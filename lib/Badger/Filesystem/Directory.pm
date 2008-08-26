@@ -69,6 +69,11 @@ sub file {
         : $self->error( missing => 'file name' );
 }
 
+sub canonical {
+    my $self = shift;
+    $self->filesystem->slash_directory( $self->{ path } );
+}
+    
 sub exists {
     my $self = shift;
     $self->filesystem->directory_exists($self->{ path });
@@ -233,8 +238,8 @@ If you're concerned about portability to other operating systems and/or file
 systems, then you can specify the directory path as a list or reference to a list
 of component names.
 
-    my $dir = File('path', 'to', 'dir');
-    my $dir = File(['path', 'to', 'dir']);
+    my $dir = Dir('path', 'to', 'dir');
+    my $dir = Dir(['path', 'to', 'dir']);
 
 =head1 METHODS
 
@@ -257,12 +262,23 @@ This method returns true for all C<Badger::Filesystem::Directory> instances.
 =head2 volume() / vol()
 
 Returns any volume defined as part of the path.  This is most commonly used
-on MS Windows platforms to indicate drive letters, e.g. C<C:>.
+on Win32 platforms to indicate drive letters, e.g. C<C:>.
+
+    # on MS Windows
+    print Dir('C:\\foo\\bar')->volume;   # C
 
 =head2 base()
 
 This always returns C<$self> for directories.
 
+=head2 canonical()
+
+This returns the canonoical representation of the directory path.  This is
+the absolute path with a trailing slash added (or whatever the relevant
+directory separator is for your filesystem).
+
+    print Dir('/foo/bar')->canonical;   # /foo/bar/
+    
 =head2 directory() / dir()
 
 Returns the complete directory path when called without arguments. This is
@@ -273,43 +289,60 @@ This can also be used with an argument to locate another directory relative
 to this one.
 
     my $dir = Dir('/path/to/dir');
-    print $dir->dir;                   # /path/to/dir
-    print $dir->dir('subdir');         # /path/to/dir/subdir
+    print $dir->dir;                    # /path/to/dir (auto-stringified)
+    print $dir->dir('subdir');          # /path/to/dir/subdir (ditto)
+
+Directories are returned as new C<Badger::Filesystem::Directory> objects.
+The above examples are relying on the auto-stringification to display
+the path when printed.
 
 =head2 file($name)
 
 This method can be used to locate a file relative to the directory.  The
 file is returned as a L<Badger::Filesystem::File> object.
 
+    my $dir  = Dir('/path/to/dir');
+    my $file = $dir->file('example.txt');
+    print $file->path;                  # /path/to/dir/example.txt
+    print $file;                        # same (auto-stringified)
+
 =head2 create()
 
 This method can be used to create the directory if it doesn't already exist.
+
+    Dir('/path/to/dir')->create;
 
 =head2 delete()
 
 This method deletes the directory permanently.  Use it wisely.
 
+    Dir('/tmp/junk')->delete;
+
 =head2 mkdir($subdir)
 
 This method can be used to create a sub-directory.
 
-    $dir->mkdir('subdir');
+    my $dir = Dir('/tmp');
+    $dir->mkdir('junk');                # /tmp/junk
 
 When called without an argument it has the same effect as L<create()> in
 creating itself.
 
-    $dir->mkdir;        # same as $dir->create
+    my $dir = Dir('/tmp/junk');
+    $dir->mkdir;                        # same as $dir->create
 
 =head2 rmdir($subdir);
 
 This does the opposite of L<mkdir()> but works in the same way.  It can be
 used to delete a sub-directory:
 
-    $dir->rmdir('subdir');
+    my $dir = Dir('/tmp');
+    $dir->rmdir('junk');                # /tmp/junk
 
 Or the directory itself when called without an argument:
 
-    $dir->rmdir;
+    my $dir = Dir('/tmp/junk');
+    $dir->rmdir;                        # same as $dir->delete
 
 =head2 open()
 

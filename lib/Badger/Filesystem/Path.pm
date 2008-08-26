@@ -62,12 +62,13 @@ class->methods(
 );
 
 # define some aliases
-*is_dir = \&is_directory;
-*dir    = \&directory;
-*vol    = \&volume;     # goes up to 11
-*ext    = \&extension;  
-*up     = \&parent;
-*meta   = \&metadata;
+*is_dir    = \&is_directory;
+*dir       = \&directory;
+*vol       = \&volume;     # goes up to 11
+*ext       = \&extension;  
+*up        = \&parent;
+*meta      = \&metadata;
+*canonical = \&absolute;
 
 
 sub new {
@@ -263,6 +264,7 @@ sub stats {
 
 sub extension {
     my $self = shift;
+    # TODO: is this filesystem specific?
     return $self->{ path } =~ /\.([^\.]+)$/
         ? $1
         : '';
@@ -501,15 +503,41 @@ is not specified.
 Returns the definitive representation of the path which in most cases will
 be the same as the L<absolute()> path.
 
-However, if you're using a L<Badger::Filesystem> with a virtual root 
-directory, then the I<definitive> path I<will> include the virtual root 
-directory, whereas a the I<absolute> path will I<not>.
+However, if you're using a L<virtual filesystem|Badger::Filesystem::Virtual>,
+then the I<definitive> path I<will> include the virtual root directory,
+whereas a the I<absolute> path will I<not>.
 
-    my $fs = Badger::Filesystem->new( root => '/my/vfs' );
-    $fs->absolute('/foo/bar');              # /foo/bar
-    $fs->definitive('/foo/bar');            # /my/vfs/foo/bar
+    my $vfs  = Badger::Filesystem::Virtual->new( root => '/my/vfs' );
+    my $path = $vfs->file('/foo/bar');
+    print $path->absolute;              # /foo/bar
+    print $path->definitive;            # /my/vfs/foo/bar
 
-=head2 collapse
+=head2 canonical()
+
+This method returns the canonical representation of the path. In most cases
+this is the same as the absolute path (in fact the base class aliases the
+C<canonical()> method directly to the L<absolute()> method).
+
+    print Path('foo')->canonical;               # /your/current/path/foo
+    print Path('/foo/bar')->canonical;          # /foo/bar
+    print Path('/foo/bar/')->canonical;         # /foo/bar
+    print Path('/foo/bar.txt')->canonical;      # /foo/bar.txt
+
+Note that the C<Badger::Filesystem::Path> base class will I<remove> any
+trailing slashes (or whatever the appropriate directory separator is for your
+filesystem) from the end of an absolute path.
+
+In the case of directories, implemented by the
+L<Badger::Filesystem::Directory> subclass, a trailing slash (or relevant 
+separator for your filesystem) will be added.
+
+    print Dir('/foo/bar')->canonical;          # /foo/bar/
+
+This is done by delegation to the
+L<slash_directory()|Badger::Filesystem/slash_directory()> method in
+L<Badger::Filesystem>.
+
+=head2 collapse()
 
 Reduces the path to its simplest form by resolving and removing any C<.>
 (current directory) and C<..> (parent directory) components (or whatever the
