@@ -17,7 +17,6 @@ use strict;
 use warnings;
 use base 'Badger::Exporter';
 use Badger::Constants 'DELIMITER ARRAY HASH CODE PKG REFS ONCE';
-use Badger::Utils 'load_module';
 use Carp;
 use constant {
     FILESYSTEM => 'Badger::Filesystem',
