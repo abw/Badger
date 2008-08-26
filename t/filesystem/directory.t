@@ -17,7 +17,7 @@ use warnings;
 use Badger::Filesystem::Directory;
 use Badger::Filesystem::Virtual;
 use Badger::Test 
-    tests => 58,
+    tests => 59,
     debug => 'Badger::Filesystem::Directory',
     args  => \@ARGV;
 
@@ -50,6 +50,7 @@ $dir = $DIR->new('/foo/bar/baz');
 is( $dir, '/foo/bar/baz', 'foo/bar/baz path');
 is( $dir->dir, '/foo/bar/', 'foo/bar dir');
 is( $dir->name, 'baz', 'baz file' );
+is( $dir->canonical, '/foo/bar/baz/', 'baz slashed' );
 
 $dir = $DIR->new('/foo/bar/baz/');
 is( $dir, '/foo/bar/baz', 'foo/bar/baz path with trailing slash');

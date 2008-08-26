@@ -17,7 +17,7 @@ use warnings;
 use Badger::Filesystem ':types';
 use Badger::Filesystem::Path;
 use Badger::Test 
-    tests => 40,
+    tests => 46,
     debug => 'Badger::Filesystem::Path',
     args  => \@ARGV;
 
@@ -90,6 +90,21 @@ is( Path('foo/bar/baz/bam')->parent(2), 'foo', 'relative path parent two' );
 is( Path('foo/bar/baz/bam')->parent(3), $cwd, "relative path parent three is $cwd" );
 is( Path('foo/bar/baz/bam')->parent(4), $cwd->parent, 'relative path parent four is ' . $cwd->parent );
 is( Path('foo/bar/baz/bam')->parent(5), $cwd->parent(1), 'relative path parent five is ' . $cwd->parent(1) );
+
+
+#-----------------------------------------------------------------------
+# canonical
+#-----------------------------------------------------------------------
+
+my $abs = Cwd->dir('foo/bar')->absolute;
+my $can = $abs . '/';
+
+is( Path('foo/bar')->canonical, $abs, 'canonical foo/bar' );
+is( Path('/foo/bar')->canonical, '/foo/bar', 'canonical /foo/bar' );
+is( Path('/foo/bar/')->canonical, '/foo/bar', 'canonical /foo/bar/' );
+is( Dir('foo/bar')->canonical, $can, 'canonical dir foo/bar' );
+is( Dir('/foo/bar')->canonical, '/foo/bar/', 'canonical dir /foo/bar' );
+is( Dir('/foo/bar/')->canonical, '/foo/bar/', 'canonical dir /foo/bar/' );
 
 
 #-----------------------------------------------------------------------
