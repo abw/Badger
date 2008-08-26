@@ -452,7 +452,7 @@ Perl modules, including L<File::Spec>, L<File::Path>, L<Cwd>, L<IO::File>,
 L<IO::Dir> and draw heavily on ideas in L<Path::Class>.
 
 Please see the L<ACKNOWLEDGEMENTS|Badger::Filesystem/ACKNOWLEDGEMENTS>
-in L<Badger::Fileystem> for further information.
+in L<Badger::Filesystem> for further information.
 
 =head1 SEE ALSO
 

@@ -63,7 +63,7 @@ sub definitive_read {
     my ($base, $full);
 
     foreach $base (@{ $self->{ root } }) {
-        $full = $self->join_directory($base, $path);
+        $full = $self->merge_paths($base, $path);
         $self->debug("looking for $full\n") if $DEBUG;
         return $full if -e $full;
     }

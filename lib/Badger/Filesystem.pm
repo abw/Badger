@@ -36,7 +36,7 @@ use Badger::Class
         VISITOR     => 'Badger::Filesystem::Visitor',
     },
     exports   => {
-        any         => 'FS PATH FILE DIR DIRECTORY CWD getcwd',
+        any         => 'FS PATH FILE DIR DIRECTORY cwd getcwd rel2abs abs2rel',
         tags        => { 
             types   => 'Path File Dir Directory Cwd',
             dirs    => 'ROOTDIR UPDIR CURDIR',
@@ -51,6 +51,7 @@ use Badger::Class
     messages  => {
         open_failed   => 'Failed to open %s %s: %s',
         delete_failed => 'Failed to delete %s %s: %s',
+        bad_volume    => 'Volume mismatch: %s vs %s',
     };
 
 use Badger::Filesystem::File;
@@ -106,7 +107,6 @@ sub Path      { return @_ ? FS->path(@_)      : PATH      }
 sub File      { return @_ ? FS->file(@_)      : FILE      }
 sub Directory { return @_ ? FS->directory(@_) : DIRECTORY }
 sub Cwd       { FS->directory }
-*CWD = \&getcwd;
 
 
 #-----------------------------------------------------------------------
@@ -187,11 +187,22 @@ sub root {
 }
 
 sub cwd {
-    my $self = shift->prototype;
-    # if we have a hard-coded cwd set then return that, otherwise call 
-    # getcwd to return the real current working directory.  NOTE: we don't
-    # cache the dynamically resolved cwd as it'll change if chdir() is called
-    $self->{ cwd } || getcwd;
+    my $cwd;
+    if (@_) {
+        # called as an object or class method
+        my $self = shift->prototype;
+        # if we have a hard-coded cwd set then return that, otherwise call 
+        # getcwd to return the real current working directory.  NOTE: we don't
+        # cache the dynamically resolved cwd as it'll change if chdir() is called
+        $cwd = $self->{ cwd } || getcwd;
+    }
+    else {
+        # called as a subroutine
+        $cwd = getcwd;
+    }
+    # pass through File::Spec to sanitise path to local filesystem 
+    # convention - otherwise we get /forward/slashes on Win32
+    FILESPEC->canonpath($cwd);
 }
 
 
@@ -199,6 +210,24 @@ sub cwd {
 # path manipulation methods
 #-----------------------------------------------------------------------
 
+sub merge_paths {
+    my ($self, $base, $path) = @_;
+    my @p1 = FILESPEC->splitpath($base);
+    my @p2 = FILESPEC->splitpath($path);
+
+    # check volumes match
+    if (defined $p2[0]) {
+        $p1[0] ||= $p2[0];
+        return $self->error_msg( bad_volume => $p1[0], $p1[0] )
+            unless $p1[0] eq $p2[0];
+    }
+    shift(@p2);
+    my $vol = shift(@p1) || '';
+    my $file = pop @p2;
+    
+    FILESPEC->catpath($vol, FILESPEC->catdir(@p1, @p2), $file);
+}
+    
 sub join_path {
     my $self = shift;
     my @args = map { defined($_) ? $_ : '' } @_[0..2];
@@ -513,12 +542,12 @@ The C<Badger::Filesystem> module defines a number of importable constructor
 functions for creating objects that represents files, directories and generic
 paths in a filesystem.
 
-    use Badger::Filesystem 'CWD Cwd Path File Dir Directory';
-    use Badger::Filesystem 'CWD :types';        # same thing
+    use Badger::Filesystem 'cwd Cwd Path File Dir Directory';
+    use Badger::Filesystem 'cwd :types';        # same thing
     
-    # CWD returns current working directory as text string, 
-    # Cwd as a Badger::Filesystem::Directory object
-    print CWD;                                  # /path/to/cwd
+    # cwd returns current working directory as text string, 
+    # Cwd return it as a Badger::Filesystem::Directory object
+    print cwd;                                  # /path/to/cwd
     print Cwd->parent;                          # /path/to
     
     # create Badger::Filesystem::Path/File/Directory objects using
@@ -792,14 +821,17 @@ working directory.
     print Cwd;              # /foraging/for/nuts/and/berries
     print Cwd->parent;      # /foraging/for/nuts/and
 
-=head2 CWD
+=head2 cwd
 
 This returns a simple text string representing the current working directory.
-It is a direct alias to the C<getcwd> function in L<Cwd>.
+It is a a wrapper around the C<getcwd> function in L<Cwd>.  It also 
+sanitises the path (via the L<canonpath()|Path::Spec/canonpath()> function
+in L<File::Spec>) to ensure that the path is returned in the local 
+filesystem convention (e.g. C</> is converted to C<\> on Win32).
 
 =head2 getcwd
 
-This is also a direct alias to the C<getcwd> function in L<Cwd>.
+This is a direct alias to the C<getcwd> function in L<Cwd>.
 
 =head2 :types
 
@@ -882,6 +914,28 @@ the current working directory, as returned by L<cwd()>.
     my $cwd = $fs->dir;
 
 =head1 PATH MANIPULATION METHODS
+
+=head2 merge_paths($path1,$path2)
+
+Joins two paths into one.  
+
+    $fs->merge_paths('/path/one', 'path/two');      # /path/one/path/two
+
+No attempt will be made to verify that the second argument is an absolute
+path.  In fact, it is considered a feature that this method will do its
+best to merge two paths even if they look like they shouldn't go together
+(this is particularly relevant when using virtual filesystems - see
+L<Badger::Filesystem::Virtual>)
+
+    $fs->merge_paths('/path/one', '/path/two');     # /path/one/path/two
+
+If either defines a volume then it will be used as the volume for the combined
+path. If both paths define a volume then it must be the same or an error will
+be thrown.
+
+    $fs->merge_paths('C:\path\one', 'path\two');    # C:\path\one\path\two
+    $fs->merge_paths('\path\one', 'C:\path\two');   # C:\path\one\path\two
+    $fs->merge_paths('C:\path\one', 'C:\path\two'); # C:\path\one\path\two
 
 =head2 split_path($path)
 
@@ -1192,7 +1246,7 @@ passed as a list or reference to a hash array of named parameters.
     $fs->visitor( files => 1, dirs => 0 );
 
 If the first argument is already a reference to a
-L<Badger::Filesystem:Visitor> object or subclass then it will be returned
+L<Badger::Filesystem::Visitor> object or subclass then it will be returned
 unmodified.
 
 =head2 visit(\%params)
@@ -1225,9 +1279,8 @@ L<Badger::Filesystem::Visitor> object returned.
 =head2 cwd()
 
 Returns the current working directory. This is a text string rather than a
-L<Badger::Filesystem::Directory> object. Call the L<directory()> method
-without an argument if you want a L<Badger::Filesystem::Directory> object
-instead.
+L<Badger::Filesystem::Directory> object. Call the L<Cwd()> method
+if you want a L<Badger::Filesystem::Directory> object instead.
 
     my $cwd = $fs->cwd;
 

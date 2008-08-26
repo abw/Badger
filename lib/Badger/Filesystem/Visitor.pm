@@ -402,12 +402,12 @@ This method is called to visit a L<Badger::Filesystem::File> object.
 
 =head2 visit_directory($dir) / visit_dir($dir)
 
-This method is called to visit a L<Badger::Filesystem::Dir> object.
+This method is called to visit a L<Badger::Filesystem::Directory> object.
 
 =head2 visit_directory_children($dir) / visit_dir_kids($dir)
 
-This method is called to visit the children of a L<Badger::Filesystem::Dir>
-object.
+This method is called to visit the children of a
+L<Badger::Filesystem::Directory> object.
 
 =head1 SELECTION METHODS
 

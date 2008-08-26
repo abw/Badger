@@ -796,17 +796,17 @@ if the path references a file.
 =head2 volume() / vol()
 
 Returns any volume defined as part of the path. This method does nothing in
-the C<Badger::Fileystem::Path> base class.
+the C<Badger::Filesystem::Path> base class.
 
 =head2 directory() / dir()
 
 Returns the directory portion of a path. This method does nothing in the
-C<Badger::Fileystem::Path> base class.
+C<Badger::Filesystem::Path> base class.
 
 =head2 name()
 
 Returns the file name portion of a path. This method does nothing in the
-C<Badger::Fileystem::Path> base class.
+C<Badger::Filesystem::Path> base class.
 
 =head1 AUTHOR
 
@@ -823,7 +823,7 @@ Perl modules, including L<File::Spec>, L<File::Path>, L<Cwd>, L<IO::File>,
 L<IO::Dir> and draw heavily on ideas in L<Path::Class>.
 
 Please see the L<ACKNOWLEDGEMENTS|Badger::Filesystem/ACKNOWLEDGEMENTS>
-in L<Badger::Fileystem> for further information.
+in L<Badger::Filesystem> for further information.
 
 =head1 SEE ALSO
 
