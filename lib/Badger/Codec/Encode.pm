@@ -94,7 +94,7 @@ the C<codec()> subroutine.
 =head2 encode($encoding, $data)
 
 Method for encoding data which forwards all arguments to the L<Encode>
-L<encode()|Encode/encode()> method.  The first argument is the encoding,
+C<encode()> method.  The first argument is the encoding,
 the second is the data to encode.
 
     $encoded = Badger::Codec::Encode->encode( utf8 => $data );
@@ -102,22 +102,20 @@ the second is the data to encode.
 =head2 decode($encoding, $data)
 
 Method for decoding data which forwards all arguments to the L<Encode>
-L<decode()|Encode/decode()> method.  The first argument is the encoding,
-the second is the data to decode.
+C<decode()> method. The first argument is the encoding, the second is the data
+to decode.
 
     $decoded = Badger::Codec::Encode->decode( utf8 => $encoded );
 
 =head2 encoder()
 
-This method returns a reference to the real subroutine that's doing
-all the encoding work, i.e. the L<encode()|Encode/encode()> method in 
-L<Encode>.
+This method returns a reference to the real subroutine that's doing all the
+encoding work, i.e. the C<encode()> function in L<Encode>.
 
 =head2 decoder()
 
-This method returns a reference to the real subroutine that's doing
-all the encoding work, i.e. the L<decode()|Encode/decode()> method in 
-L<Encode>.
+This method returns a reference to the real subroutine that's doing all the
+encoding work, i.e. the C<decode()> method in L<Encode>.
 
 =head1 AUTHOR
 

@@ -149,7 +149,7 @@ Badger::Test - test module
     # and Your::Badger::Module, as well as exporting a $DEBUG
     # flag here. -c will enable colour mode.
     # e.g.   $ perl t/test.t -d -c
-
+    
     ok( $bool, 'Test passes if $bool true' );
     
     is( $one, $two, 'Test passes if $one eq $two' );
@@ -232,6 +232,18 @@ Skip all tests.  This should be called instead of L<plan()>
 
     skip_all("We don't have that piece of scenery any more");
 
+=head2 skip_some($number,$reason)
+
+Skip a number of tests.
+
+    skip_some(11, "Hugeness of object understated");
+
+=head2 skip_rest(,$reason)
+
+Skip any remaining tests.
+
+    skip_rest("Should have made a big thing out of it");
+
 =head1 CLASS METHODS
 
 The C<Badger::Test> module defines the following class methods to 
@@ -271,10 +283,11 @@ An alias for L<colour()>.
 
 =head2 args(@args)
 
-This method parses the arguments looking for C<-d> to enable debugging or
-C<-c> to enable colour output. This method is called by the L<args> import
-hook.  Arguments can also be passed as a reference to a list, in which case
-any C<-c> or C<-d> arguments at the start will be removed.
+This method parses the arguments looking for C<-d> to enable debugging, C<-c>
+to enable colour output or C<-s> to print a test summary. This method is
+called by the L<args> import hook. Arguments can also be passed as a reference
+to a list, in which case any C<-c>, C<-d> or C<-s> arguments at the start will
+be removed.
 
     Badger::Test->args(@ARGV);      # either
     Badger::Test->args(\@ARGV);     # or

@@ -268,8 +268,8 @@ was called.
 
     [Badger::Example line 42] Hello World
 
-At some point in the future this will be extended to allow you to tie 
-debug hooks in, e.g. to forward to a logging module.
+At some point in the future this will be extended to allow you to tie in
+debug hooks, e.g. to forward to a logging module.
 
 =head2 debug_up($n, $msg1, $msg2, ...)
 
@@ -283,7 +283,7 @@ example.
         my $self = shift;
         
         while (my ($foo, $bar) = $self->get_foo_bar) {
-            $self->trace($foo, $bar);               # here
+            $self->trace($foo, $bar);               # report line here
             # do something
         }
     }

@@ -63,7 +63,7 @@ You can use the L<Badger::Class> module to declare mixins:
     
     use Badger::Class
         mixins => '$FOO @BAR %BAZ bam';
-
+        
     # some sample data/methods to mixin
     our $FOO = 'Some random text';
     our @BAR = qw( foo bar baz );
@@ -141,7 +141,7 @@ list of items or as a single whitespace delimited string.
 
     package Your::Module;
     use base 'Badger::Mixin';
-
+    
     # either list of symbols...
     __PACKAGE__->mixins('$FOO', '@BAR', '%BAZ', 'bam');
     

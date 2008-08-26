@@ -96,25 +96,32 @@ Badger::Utils - various utility functions
 
 =head1 SYNOPSIS
 
-    use Badger::Utils;
-
-    Badger::Utils->load_module('foo');
+    use Badger::Utils 'blessed params';
+    
+    sub example {
+        my $self   = shift;
+        my $params = params(@_);
+        
+        if (blessed $self) {
+            print "self is blessed\n";
+        }
+    }
+    
 
 =head1 DESCRIPTION
 
-This module implements various utility functions.
+This module implements various utility functions.  
+
+TODO: At present it is very basic, implementing only the core utilities that I
+need right now. I plan to extend it to autoload and delegate to the other
+*::Util modules.
 
 =head1 EXPORTABLE FUNCTIONS
 
 =head2 UTILS
 
 Exports a C<UTILS> constant which contains the name of the C<Badger::Utils>
-class.  This can be used to call C<Badger::Utils> class methods without 
-having to hard-code the C<Badger::Utils> class name in your code.
-
-    use Badger::Utils 'UTILS';
-    
-    UTILS->load_module('My::Module');
+class.  
 
 =head2 blessed($ref)
 
@@ -230,31 +237,6 @@ embedding positional parameters.
 
     xprintf('The <2> sat on the <1>', 'mat', 'cat');
     xprintf('The <1> costs <2:%.2f>', 'widget', 11.99);
-
-=head1 METHODS
-
-NOTE: these are deprecated.  Use Badger::Class load() and maybe_load() instead.
-
-=head2 load_module($name)
-
-Loads the Perl module specified as a parameter.  Returns the module name 
-as returned by L<module_file()>.  Throws an error if the 
-module cannot be found or loaded.
-
-    use Badger::Utils 'UTILS';
-    print UTILS->load_module('My::Module');     # My/Module.pm
-
-=head2 maybe_load_module($name)
-
-A wrapper around L<load_module()> which catches any errors thrown by missing
-or invalid modules and returns zero.
-
-    if (UTILS->maybe_load_module('My::Module')) {
-        print "loaded\n";
-    }
-    else {
-        print "no loaded\n";
-    }
 
 =head1 AUTHOR
 

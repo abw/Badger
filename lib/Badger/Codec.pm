@@ -53,8 +53,7 @@ Badger::Codec - base class for encoding/decoding data
 
 =head1 SYNOPSIS
 
-Creating a Badger::Codec subclass:
-    
+    # creating a Badger::Codec subclass
     package My::Codec;
     use base 'Badger::Codec';
     
@@ -70,25 +69,30 @@ Creating a Badger::Codec subclass:
         return $decoded_data;
     }
 
-Using the subclass:
-    
+    # using the subclass:
     use My::Codec;
     
     my $codec   = My::Codec->new();
     my $encoded = $codec->encode($some_data);
     my $decoded = $codec->decode($encoded);
 
+=head1 INTRODUCTION
+
+This documentation describes the inner working of codec modules. You should
+only need to consult this documentation if you're writing a codec subclass.
+For a general introduction to codecs and examples of use, please see
+L<Badger::Codecs>.
+
 =head1 DESCRIPTION
 
-This module implements a base class of a codec module for encoding and
-decoding data to and from a form suitable for secondary storage or
-transmission. It must be subclassed to provide useful implementations of the
-C<encode()> and C<decode()> methods.
+This module implements a base class codec module for encoding and decoding
+data to and from different formats. It must be subclassed to provide useful
+implementations of the C<encode()> and C<decode()> methods.
 
 In most, if not all cases, subclasses will simply delegate to
 subroutines provided by other modules.  For example, the
 L<Badger::Codec::Storable> module delegates to the C<freeze()> and
-C<thaw()> methods provided by the C<Storable> module.
+C<thaw()> methods provided by the L<Storable> module.
 
 =head1 METHODS
 

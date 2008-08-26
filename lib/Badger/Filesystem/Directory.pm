@@ -278,7 +278,7 @@ the absolute path with a trailing slash added (or whatever the relevant
 directory separator is for your filesystem).
 
     print Dir('/foo/bar')->canonical;   # /foo/bar/
-    
+
 =head2 directory() / dir()
 
 Returns the complete directory path when called without arguments. This is

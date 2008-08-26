@@ -738,7 +738,7 @@ method to call other visitor methods.
 =head2 enter($visitor)
 
 This is a special case of the L<accept()> method which subclasses (e.g.
-L<directory|Badger::Filesystem:Directory>) use to differentiate between the
+L<directory|Badger::Filesystem::Directory>) use to differentiate between the
 initial entry point of a visitor and subsequent visits to directories 
 contained therein.  In the base class it simply delegates to the L<accept()>
 method.

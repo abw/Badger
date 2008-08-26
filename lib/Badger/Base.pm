@@ -451,11 +451,46 @@ Badger::Base - base class module
 
 =head1 SYNOPSIS
 
-    # define a subclass of Badger::Base
+    # define a new object class derived from Badger::Base
     package Your::Badger::Module;
     use base 'Badger::Base';
     
-    # define init() method for initialisation
+    sub init {
+        my ($self, $config) = @_;
+        
+        # $config is a hash of named parameters
+        # - let's assume 'name' is mandatory
+        $self->{ name } = $config->{ name } 
+            || return $self->error('no name specified');
+        
+        # save the rest of the config for later
+        $self->{ config } = $config;
+    
+        # return $self to indicate success
+        return $self;
+    }
+    
+    # ...any other methods follow....
+
+    # now use it
+    use Your::Badger::Module
+    my $object = Your::Badger::Module->new( name => 'Brian' );
+
+=head1 DESCRIPTION
+
+This module implements a base class object from which most of the other
+C<Badger> modules are derived. It implements a number of methods to aid in
+object creation, configuration, error handling and debugging.
+
+You can use it as a base class for your own modules to inherit the methods
+that it provides.
+
+    package Your::Badger::Module;
+    use base 'Badger::Base';
+
+You can inherit the default L<new()> constructor method and define your
+own L<init()> method to initialise objects.
+
     sub init {
         my ($self, $config) 
         
@@ -471,26 +506,21 @@ Badger::Base - base class module
         # return $self to indicate success
         return $self;
     }
-    
-    # any other methods go here...
 
-    # using the module
-    package main;
+You can then use your module and instantiate objects. The L<new()> method
+accepts a list or reference to a hash array of named parameters.
+
+    use Your::Badger::Module;
+    
+    # list of named parameters
     my $object = Your::Badger::Module->new( name => 'Brian' );
-
-=head1 DESCRIPTION
-
-This module implements a base class object from which most of the other
-C<Badger> modules are derived. It implements a number of methods to aid
-in object creation, configuration, error handling and debugging.
-
-You can use it as a base class for your own modules to inherit the methods
-that it provides.
-
-    package Your::Badger::Module;
-    use base 'Badger::Base';
     
-    # your code here
+    # hash ref of name parameters
+    my $object = Your::Badger::Module->new({ name => 'Brian' });
+
+C<Badger::Base> provides a number of other methods that are generally
+suitable for all (or most) objects to inherit.  These include methods for
+error reporting, debugging and raising warnings.
 
 =head1 METHODS
 
@@ -583,19 +613,27 @@ something like this:
            ||  $DATE_FORMAT;                        #  ...or pkg var
     }
 
-This allows you to use C<$self-E<gt>{ date_format }> as a working copy of the
-value while keeping the original configuration value (if any) intact. The
-above method will set the value if you pass an argument and return the current
-value if you don't. If no current value is defined then it defaults to the
-value in the config hash or the C<$DATE_FORMAT> package variable.  Now any
-other methods that require access to a date format need only call to the 
-C<date_format()> method to have it Do The Right Thing.
+This allows you to use C<$self-E<gt>{date_format}> as a working copy of the
+value while keeping the original configuration value (if any) intact in
+C<$self-E<gt>{config}-E<gt>{date_format}>. The above method will set the value
+if you pass an argument and return the current value if you don't. If no
+current value is defined then it defaults to the value in the config hash or
+the C<$DATE_FORMAT> package variable. Now any other methods that require
+access to a date format need only call to the C<date_format()> method to have
+it Do The Right Thing.
 
-The L<on_error()> and L<on_warn()> methods follow this protocol.  If you 
-want to define C<on_error> and/or C<on_warn> handlers as configuration 
-parameters then you'll need to either copy the C<$config> reference into 
-C<$self-E<gt>{ config }> or copy the individual items into 
-C<$self-E<gt>{ ON_ERROR }> and/or C<$self-E<gt>{ ON_WARN }>, respectively.
+The benefit here is that you don't have to waste time (and memory) in the
+L<init()> method copying the C<date_format> parameter from C<$config> into
+C<$self>. That doesn't mean that it's always the right thing to do, but it can
+be useful for configuration options that are infrequently used.
+
+The L<on_error()> and L<on_warn()> methods follow this protocol. They look for
+an C<ON_ERROR> or C<ON_WARN> item in C<$self> or an C<on_error> or C<on_warn>
+parameter in C<$self-E<gt>{config}>. If you want to define C<on_error> and/or
+C<on_warn> handlers as configuration parameters then you'll need to either
+copy the C<$config> reference into C<$self-E<gt>{config}> or copy the
+individual items into C<$self-E<gt>{ON_ERROR}> and/or C<$self-E<gt>{ON_WARN}>, 
+respectively.
 
     # either copy the config...
     sub init {
@@ -636,7 +674,7 @@ A method to raise a warning.  The default behaviour is to forward all
 arguments to Perl's C<warn> function.  However, you can install your
 own warning handlers on a per-class or per-object basis using the 
 L<on_warn()> method or by setting a C<$ON_WARN> package variable 
-in your module.
+in your module.  See L<on_warn()> for further details.
 
     $object->warn("Careful with that axe, Eugene!");
 
@@ -647,13 +685,18 @@ called whenever a warning is raised via the L<warn()> method. Multiple
 handlers can be installed and will be called in turn whenever an error occurs.
 The warning message is passed as an argument to the handlers.
 
+For example, if you wanted to forward warning messages to your favourite 
+logging tool, you might do something like this:
+
     my $log = My::Fave::Log::Tool->new(%log_config);
     
-    $object->on_warn( sub { 
-        my $message = shift;
-        $log->warning("$message);
-        return $message;
-    } );
+    $object->on_warn( 
+        sub { 
+            my $message = shift;
+            $log->warning("$message);
+            return $message;
+        } 
+    );
 
 The value returned from the callback is forwarded to the next handler (if
 there is one). If a callback returns a false value or an empty list then the
@@ -690,6 +733,7 @@ you can use a value of C<0>.
 These values can be imported from L<Badger::Constants> as the C<WARN> and 
 C<NONE> constants.
 
+    use Badger::Constants 'WARN NONE';
     $object->on_warn(WARN);         # raise warning - the default action
     $object->on_warn(NONE);         # no warnings
 
@@ -718,7 +762,7 @@ The C<error()> method is used for error reporting.  When an object method
 fails for some reason, it calls the C<error()> method passing an argument
 denoting the problem that occurred.  This causes an exception object to
 be created (see L<Badger::Exception>) and thrown via C<throw()>.  In this
-case the L<error()> method will never return.
+case the C<error()> method will never return.
 
     sub engage {
         my $self = shift;
@@ -793,25 +837,27 @@ methods.
 
 =head2 on_error($handler, $another_handler, ...)
 
-This method in similar to L<on_warn()> in allowing you to install a callback 
+This method is similar to L<on_warn()> in allowing you to install a callback 
 handler which is called whenever an error is raised via the L<error()> method
 (or the L<error_msg()> wrapper).
 
-    $world->on_error( sub { 
-        my $message = shift;
+    $world->on_error( 
+        sub { 
+            my $message = shift;
         
-        Thunderbirds->call({
-            priority => IR_PRIORITY_HIGH,
-            message  => $message,
-        });
+            Thunderbirds->call({
+                priority => IR_PRIORITY_HIGH,
+                message  => $message,
+            });
         
-        return $message;    # forward message to next handler
-    });
+            return $message;    # forward message to next handler
+        }
+    );
 
 The value returned from the callback is forwarded to the next handler.
 If a callback returns a false value or an empty list then the remaining
 handlers will not be called.  However, the error will still be raised
-regardless of what any of the handler do or return.
+regardless of what any of the handlers do or return.
 
 =head2 decline($reason, $more_reasons, ...)
 
@@ -1114,6 +1160,7 @@ also affect the exceptions thrown by those methods.
     Badger::Example->throw('No berries');   # food error - No berries
     Badger::Example->error('No berries');   # food error - No berries
     
+    # all objects of this class now throw food by default
     my $badger = Badger::Example->new;
     $badger->throw('No cheese');            # food error - No cheese
     $badger->error('No cheese');            # food error - No cheese
@@ -1181,7 +1228,7 @@ from C<Badger::Base> by adding a C<$EXCEPTION> package variable;
 
 This method is used internally to raise a fatal error.  It bypasses the 
 normal error reporting mechanism and dies with a stack backtrace by calling 
-L<confess()|Carp>.  
+C<confess()> (see L<Carp>).
 
 The most common reason for a fatal error being raised is calling the
 L<message()> method (or either of the L<error_msg()> or L<decline_msg()>
@@ -1281,7 +1328,7 @@ own debugging methods, as shown in the following example.
         my $self = shift;
         
         while (my ($foo, $bar) = $self->get_foo_bar) {
-            $self->trace($foo, $bar);               # here
+            $self->trace($foo, $bar);               # report line here
             # do something
         }
     }

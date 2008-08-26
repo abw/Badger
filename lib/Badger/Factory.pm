@@ -302,7 +302,7 @@ The L<Badger::Factory::Class> module can be used to simplify the process
 of defining factory subclasses.
 
     package My::Widgets;
-
+    
     use Badger::Factory::Class
         item    => 'widget',
         path    => 'My::Widget Your::Widget';

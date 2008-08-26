@@ -139,7 +139,7 @@ to set the C<$ITEMS> package variable for L<Badger::Factory> to use.
 A list of module names that form the search path when loading modules. This
 will set the relevant package variable depending on the value of C<$ITEMS> (or
 the regular plural form of C<$ITEM> if C<$ITEMS> is undefined).  For example,
-is C<$ITEMS> is set to C<widgets> then this method will set $<WIDGETS_PATH>.
+is C<$ITEMS> is set to C<widgets> then this method will set C<$WIDGETS_PATH>.
 
 =head1 AUTHOR
 

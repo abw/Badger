@@ -403,7 +403,7 @@ If you call C<Badger> methods as class methods then they are forwarded to
 a L<prototype|Badger::Prototype> object (effectively a singleton object).
 That in turn will use a L<prototype|Badger::Prototype> hub object.  In this
 case, both the C<Badger> and C<Badger::Hub> objects will exist until the 
-end of the program.  This ensures that your class methods all L<Do the right
+end of the program.  This ensures that your class methods all I<Do the right
 Thing> without you having to worry about creating a L<Badger> object.
 
     # class method creates Badger prototype, which creates Badger::Hub
@@ -487,7 +487,7 @@ component.  The component is then cached for subsequent use.
     # ...results in code equivalent to this:
     use Your::Module::Fuzzbox;
     Your::Module::Fuzzbox->new({ volume => 11, hub => $hub });
-    
+
 =head2 generate_component_method($name,$module)
 
 This method generates a component method named C<$name> which accesses an

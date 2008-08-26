@@ -79,20 +79,14 @@ Badger::Constants - defines constants for other TT modules
     use Badger::Constants 'HASH';
     
     if (ref $something eq HASH) {
-        # rejoice!
+        # rejoice!  No need to quote the word 'HASH'
     }
-    
+
 =head1 DESCRIPTION
 
 This module defines a number of constants used by other C<Badger> modules.
-Badger Toolkit.  They can be used by specifying the L<Badger::Constants> 
-package explicitly as part of the name:
-
-    use Badger::Constants;
-    print Badger::Constants::HASH;   # HASH
-
-Constants may be imported into the caller's namespace by naming them as 
-options to the C<use Badger::Constants> statement:
+They can be imported into the caller's namespace by naming them as options to
+the C<use Badger::Constants> statement:
 
     use Badger::Constants 'HASH';
     print HASH;   # HASH
@@ -108,6 +102,14 @@ to import different sets of constants.
 =head2 CONSTANTS
 
 Set to C<Badger::Constants>.
+
+=head2 SCALAR
+
+The literal word C<SCALAR>, typically used for testing references.
+
+    if (ref $data eq SCALAR) {
+        ...
+    }
 
 =head2 ARRAY
 
@@ -207,11 +209,13 @@ The literal string C<once>.  Typically used like so:
 
 =head2 BLANK
 
-An empty string.
+An empty string.  How much more blank could this be?  And the answer is
+none.  None more blank.
 
 =head2 SPACE
 
-A single space.
+A single space character. Not to be confused with the three dimensional fabric
+of reality that it happens to share a name with.
 
 =head2 DELIMITER
 
@@ -236,7 +240,7 @@ The following tag sets and associated constants are defined:
 
 =head2 :types
 
-    HASH ARRAY CODE REGEX
+    SCALAR HASH ARRAY CODE REGEX
 
 =head2 :values
 

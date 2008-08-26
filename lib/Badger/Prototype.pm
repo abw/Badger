@@ -42,7 +42,7 @@ Badger::Prototype - base class for creating prototype classes
     package Badger::Example;
     use base 'Badger::Prototype';
     
-    sub message {
+    sub greeting {
         my $self = shift;
         
         # get prototype object if called as a class method
@@ -50,12 +50,12 @@ Badger::Prototype - base class for creating prototype classes
         
         # continue as normal, now $self is an object
         if (@_) {
-            # set message if called with args
-            return ($self->{ message } = shift);
+            # set greeting if called with args
+            return ($self->{ greeting } = shift);
         }
         else {
-            # otherwise get message 
-            return $self->{ message };
+            # otherwise get greeting
+            return $self->{ greeting };
         }
     }
 
@@ -67,35 +67,35 @@ have methods that can be called as either class or object methods.
 
     # object method
     my $object = Badger::Example->new();
-    $object->message('Hello World');
+    $object->greeting('Hello World');
 
     # class method
-    Badger::Example->method('Hello World');
+    Badger::Example->greeting('Hello World');
 
 The L<prototype()> method returns a singleton object instance which can be 
 used as a default object by methods that have been called as class methods. 
 
-Here's an example of a C<message()> method that can be called with an argument 
-to set an object message:
+Here's an example of a C<greeting()> method that can be called with an argument 
+to set a greeting message:
 
-    $object->message('Hello World');
+    $object->greeting('Hello World');
 
 Or without any arguments to get the current message:
 
-    print $object->message();    # Hello World
+    print $object->greeting;            # Hello World
 
 As well as being called as an object method, we want to be able to call it
 as a class method:
 
-    Badger::Example->message('Hello World');
-    print Badger::Example->message();      # Hello World
+    Badger::Example->greeting('Hello World');
+    print Badger::Example->greeting();  # Hello World
 
-Here's what the C<message()> method looks like.
+Here's what the C<greeting()> method looks like.
 
     package Badger::Example;
     use base 'Badger::Prototype';
     
-    sub message {
+    sub greeting {
         my $self = shift;
         
         # get prototype object if called as a class method
@@ -103,16 +103,16 @@ Here's what the C<message()> method looks like.
         
         # continue as normal, now $self is an object
         if (@_) {
-            # set message if called with args
-            return ($self->{ message } = shift);
+            # set greeting if called with args
+            return ($self->{ greeting } = shift);
         }
         else {
-            # otherwise get message 
-            return $self->{ message };
+            # otherwise get greeting 
+            return $self->{ greeting };
         }
     }
 
-We use C<ref $self> to determine if C<message()> has been called as an object
+We use C<ref $self> to determine if C<greeting()> has been called as an object
 method (C<$self> contains an object reference) or as a class method (C<$self>
 contains the class name, in this case C<Badger::Example>). In the latter
 case, we call L<prototype()> as a class method (remember, C<$self> contains
@@ -141,7 +141,7 @@ C<$PROTOTYPE> package variable for subsequent use.  This is usually
 called from inside methods that can operate as class or object methods, 
 as shown in the earlier example.
 
-    sub message {
+    sub example {
         my $self = shift;
         
         # upgrade $self to an object when called as a class method
@@ -153,7 +153,7 @@ as shown in the earlier example.
 If you prefer a more succint idiom and aren't too worried about calling the
 L<prototype> method unneccessarily, then you can write it like this:
 
-    sub message {
+    sub greeting {
         my $self = shift->prototype;
         # ...code follows...
     }

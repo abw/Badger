@@ -136,7 +136,7 @@ Badger::Exception - structured exception for error handling
     
     # use automagic stringification 
     print $exception;
-
+    
     # throw exception
     die $exception;
 

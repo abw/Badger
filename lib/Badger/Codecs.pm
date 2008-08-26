@@ -231,15 +231,15 @@ Badger::Codecs - modules for encoding and decoding data
     # accessing codecs via Badger::Class
     use Badger::Class 
         codec => 'base64';
+        
+    codec();    encode(...);    decode(...);
 
-    codec(); encode(...); decode(...);      # as above
-    
     use Badger::Class 
         codecs => 'base64 storable';
     
     base64();   encode_base64(...);    decode_base64(...);
     storable(); encode_storable(...);  decode_storable(...);
-    
+
 =head1 DESCRIPTION
 
 A I<codec> is an object responsible for encoding and decoding data.
@@ -251,7 +251,7 @@ codec objects.
 First you need to load the C<Badger::Codecs> module.
 
     use Badger::Codecs;
-    
+
 It can be used in regular OO style by first creating a C<Badger::Codecs>
 object and then calling methods on it.
 
@@ -278,9 +278,10 @@ These examples are the equivalent of:
     my $encoded = $codec->encode($original);
     my $decoded = $codec->decode($encoded);
 
-C<Badger::Codecs> will do its best to locate and load the correct codec 
-module for you.  It defines a base module (C<Badger::Codec> by default)
-to which the name of the requested codec is appended in various forms.
+C<Badger::Codecs> will do its best to locate and load the correct codec module
+for you. It defines a module base path (containing C<Badger::Codec> and
+C<BadgerX::Codec> by default) to which the name of the requested codec is
+appended in various forms.
 
 It first tries the name exactly as specified.  If no corresponding codec
 module is found then it tries a capitalised version of the name, followed
@@ -288,6 +289,10 @@ by an upper case version of the name.  So if you ask for a C<foo> codec,
 then you'll get back a C<Badger::Codec::foo>, C<Badger::Codec::Foo>,
 C<Badger::Codec::FOO> or an error will be thrown if none of these can be
 found.
+
+NOTE: the above paragaph is incorrect.  It now tries the capitalised version
+first to work around Apple's case-insensitive file system.  This is subject
+to change.
 
     my $codec = Badger::Codecs->code('url');
         # tries: Badger::Codec + url = Badger::Codec::url   # Nope
@@ -355,8 +360,10 @@ You can define alternate names for codecs by providing a reference to a
 hash array.
 
     use Badger::Codecs
-        text => 'base64',
-        data => 'storable+base64';
+        codecs => {
+            text => 'base64',
+            data => 'storable+base64',
+        };
     
     # codec objects
     $encoded = text->encode($original);
@@ -379,38 +386,8 @@ Constructor method to create a new C<Badger::Codecs> object.
     my $codecs  = Badger::Codecs->new();
     my $encoded = $codecs->encode( url => $source );
 
-=head3 Configuration Options
-
-=head4 base
-
-This option can be used to specify the name(s) of one or more modules which
-define a search path for codec modules. The default value is C<Badger::Codec>.
-
-    my $codecs = Badger::Codecs->new( 
-        base => 'My::Codec' 
-    );
-    my $codec = $codecs->codec('Foo');      # My::Codec::Foo
-
-Multiple paths can be specified using a reference to a list.
-
-    my $codecs = Badger::Codecs->new( 
-        base => ['My::Codec', 'Badger::Codec'],
-    );
-    my $codec = $codecs->codec('Bar');      # either My::Codec::Bar
-                                            # or Badger::Codec::Bar
-
-=head4 codecs
-
-The C<codecs> configuration option can be used to define specific codec
-mappings to bypass the automagical name grokking mechanism.
-
-    my $codecs = Badger::Codecs->new( 
-        codecs => {
-            foo => 'Ferret::Codec::Foo', 
-            bar => 'Stoat::Codec::Bar',
-        },
-    );
-    my $codec = $codecs->codec('foo');      # Ferret::Codec::Foo
+See L<CONFIGURATION OPTIONS> for details of the configuration options
+that can be specified.
 
 =head2 base(@modules)
 
@@ -552,7 +529,41 @@ module when a codec is located and loaded.
 
 This is an internal method called by the base class L<Badger::Factory>
 module when a codec is located which is defined as a reference value.
-    
+
+=head1 CONFIGURATION OPTIONS
+
+=head2 path
+
+This option can be used to specify the name(s) of one or more modules which
+define a search path for codec modules. The default path contains
+C<Badger::Codec> and C<BadgerX::Codec>.
+
+    my $codecs = Badger::Codecs->new( 
+        path => 'My::Codec' 
+    );
+    my $codec = $codecs->codec('Foo');      # My::Codec::Foo
+
+Multiple paths can be specified using a reference to a list.
+
+    my $codecs = Badger::Codecs->new( 
+        path => ['My::Codec', 'Badger::Codec'],
+    );
+    my $codec = $codecs->codec('Bar');      # either My::Codec::Bar
+                                            # or Badger::Codec::Bar
+
+=head2 codecs
+
+The C<codecs> configuration option can be used to define specific codec
+mappings to bypass the automagical name grokking mechanism.
+
+    my $codecs = Badger::Codecs->new( 
+        codecs => {
+            foo => 'Ferret::Codec::Foo', 
+            bar => 'Stoat::Codec::Bar',
+        },
+    );
+    my $codec = $codecs->codec('foo');      # Ferret::Codec::Foo
+
 =head1 AUTHOR
 
 Andy Wardley E<lt>abw@wardley.orgE<gt>

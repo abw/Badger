@@ -881,18 +881,16 @@ Badger::Class - class metaprogramming module
 
 =head1 SYNOPSIS
 
-The C<Badger::Class> module can be used to take care of the housekeeping
-involved in defining a new object class.
-
+    # composing a new module
     package Your::Module;
     
     use Badger::Class
+        base        => 'Badger::Base',  # define base class(es)
         version     => 1.00,            # sets $VERSION
         debug       => 0,               # sets $DEBUG
         throws      => 'wobbler',       # sets $THROWS error type
-        base        => 'Badger::Base',  # define base class(es)
         import      => 'class',         # import class() subroutine
-        utils       => 'blessed UTILS', # imports from Badger::Utils
+        utils       => 'blessed params',# imports from Badger::Utils
         codec       => 'storable',      # imports from Badger::Codecs
         codecs      => 'base64 utf8'    # codecs do encode/decode
         constants   => 'TRUE FALSE',    # imports from Badger::Constants
@@ -901,8 +899,8 @@ involved in defining a new object class.
             e       => 2.718,
         },
         words       => 'yes no quit',   # define constant words
-        get_methods => 'foo bar',       # create accessors
-        set_methods => 'wiz bang',      # create mutators
+        accessors   => 'foo bar',       # create accessor methods
+        mutators    => 'wiz bang',      # create mutator methods
         methods     => {                # create/bind methods
             wam     => sub { ... },
             bam     => sub { ... },
@@ -929,59 +927,11 @@ involved in defining a new object class.
     our $X = 10;
     our $Y = 20;
     sub whatever { ... }
-    
-    # ...etc...
 
-The import hooks shown above are syntactic sugar.  They're mapped to 
-C<Badger::Class> methods.  You can call those methods yourself using the
-importable C<class> subroutine.  This returns a C<Badger::Class> object
-for the current package.
-
-    package Your::Module;
-    
+    # Other Badger::Class tricks
     use Badger::Class 'class';
     
-    # set base class
-    class->base('Another::Base', 'And::Another');
-    
-    # generate some standard accessor methods
-    class->get_methods('method1', 'method2');
-    
-    # define some custom methods
-    class->methods(
-        wam => sub { ... }
-        bam => \&Some::Other::Subroutine,
-    );
-    
-    # define some exportable items
-    class->exports( all => '$X $Y' );   # '$X $Y' is short for ['$X', '$Y']
-
-You can chain these class metaprogramming methods together.
-
-    class->base('Another::Base', 'And::Another')
-         ->version(3.14)
-         ->get_methods('method1', 'method2')
-         ->exports( all => '$X $Y' );
-
-The C<Badger::Class> object returned by C<class> can also be used to 
-get and set the value of package variables.  
-
-    class->var('X');                    # get $X in current class
-    class->var( X => 10 );              # set $X in current class
-
-There are also methods that will search upwards through base classes,
-effectively allowing you to define I<class variables> that are inherited by
-subclasses.
-
-    class->any_var('X');                # get $X in current or base classes
-    class->all_vars('X');               # all $X in current/base classes
-
-The C<class> subroutine can also be used to access other classes.
-
-    class('Another::Module')->var('X'); # $Another::Module::X
-
-You can even use it to compose new classes.
-
+    # compose a new class on the fly
     class('Amplifier')
         ->base('Badger::Base')
         ->constant( max_volume => 10 )
@@ -997,13 +947,6 @@ You can even use it to compose new classes.
         ->constant( max_volume => 11 );
     
     Nigels::Amplifier->about;           # This amp goes up to 11
-
-You can also call C<class> as a class or object method.
-
-    Your::Module->class->var('X');
-    
-    my $object = Your::Module->new;
-    $object->class->var('X');
 
 =head1 DESCRIPTION
 
@@ -1024,7 +967,7 @@ that perform various tasks to help in the construction of object classes.
 For example, instead of writing something like this:
 
     package Your::Module;
-
+    
     use base qw( Exporter Class::Base Class::Accessor::Fast );
     use constant {
         name => 'Badger',
@@ -1090,12 +1033,11 @@ C<Badger::Class> will enable them both in your module, the arguments passed to
 C<Badger::Class> will be evaluated before C<strict> and C<warnings> get
 enabled so any errors may go unreported. 
 
-=head2 THE C<class> SUBROUTINE
+=head2 CLASS METAPROGRAMMING
 
-The module defines an exportable C<class> subroutine which returns a
-C<Badger::Class> object for the current package (we use the term I<package>
-when we're talking specifically about Perl's symbol tables - but the term is
-generally synonymous with I<class>).
+The import hooks shown above are syntactic sugar. They're mapped to
+C<Badger::Class> methods. You can call those methods yourself using the
+importable C<class> subroutine. 
 
     package Your::Module;
     use Badger::Module 'class';     # import class subroutine
@@ -1104,34 +1046,44 @@ You can also specify this using the C<import> parameter.
 
     use Badger::Class import => 'class';
 
-=head2 CLASS METAPROGRAMMING
+The C<class> subroutine returns a C<Badger::Class> object for the
+current package.  (NOTE: we use the term I<package> when we're talking
+specifically about Perl's symbol tables - but the term is generally synonymous
+with I<class>).  
 
 A C<Badger::Class> object provides a number of methods that allow you to
 modify the class.  For example, you can add base classes, generate accessor
-and mutator methods, define exportable items, and so on.
+and mutator methods, define exportable items, and so on.  
 
     class->version(3.14);           # define $VERSION
     class->base('Another::Class');  # add base class
-    class->get_methods('foo bar');  # generate accessors
+    class->accessors('foo bar');    # generate accessors
     class->exports(                 # define exports
         all => '$X $Y',
     )
 
-These methods can also be accessed using import hooks.  The above example
-can be expressed more succinctly as:
+All the class metaprogramming methods return C<$self> so that you
+can chain them together like this:
+
+    class->version(3.14)
+         ->base('Another::Class')
+         ->accessors('foo bar')
+         ->exports( all => '$X $Y' );
+
+The above are the explicit equivalents of using the following import hooks.
 
     use Badger::Class
-        version     => 3.14,
-        base        => 'Another::Class';
-        get_methods => 'foo bar',
-        exports     => {
-            all     => '$X $Y',
+        version   => 3.14,
+        base      => 'Another::Class';
+        accessors => 'foo bar',
+        exports   => {
+            all   => '$X $Y',
         };
 
 One important benefit of using import hooks is that the methods are called at
-compile time. That means that any symbols defined by the hooks/methods (e.g.
-the C<debug> method defines a C<$DEBUG> variable) will be available
-immediately.
+compile time. That means that any symbols defined by the hooks/methods will be
+available immediately.  For example, the L<debug> hook and corresponding 
+L<debug()> method defines a C<$DEBUG> variable (amongst other things).
 
     use Badger::Class
         debug => 0;
@@ -1139,8 +1091,8 @@ immediately.
     # no need to declare 'our $DEBUG' - the above import hook did that
     print $DEBUG;           # 0
 
-You can also modify remote classes, i.e. classes other than the current
-one.
+You can also use the class subroutine to modify remote classes, i.e. classes
+other than the current one.
 
     class->('Existing::Class')->methods(
         wiz => sub {
@@ -1222,16 +1174,16 @@ on.
             UTILS     => 'My::Utils',
         };
 
-The trick here is to use the C<uber> hook instead of C<base>.  This is a
+The trick here is to use the C<uber> hook instead of C<base>. This is a
 special case that applies only when you're subclassing C<Badger::Base> (or
-another module derived from C<Badger::Base>).  In addition to adding 
-C<Badger::Class> (or whatever class module you specify) as a base class of
-the current module, it also performs some extra magic to ensure that the
-L<class> and L<classes> subroutines return objects of your new class
-(e.g. C<My::Class>) instead of C<Badger::Class>.  You don't need to worry
-too much about the details.  Just use C<uber> instead of C<base> when you're
-subclass a C<Badger::Class> module and we'll take care of everything for you.
-See the L<uber()> and L<UBER()> methods for further details.
+another module derived from C<Badger::Base>). In addition to adding
+C<Badger::Class> (or whatever class module you specify) as a base class of the
+current module, it also performs some extra magic to ensure that the
+L<class()> and L<classes()> subroutines return objects of your new class (e.g.
+C<My::Class>) instead of C<Badger::Class>. You don't need to worry too much
+about the details. Just use C<uber> instead of C<base> when you're subclass a
+C<Badger::Class> module and we'll take care of everything for you. See the
+L<uber()> and L<UBER()> methods for further details.
 
 Once your class module is defined, you can use it to generate new classes
 for your application.
@@ -1245,8 +1197,72 @@ for your application.
         constants => 'black white blue',     # imported from My::Constants
         utils     => 'wibble frusset pouch'; # imported from My::Utils
 
-TODO: you might also want to define your own metaprogramming methods and/or
-import hooks.  See the L<hooks> hook and L<hooks()> method.
+You can easily create your own methods and corresponding import hooks to
+implement whatever metaprogramming functionality you require for a 
+particular project.  Here's a trivial example which defines a method to
+set a C<$FOO> package variable in the target class.
+
+    package My::Class;
+    
+    use Badger::Class
+        uber  => 'Badger::Class',
+        hooks => 'foo';
+    
+    sub foo {
+        my ($self, $value) = @_;
+        $self->var( FOO => $value );
+    }
+
+Now you can use your class module with the C<foo> import hook and it'll 
+define the C<$FOO> package variable at compile time.
+
+    package My::Example;
+    
+    use My::Class
+        version =>  3,
+        base    => 'My::Base',
+        foo     => 'Default foo value';
+    
+    print $FOO;     # Default foo value
+
+Here's a slightly more advanced example which sets the C<$FOO> package
+variable as above and additionally generates a C<foo()> method in the target
+class. The C<foo()> method being generated (not to be confused with the
+C<foo()> method generating it) is a simple mutator method to get or set the
+C<$this-E<gt>{foo}> item.  We use C<$this> to represent the object in our
+target class that will have the the generated C<foo()> method called against
+it to avoid confusion with the C<$self> reference which is the
+C<Badger::Class> metaprogramming object.  If the method doesn't find a C<foo>
+value set in C<$this> then it uses the default value defined in the C<$FOO>
+package variable.
+
+    package My::Class;
+    
+    use Badger::Class
+        uber  => 'Badger::Class',
+        hooks => 'foo';
+    
+    sub foo {                                   # metaprogramming method
+        my ($self, $value) = @_;
+        $self->var( FOO => $value );            # define $FOO pkg var
+        $self->method(                          
+            foo => sub {                        # generate foo() method
+                my $this = shift;               # object in target class
+                return @_
+                    ? $this->{ foo } = shift    # set 
+                    : $this->{ foo }            # get
+                   || $this->var('FOO');        # default
+            }
+        );
+    }
+
+It is a little confusing at first to have methods in one class generating
+methods in another, especially when they share the same name. However, it's
+probably I<less> confusing than deliberating giving your generating and
+generated method different names. The C<hook> mechanism shown above is
+deliberately simple, but you can roll your own more extensive mechanism using
+the L<Badger::Exporter> (see the L<exports> hook and L<exports()> method)
+if you want to do something more advanced.
 
 =head1 EXPORTABLE SUBROUTINES
 
@@ -1297,8 +1313,9 @@ is specified.
     CLASS->method;          # same as __PACKAGE__->method
     $object->CLASS->method; # same as ref($object)->method
 
-There's nothing special about the class name returned.  It's just a plain
-text string.
+There's nothing special about the class name returned. It's just a plain text
+string. This is currently implemented as a runtime subroutine but will
+probably be changed at some point to be a compile-time constant subroutine.
 
 =head2 class($pkg)
 
@@ -1385,7 +1402,7 @@ package variable.
 
     my $amp = Amplifer->new;      # default max_volume: 10
 
-So if you're on ten here, all the way up, all the way up, all the way up,
+So you're on ten here, all the way up, all the way up, all the way up,
 you're on ten on your guitar. Where can you go from there? Where? Nowhere. 
 Exactly. What we do is, if we need that extra push over the cliff, you know 
 what we do?
@@ -1394,10 +1411,10 @@ what we do?
 
 Eleven. Exactly. One louder.
 
-But what if we wanted to make this the default?  Sure, we could make ten
-louder and make that be the top number, or we could remember to specify 
-the C<max_volume> parameter each time we use it.  But let's assume we're
-working with temperamental artistes who will be too busy worrying about
+So far, so good. But what if we wanted to make this the default? Sure, we
+could make ten louder and make that be the top number, or we could remember to
+specify the C<max_volume> parameter each time we use it. But let's assume
+we're working with temperamental artistes who will be too busy worrying about
 the quality of the backstage catering to think about checking their volume
 settings before they go on stage.
 
@@ -1412,10 +1429,11 @@ looks like):
     Amplifier->class->var( MAX_VOLUME => 11 );
 
 Either way has the desired effect of changing the default maximum volume
-setting without having to go and edit the source code of the module. However,
-it is an all-encompassing change that will affect all future instances of
-C<Amplifier> (and any subclasses derived from it) that don't define
-their own C<max_volume> parameter explicitly.
+setting without having to go and edit the source code of the module. 
+
+The downside to this is that it is an all-encompassing change that will affect
+all future instances of C<Amplifier> and any subclasses derived from it that
+don't define their own C<max_volume> parameter explicitly.
 
 But what if that's not what you want? What if you're playing a Jazz/Blues
 festival on the Isle of Lucy, for example, or performing a musical trilogy in
@@ -1491,12 +1509,12 @@ shown in the earlier examples with C<$self-E<gt>{ max_volume }>.
 =head2 classes($pkg)
 
 This subroutine returns a list (in list context) or a reference to a list (in
-scalar context) of C<Badger::Class> objects. As per L<class>, a package name
+scalar context) of C<Badger::Class> objects. As per L<class()>, a package name
 or object reference should be passed as the first argument, either explicitly
 or implicitly by calling it as an object method.
 
 The first L<Badger::Class> object in the list returned represents the 
-current class object, as would be returned by L<class>.  Any further
+current class object, as would be returned by L<class()>.  Any further
 items in the list are L<Badger::Class> objects representing all the base
 classes of the object.  The order of base classes is determined by the 
 L<heritage()> method which implements a simplified variant of the C3
@@ -1518,11 +1536,11 @@ delimited string.
     # single base class
     use Badger::Class
         base => 'Your::Base';
-    
+
     # multiple base classes as list reference
     use Badger::Class
         base => ['My::Base', 'Your::Base'];
-        
+
     # multiple base classes as single string
     use Badger::Class
         base => 'My::Base Your::Base';
@@ -1612,7 +1630,7 @@ See the L<version()> method for further details.
 
 This can be used to define a C<$DEBUG> package variable and C<debugging()>
 subroutine that you can use to get or set its value.  It is typically used
-in conjunction with the L<Badger::Base> L<debug()|Badger::Base::debug()> 
+in conjunction with the L<Badger::Base> L<debug()|Badger::Base/debug()> 
 method like so:
 
     package Your::Module;
@@ -1683,6 +1701,11 @@ so:
     package main;
     
     My::Amplifier->how_loud;  # This amp goes up to 11
+
+This provides an alternative to using package variables to define default
+configuration values for a module. The only limitation is that you can't
+change them once they're defined (although you can subclass the module and
+define a new constant). This limitation may be a Good Thing in some cases.
 
 See the L<constant()> method for further details.
 
@@ -1966,7 +1989,7 @@ See the L<hooks()> method for further details.
 =head2 new($package)
 
 Constructor method for a C<Badger::Class> object.  You shouldn't ever
-need to call this method directly.  Use the L<class> subroutine instead.
+need to call this method directly.  Use the L<class()> subroutine instead.
 
 =head2 name() / pkg()
 
@@ -2346,7 +2369,7 @@ undefined variable.
 
     use Badger::Class
         debug => 0;
-
+        
     sub do_something {
         my $self = shift;
         $self->debug("Doing something\n") if $DEBUG;
@@ -2361,12 +2384,12 @@ variable for the class.  Here's how you would typically use it.
     
     use Badger::Class
         debug => 0;         # debugging off by default
-
+        
     sub do_something {
         my $self = shift;
         $self->debug("Doing something\n") if $DEBUG;
     }
-    
+
     package main;
     
     my $obj = Your::Module->new;
@@ -2649,8 +2672,8 @@ should generally be used via the L<filesystem> hook.
 This method is used when creating a subclass of the C<Badger::Class> module
 (or another subclass of it). It does the same thing as the L<base()> module in
 adding the C<$class> to the C<@ISA> package variable. It then calls the
-internal L<UBER()> method to generate the L<class> and L<classes> subroutines
-in the subclass.
+internal L<UBER()> method to generate the L<class()> and L<classes()>
+subroutines in the subclass.
 
 =head2 hooks($names)
 
@@ -2673,14 +2696,44 @@ variable could be implemented like this.
 
 =head2 UBER
 
-This method generates the L<class> and L<classes> subroutines that return
+This method generates the L<class()> and L<classes()> subroutines that return
 C<Badger::Class> objects when called. You shouldn't ever need to call this
 method directly. It is automatically called once when the C<Badger::Class>
 module is first loaded. It is also called by the L<uber()> method to generate
-the L<class> and L<classes> method in modules subclassed from C<Badger::Class>
-(e.g. C<Your::Class>). In this case, the generated subroutines will return
-object instances of the subclass (i.e. C<Your::Class>) instead of
-C<Badger::Class>.
+the L<class()> and L<classes()> methods in modules subclassed from
+C<Badger::Class> (e.g. C<Your::Class>). In this case, the generated
+subroutines will return object instances of the subclass (i.e. C<Your::Class>)
+instead of C<Badger::Class>.
+
+=head1 INTERNAL CONSTANTS
+
+The following constants are defined for internal use.  You can redefine
+them in subclasses to hook in different delegate modules, as shown in 
+L<SUBCLASSING Badger::Class>.
+
+=head2 CODECS
+
+Badger::Codecs
+
+=head2 CONSTANTS
+
+Badger::Constants
+
+=head2 EXPORTER
+
+Badger::Exporter
+
+=head2 FILESYSTEM
+
+Badger::Filesystem
+
+=head2 MIXIN
+
+Badger::Mixin
+
+=head2 UTILS
+
+Badger::Utils
 
 =head1 IMPLEMENTATION NOTES
 
@@ -2738,19 +2791,6 @@ faster implementation than regular C3. It's also fully deterministic (i.e. it
 never fails) which removes the need for any error handling (which can be
 tricky if you're trying to call an error method on an object which can't
 resolve its own methods).
-
-=head1 TODO
-
-Finish documentation.
-
-=begin Test::Pod::Coverage
-
-This is to keep L<Test::Pod::Coverage> quiet.  You shouldn't see this when 
-the POD is displayed.
-
-=head2 CONSTANTS DEBUG LOADED UTILS VERSION
-
-=end Test::Pod::Coverage
 
 =head1 AUTHOR
 

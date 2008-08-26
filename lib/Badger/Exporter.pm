@@ -809,14 +809,7 @@ future use.
 This method can be used to install a code reference as a symbol in a 
 package.  
 
-=begin Test::Pod::Coverage
-
-This is to keep L<Test::Pod::Coverage> quiet.  You shouldn't see this when 
-the POD is displayed.
-
-=head2 EXPORT_ANY EXPORT_ALL EXPORT_TAGS EXPORT_HOOKS EXPORT_FAIL ISA
-
-=end Test::Pod::Coverage
+    Badger::Exporter->export_symbol('My::Package', 'Foo', \&foosub);
 
 =head1 AUTHOR
 
@@ -838,3 +831,4 @@ modify it under the same terms as Perl itself.
 # End:
 #
 # vim: expandtab shiftwidth=4:
+

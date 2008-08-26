@@ -378,7 +378,7 @@ Badger::Test::Manager - test manager module
     Badger::Test::Manager->pass('This is ok');
     Badger::Test::Manager->fail('This is not ok');
     # ... plus is(), isnt(), like() unlike() methods, as above
-    
+
 =head1 DESCRIPTION
 
 This module implements a simple test manager for L<Badger::Test>.
