@@ -28,8 +28,7 @@ our $ERROR    = '';
 our $MESSAGES = { };
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed reftype is_object params self_params plural 
-    load_module xprintf
+    UTILS blessed reftype is_object params self_params plural xprintf
 ));
 
 __PACKAGE__->export_hooks(
