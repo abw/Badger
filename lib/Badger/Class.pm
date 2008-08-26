@@ -1504,7 +1504,7 @@ method resolution algorithm.
 
 =head1 EXPORT HOOKS
 
-NOTE: The terms C<export hook> and C<eximport hook> refer to the same thing
+NOTE: The terms C<export hook> and C<import hook> refer to the same thing
 and can be used interchangeably.  We typically use C<export hook> from the
 perspective of the exporting module, and C<import hook> from the perspective
 of the importing module.
@@ -1673,17 +1673,17 @@ This module can now be subclassed with a new C<max_volume> defined, like
 so:
 
     package My::Amplifier;
-
+    
     use Badger::Class
         base     => 'Your::Amplifier',
         constant => {
             max_volume => 11,
         };
-
+        
     package main;
     
     My::Amplifier->how_loud;  # This amp goes up to 11
-    
+
 See the L<constant()> method for further details.
 
 =head2 constants
@@ -1808,10 +1808,10 @@ delegate to any symbols in any of the *::Util modules).
 
     use Badger::Class
         utils => 'blessed xprintf';
-
+        
     sub welcome {
         my ($self, $name) = @_;
-
+        
         $name = $name->get_name
             if blessed $name && $name->can('get_name');
         
@@ -1958,7 +1958,7 @@ import hooks.
     use Badger::Class
         uber  => 'Badger::Class',
         hooks => 'foo bar';
-    
+
 See the L<hooks()> method for further details.
 
 =head1 METHODS
@@ -2159,7 +2159,7 @@ Package variables that reference a list will have their contents merged in.
 
     package A;
     our $THINGS = ['Foo', 'Bar'];
-    
+
     package B;
     our $THINGS = ['Baz', 'Bam'];
 
