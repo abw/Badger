@@ -17,14 +17,15 @@ use Cwd 'getcwd';
 use Badger::Class
     version   => 0.01,
     debug     => 0,
-    base      => 'Badger::Prototype Badger::Exporter',
+    base      => 'Badger::Prototype',
     import    => 'class',
     utils     => 'params is_object',
-    constants => 'HASH ARRAY TRUE',
+    constants => 'HASH ARRAY TRUE REFS PKG',
     constant  => {
         virtual     => 0,
         NO_FILENAME => 1,
         FILESPEC    => 'File::Spec',
+        FINDBIN     => 'FindBin',
         ROOTDIR     =>  File::Spec->rootdir,
         CURDIR      =>  File::Spec->curdir,
         UPDIR       =>  File::Spec->updir,
@@ -45,7 +46,8 @@ use Badger::Class
             VFS     => sub {
                 # load VFS module and call its export() method
                 class(shift->VFS)->load->pkg->export(shift, shift)
-            }
+            },
+            '$Bin'  => \&_export_findbin_hook,
         },
     },
     messages  => {
@@ -56,6 +58,16 @@ use Badger::Class
 
 use Badger::Filesystem::File;
 use Badger::Filesystem::Directory;
+
+#-----------------------------------------------------------------------
+# special export hook to make $Bin available from FindBin
+#-----------------------------------------------------------------------
+
+sub _export_findbin_hook {
+    my ($class, $target) = @_;
+    class($class->FINDBIN)->load;
+    $class->export_symbol($target, Bin => \$FindBin::Bin);
+};
 
 
 #-----------------------------------------------------------------------
@@ -741,7 +753,7 @@ for the filesystem. There aren't any interesting paramters worth mentioning in
 the base class L<Badger::Filesystem> module at the moment, but subclasses
 (like L<Badger::Filesystem::Virtual>) do use them.
 
-=head1 CONSTRUCTOR SUBROUTINES
+=head1 EXPORTABLE SUBROUTINES
 
 The C<Badger::Filesystem> module defines the L<Path>, L<File> and L<Directory>
 subroutines which can be used to create L<Badger::Filesystem::Path>,
@@ -829,11 +841,34 @@ sanitises the path (via the L<canonpath()|Path::Spec/canonpath()> function
 in L<File::Spec>) to ensure that the path is returned in the local 
 filesystem convention (e.g. C</> is converted to C<\> on Win32).
 
+=head2 $Bin
+
+This load the L<FindBin> module and exports the C<$Bin> variable into 
+the caller's namespace.
+
+    use Badger::Filesystem '$Bin';
+    use lib "$Bin/../lib";
+
+This is exactly the same as:
+
+    use FindBin '$Bin';
+    use lib "$Bin/../lib";
+
+The benefit is that you can use it in conjunction with other import options.
+
+    use Badger::Filesystem '$Bin Cwd File';
+
+Compared to something like:
+
+    use FindBin '$Bin';
+    use Cwd;
+    use Path::Class;
+
 =head2 getcwd
 
 This is a direct alias to the C<getcwd> function in L<Cwd>.
 
-=head2 :types
+=head2 C<:types> Import Option
 
 Specifying this an an import option will export all of the L<Path()>, 
 L<File>, L<Dir>, L<Directory> and L<Cwd> subroutines to the caller.
