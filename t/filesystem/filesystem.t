@@ -15,9 +15,9 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use File::Spec;
-use Badger::Filesystem qw( FS VFS :types :dirs cwd getcwd );
+use Badger::Filesystem 'FS VFS :types :dirs cwd getcwd $Bin';
 use Badger::Test 
-    tests => 48,
+    tests => 49,
     debug => 'Badger::Filesystem',
     args  => \@ARGV;
 
@@ -33,6 +33,14 @@ sub lp($) {
     $path =~ s|/|$PATHSEP|g;
     $path;
 }
+
+
+
+#-----------------------------------------------------------------------
+# test $Bin from FindBin
+#-----------------------------------------------------------------------
+
+ok( $Bin, "\$Bin is set to $Bin" );
 
 
 #-----------------------------------------------------------------------
