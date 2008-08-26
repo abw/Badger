@@ -22,6 +22,17 @@ use Badger::Test
     debug => 'Badger::Filesystem Badger::Filesystem::Virtual',
     args  => \@ARGV;
 
+# ugly hack to grok file separator on local filesystem
+my $PATHSEP  = File::Spec->catdir(('badger') x 2);
+$PATHSEP =~ s/badger//g;
+
+# convert unix-like paths into local equivalent
+sub lp($) {
+    my $path = shift;
+    $path =~ s|/|$PATHSEP|g;
+    $path;
+}
+
 
 #-----------------------------------------------------------------------
 # figure out where the t/filesystem/testfiles directory, depending on 
@@ -30,7 +41,7 @@ use Badger::Test
 
 our $here = -d 't' 
     ? FS->directory(qw(t filesystem))
-    : FS->directory;
+    : FS->Cwd;
 our $tfdir = $here->dir('testfiles');
 
 $tfdir->must_exist;
@@ -43,6 +54,7 @@ $tfdir->must_exist;
 
 my $fs = VFS->new;
 ok( $fs, 'created a new virtual filesystem with default root' );
+my $dir = $fs->dir($tfdir->absolute);
 ok( $fs->dir($tfdir->absolute)->must_exist, 'got testfiles dir via default vfs' );
 
 
@@ -128,10 +140,10 @@ $vfs = VFS->new(
 ok( $vfs, 'created filesystem with virtual root' );
 
 my $file1 = $vfs->file('foo', 'bar');
-is( $file1->absolute, '/foo/bar', 'absolute foo bar in virtual root fs' );
+is( $file1->absolute, lp '/foo/bar', 'absolute foo bar in virtual root fs' );
 
 $file1 = $vfs->file('/foo/bar');
-is( $file1->absolute, '/foo/bar', 'absolute /foo/bar in virtual root fs' );
-is( $file1->definitive, '/path/to/my/web/pages/foo/bar', 'definitive path adds root' );
+is( $file1->absolute, lp '/foo/bar', 'absolute /foo/bar in virtual root fs' );
+is( $file1->definitive, lp '/path/to/my/web/pages/foo/bar', 'definitive path adds root' );
 ok( $vfs->virtual, 'filesystem is virtual' );
 

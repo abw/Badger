@@ -14,6 +14,7 @@
 use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
+use File::Spec;
 use Badger::Filesystem ':types';
 use Badger::Filesystem::Path;
 use Badger::Test 
@@ -26,27 +27,38 @@ our $FS    =  $PATH->filesystem;
 our $CWD   = $FS->cwd;
 my ($path, $sub);
 
+# ugly hack to grok file separator on local filesystem
+my $PATHSEP  = File::Spec->catdir(('badger') x 2);
+$PATHSEP =~ s/badger//g;
+
+# convert unix-like paths into local equivalent
+sub lp($) {
+    my $path = shift;
+    $path =~ s|/|$PATHSEP|g;
+    $path;
+}
+
 $path = $PATH->new('foo');
 ok( $path, 'created a new file: foo' );
 ok( $path->is_relative, 'foo is relative' );
 ok( ! $path->is_absolute, 'foo is not absolute' );
 is( $path->absolute, $FS->join_dir($CWD, 'foo'), 'foo absolute is ' . $path->absolute );
 
-if ($FS->rootdir eq '/' && $FS->separator eq '/') {
+if (1) { # && $FS->rootdir eq '/' && $FS->separator eq '/') {
     $path = $PATH->new('/foo');
     ok( $path, 'created a new file: /foo' );
     ok( ! $path->is_relative, '/foo is not relative' );
     ok( $path->is_absolute, '/foo is absolute' );
-    is( $path->absolute, '/foo', '/foo is already absolute' );
+    is( $path->absolute, lp '/foo', '/foo is already absolute' );
     
     #-----------------------------------------------------------------------
     # test construction
     #-----------------------------------------------------------------------
     
     $path = $PATH->new('/foo/bar/baz');
-    is( $path->relative('bam'), '/foo/bar/baz/bam', '/foo/bar/baz + bam' );
-    is( $path->relative('/bam'), '/bam', '/foo/bar/baz + /bam' );
-    is( $path->relative('../../wam'), '/foo/wam', '/foo/bar/baz + ../../wam' );
+    is( $path->relative('bam'), lp '/foo/bar/baz/bam', '/foo/bar/baz + bam' );
+    is( $path->relative('/bam'), lp '/bam', '/foo/bar/baz + /bam' );
+    is( $path->relative('../../wam'), lp '/foo/wam', '/foo/bar/baz + ../../wam' );
 }
 else {
     skip_some(7, 'Non-standard file separators')
@@ -56,9 +68,9 @@ else {
 # base()
 #-----------------------------------------------------------------------
 
-is( Path('/foo/bar')->base, '/foo/bar', 'path base' );
-is( Directory('/foo/bar')->base, '/foo/bar', 'dir base' );
-is( File('/foo/bar')->base, '/foo', 'file base' );
+is( Path('/foo/bar')->base, lp '/foo/bar', 'path base' );
+is( Directory('/foo/bar')->base, lp '/foo/bar', 'dir base' );
+is( File('/foo/bar')->base, lp '/foo', 'file base' );
 
 
 #-----------------------------------------------------------------------
@@ -66,26 +78,26 @@ is( File('/foo/bar')->base, '/foo', 'file base' );
 #-----------------------------------------------------------------------
 
 # absolute
-is( Path('/foo/bar')->parent, '/foo', 'absolute path parent' );
-is( Directory('/foo/bar/baz')->parent, '/foo/bar', 'absolute dir parent' );
-is( File('/foo/bar/baz/bam')->parent, '/foo/bar/baz', 'absolute file parent' );
-is( Path('/foo/bar/baz/bam')->parent, '/foo/bar/baz', 'absolute path parent' );
-is( Path('/foo/bar/baz/bam')->parent(0), '/foo/bar/baz', 'absolute path parent zero' );
-is( Path('/foo/bar/baz/bam')->parent(1), '/foo/bar', 'absolute path parent one' );
-is( Path('/foo/bar/baz/bam')->parent(2), '/foo', 'absolute path parent two' );
-is( Path('/foo/bar/baz/bam')->parent(3), '/', 'absolute path parent three' );
-is( Path('/foo/bar/baz/bam')->parent(4), '/', 'absolute path parent four' );
-is( Path('/foo/bar/baz/bam')->parent(5), '/', 'absolute path parent five' );
+is( Path('/foo/bar')->parent, lp '/foo', 'absolute path parent' );
+is( Directory('/foo/bar/baz')->parent, lp '/foo/bar', 'absolute dir parent' );
+is( File('/foo/bar/baz/bam')->parent, lp '/foo/bar/baz', 'absolute file parent' );
+is( Path('/foo/bar/baz/bam')->parent, lp '/foo/bar/baz', 'absolute path parent' );
+is( Path('/foo/bar/baz/bam')->parent(0), lp '/foo/bar/baz', 'absolute path parent zero' );
+is( Path('/foo/bar/baz/bam')->parent(1), lp '/foo/bar', 'absolute path parent one' );
+is( Path('/foo/bar/baz/bam')->parent(2), lp '/foo', 'absolute path parent two' );
+is( Path('/foo/bar/baz/bam')->parent(3), lp '/', 'absolute path parent three' );
+is( Path('/foo/bar/baz/bam')->parent(4), lp '/', 'absolute path parent four' );
+is( Path('/foo/bar/baz/bam')->parent(5), lp '/', 'absolute path parent five' );
 
 # relative
 my $cwd = $FS->dir;
 is( Path('foo/bar')->parent, 'foo', 'relative path parent' );
 is( Path('foo/bar/')->parent, 'foo', 'relative path trailing slash parent' );
-is( Directory('foo/bar/baz')->parent, 'foo/bar', 'relative dir parent' );
-is( File('foo/bar/baz/bam')->parent, 'foo/bar/baz', 'relative file parent' );
-is( Path('foo/bar/baz/bam')->parent, 'foo/bar/baz', 'relative path parent' );
-is( Path('foo/bar/baz/bam')->parent(0), 'foo/bar/baz', 'relative path parent zero' );
-is( Path('foo/bar/baz/bam')->parent(1), 'foo/bar', 'relative path parent one' );
+is( Directory('foo/bar/baz')->parent, lp 'foo/bar', 'relative dir parent' );
+is( File('foo/bar/baz/bam')->parent, lp 'foo/bar/baz', 'relative file parent' );
+is( Path('foo/bar/baz/bam')->parent, lp 'foo/bar/baz', 'relative path parent' );
+is( Path('foo/bar/baz/bam')->parent(0), lp 'foo/bar/baz', 'relative path parent zero' );
+is( Path('foo/bar/baz/bam')->parent(1), lp 'foo/bar', 'relative path parent one' );
 is( Path('foo/bar/baz/bam')->parent(2), 'foo', 'relative path parent two' );
 is( Path('foo/bar/baz/bam')->parent(3), $cwd, "relative path parent three is $cwd" );
 is( Path('foo/bar/baz/bam')->parent(4), $cwd->parent, 'relative path parent four is ' . $cwd->parent );
@@ -99,12 +111,12 @@ is( Path('foo/bar/baz/bam')->parent(5), $cwd->parent(1), 'relative path parent f
 my $abs = Cwd->dir('foo/bar')->absolute;
 my $can = $abs . '/';
 
-is( Path('foo/bar')->canonical, $abs, 'canonical foo/bar' );
-is( Path('/foo/bar')->canonical, '/foo/bar', 'canonical /foo/bar' );
-is( Path('/foo/bar/')->canonical, '/foo/bar', 'canonical /foo/bar/' );
-is( Dir('foo/bar')->canonical, $can, 'canonical dir foo/bar' );
-is( Dir('/foo/bar')->canonical, '/foo/bar/', 'canonical dir /foo/bar' );
-is( Dir('/foo/bar/')->canonical, '/foo/bar/', 'canonical dir /foo/bar/' );
+is( Path('foo/bar')->canonical, lp $abs, 'canonical foo/bar' );
+is( Path('/foo/bar')->canonical, lp '/foo/bar', 'canonical /foo/bar' );
+is( Path('/foo/bar/')->canonical, lp '/foo/bar', 'canonical /foo/bar/' );
+is( Dir('foo/bar')->canonical, lp $can, 'canonical dir foo/bar' );
+is( Dir('/foo/bar')->canonical, lp '/foo/bar/', 'canonical dir /foo/bar' );
+is( Dir('/foo/bar/')->canonical, lp '/foo/bar/', 'canonical dir /foo/bar/' );
 
 
 #-----------------------------------------------------------------------

@@ -14,6 +14,7 @@
 use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
+use File::Spec;
 use Badger::Filesystem::Directory;
 use Badger::Filesystem::Virtual;
 use Badger::Test 
@@ -24,6 +25,17 @@ use Badger::Test
 our $DIR   = 'Badger::Filesystem::Directory';
 our $FS    = 'Badger::Filesystem';
 our $TDIR  = -d 't' ? $FS->join_dir(qw(t filesystem)) : $FS->directory;
+
+# ugly hack to grok file separator on local filesystem
+my $PATHSEP  = File::Spec->catdir(('badger') x 2);
+$PATHSEP =~ s/badger//g;
+
+# convert unix-like paths into local equivalent
+sub lp($) {
+    my $path = shift;
+    $path =~ s|/|$PATHSEP|g;
+    $path;
+}
 
 my $dir = $DIR->new('example');
 
@@ -47,14 +59,14 @@ is ( $DIR->new({ path => 'example' })->name,
 
 
 $dir = $DIR->new('/foo/bar/baz');
-is( $dir, '/foo/bar/baz', 'foo/bar/baz path');
-is( $dir->dir, '/foo/bar/', 'foo/bar dir');
+is( $dir, lp '/foo/bar/baz', 'foo/bar/baz path');
+is( $dir->dir, lp '/foo/bar/', 'foo/bar dir');
 is( $dir->name, 'baz', 'baz file' );
-is( $dir->canonical, '/foo/bar/baz/', 'baz slashed' );
+is( $dir->canonical, lp '/foo/bar/baz/', 'baz slashed' );
 
 $dir = $DIR->new('/foo/bar/baz/');
-is( $dir, '/foo/bar/baz', 'foo/bar/baz path with trailing slash');
-is( $dir->dir, '/foo/bar/', 'foo/bar dir with trailing slash');
+is( $dir, lp '/foo/bar/baz', 'foo/bar/baz path with trailing slash');
+is( $dir->dir, lp '/foo/bar/', 'foo/bar dir with trailing slash');
 is( $dir->name, 'baz', 'baz file with trailing slash' );
 
 #-----------------------------------------------------------------------
@@ -62,31 +74,31 @@ is( $dir->name, 'baz', 'baz file with trailing slash' );
 #-----------------------------------------------------------------------
 
 $dir = $DIR->new('/path/to/file/number/one');
-is( $dir, '/path/to/file/number/one', 'full path' );
-is( $dir->up, '/path/to/file/number', 'path up one' );
-is( $dir->up->up, '/path/to/file', 'path up two' );
-is( $dir->up(1), '/path/to/file', 'path up, skip one' );
-is( $dir->up(2), '/path/to', 'path up, skip two' );
-is( $dir->up(3), '/path', 'path up, skip three' );
-is( $dir->up(4), '/', 'path up, skip four' );
-is( $dir->up(42), '/', 'path up, skip fourty two' );
+is( $dir, lp '/path/to/file/number/one', 'full path' );
+is( $dir->up, lp '/path/to/file/number', 'path up one' );
+is( $dir->up->up, lp '/path/to/file', 'path up two' );
+is( $dir->up(1), lp '/path/to/file', 'path up, skip one' );
+is( $dir->up(2), lp '/path/to', 'path up, skip two' );
+is( $dir->up(3), lp '/path', 'path up, skip three' );
+is( $dir->up(4), lp '/', 'path up, skip four' );
+is( $dir->up(42), lp '/', 'path up, skip fourty two' );
 
-is( $dir->directory('two'), '/path/to/file/number/one/two', 
+is( $dir->directory('two'), lp '/path/to/file/number/one/two', 
     'relative path down' );
-is( $dir->directory('../three'), '/path/to/file/number/three', 
+is( $dir->directory('../three'), lp '/path/to/file/number/three', 
     'relative path up' );
-is( $dir->directory('../../four'), '/path/to/file/four', 
+is( $dir->directory('../../four'), lp '/path/to/file/four', 
     'relative path up up' );
-is( $dir->directory('/five'), '/five', 
+is( $dir->directory('/five'), lp '/five', 
     'absolute path on relative path' );
 
-is( $dir->file('two.txt'), '/path/to/file/number/one/two.txt', 
+is( $dir->file('two.txt'), lp '/path/to/file/number/one/two.txt', 
     'relative file down' );
-is( $dir->directory('../three.pm'), '/path/to/file/number/three.pm', 
+is( $dir->directory('../three.pm'), lp '/path/to/file/number/three.pm', 
     'relative file up' );
-is( $dir->directory('../../four.pl'), '/path/to/file/four.pl', 
+is( $dir->directory('../../four.pl'), lp '/path/to/file/four.pl', 
     'relative file up up' );
-is( $dir->directory('/five'), '/five', 
+is( $dir->directory('/five'), lp '/five', 
     'absolute file on relative path' );
 
 
