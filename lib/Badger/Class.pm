@@ -2712,27 +2712,57 @@ L<SUBCLASSING Badger::Class>.
 
 =head2 CODECS
 
-Badger::Codecs
+The name of the codecs module, as used by the L<codecs()> method: 
+C<Badger::Codecs>
 
 =head2 CONSTANTS
 
-Badger::Constants
+The name of the constants method, as used by the L<constants()> metho:
+C<Badger::Constants>
 
 =head2 EXPORTER
 
-Badger::Exporter
+The name of the exporter module, as used by the L<exports()> method:
+C<Badger::Exporter>
 
 =head2 FILESYSTEM
 
-Badger::Filesystem
+The name of the filesystem module, as used by the L<filesystem()> method:
+C<Badger::Filesystem>
 
 =head2 MIXIN
 
-Badger::Mixin
+The name of the base class mixin module, as used by the L<mixin()> method:
+C<Badger::Mixin>
 
 =head2 UTILS
 
-Badger::Utils
+The name of the utilities module, as used by the L<utils()> method:
+C<Badger::Utils>
+
+=head1 REALLY INTERNAL CONSTANTS 
+
+These constants are I<really> internal. You really don't need to know about
+them. In fact, even I<I> don't need to know about them. I'm only documenting
+then to make L<Pod::Coverage> shut the fuck up.
+
+=head2 DEBUG
+
+This is defined to contain the word C<DEBUG> (see, I said you didn't
+need to know about this).  It's the name of the C<$DEBUG> variable that
+the L<debug()> method hooks into.
+
+=head2 VERSION
+
+This constant defines the name of the variable that the L<version()> method
+updates.  Guess what?  It's set to C<VERSION>.
+
+=head2 LOADED
+
+This is the name of a variable that the C<Badger::Class> method uses to 
+assist in autoloading modules.  The default value is C<BADGER_LOADED>.
+Thus, C<Badger::Class> will define a C<$BADGER_LOADED> package variable 
+in your module to indicate that it was loaded by Badger.
 
 =head1 IMPLEMENTATION NOTES
 
