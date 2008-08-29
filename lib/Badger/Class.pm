@@ -2744,7 +2744,7 @@ C<Badger::Utils>
 
 These constants are I<really> internal. You really don't need to know about
 them. In fact, even I<I> don't need to know about them. I'm only documenting
-then to make L<Pod::Coverage> shut the fuck up.
+then to keep L<Pod::Coverage> quiet.
 
 =head2 DEBUG
 
