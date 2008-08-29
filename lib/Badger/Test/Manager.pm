@@ -234,11 +234,13 @@ sub skip_some {
 }
 
 sub skip_rest {
-    my ($self, $msg) = @_;
+    my $self = shift->prototype;
+    my $msg  = shift;
     my $plan = $self->{ plan };
     while ($self->{ tested } < $plan) {
         $self->skip($msg);
     }
+    exit;
 }
 
 sub skip_all ($;$) {
