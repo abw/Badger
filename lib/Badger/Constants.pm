@@ -72,7 +72,7 @@ __END__
 
 =head1 NAME
 
-Badger::Constants - defines constants for other TT modules
+Badger::Constants - defines constants for other Badger modules
 
 =head1 SYNOPSIS
 
