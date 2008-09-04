@@ -16,8 +16,7 @@ package Badger::Class;
 use strict;
 use warnings;
 use base 'Badger::Exporter';
-use Badger::Constants 'DELIMITER ARRAY HASH CODE PKG REFS ONCE';
-use Carp;
+use Badger::Constants 'DELIMITER SCALAR ARRAY HASH CODE PKG REFS ONCE';
 use constant {
     FILESYSTEM => 'Badger::Filesystem',
     CONSTANTS  => 'Badger::Constants',
@@ -34,6 +33,7 @@ use constant {
     ISA        => 'ISA',
     base_id    => 'Badger',
 };
+use Carp;
 use overload 
     '""' => 'name',
     fallback => 1;
@@ -42,7 +42,7 @@ our $VERSION    = 0.01;
 our $DEBUG      = 0 unless defined $DEBUG;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
-    base uber mixin mixins version debug constant constants words exports 
+    base uber mixin mixins version debug constant constants words vars exports 
     throws messages utils codec codecs filesystem hooks
     methods slots accessors mutators get_methods set_methods
 );
@@ -585,6 +585,63 @@ sub words {
     }
     return $self;
 }
+
+sub vars {
+    my $self = shift;
+    my $vars = @_ == 1 ? shift : [ @_ ];
+    my $pkg  = $self->{ name };
+    my ($symbol, $sigil, $name, $dest, $ref);
+
+    $vars = [ split(DELIMITER, $vars) ] 
+        unless ref $vars;
+
+    $vars = { map { $_ => undef } @$vars }
+        if ref $vars eq ARRAY;
+    
+    croak("Invalid vars specified: $vars\n")
+        unless ref $vars eq HASH;
+    
+    # This is a slightly simplified (stricter) version of the equivalent 
+    # code in vars.pm
+    
+    while (($symbol, $ref) = each %$vars) {
+        no strict REFS;
+
+        # only accept: $WORD @WORD %WORD WORD
+        $symbol =~ /^([\$\@\%])?(\w+)$/
+            || croak("Invalid variable name in vars: $_");
+        ($sigil, $name) = ($1 || '$', $2);
+        
+        # expand destination to full package name ($Your::Module::WORD)
+        $dest = $pkg.PKG.$name;
+
+        _debug("$sigil$name => ", $ref || '\\'.$sigil.$dest, "\n");
+        
+        if ($sigil eq '$') {
+            *$dest = defined $ref
+                ? (ref $ref eq SCALAR ? $ref : do { my $copy = $ref; \$copy })
+                : \$$dest;
+        }
+        elsif ($sigil eq '@') {
+            *$dest = defined $ref
+                ? (ref $ref eq ARRAY ? $ref : [$ref])
+                : \@$dest;
+        }
+        elsif ($sigil eq '%') {
+            *$dest = defined $ref
+                ? (ref $ref eq HASH 
+                     ? $ref 
+                     : croak("Invalid hash variable for $symbol in vars: $ref")
+                  )
+                : \%$dest;
+        }
+        else {
+            # should never happen
+            croak("Unrecognised sigil for $symbol in vars");
+        }
+    }
+    return $self;
+}
     
 sub exports {
     my $self = shift;
@@ -900,6 +957,16 @@ Badger::Class - class metaprogramming module
         words       => 'yes no quit',   # define constant words
         accessors   => 'foo bar',       # create accessor methods
         mutators    => 'wiz bang',      # create mutator methods
+        vars        => {
+            '$FOO'  => 'Hello World',   # defines $FOO package var
+            '@BAR'  => [10,20,30],      # defines @BAR
+            '%BAZ'  => {x=>10, y=>20},  # defines %BAZ
+            # leading '$' is optional for scalar package vars
+            WIZ     => 'Hello World',   # defines $WIZ as scalar value
+            WAZ     => [10,20,30],      # defines $WAZ as list ref
+            WOZ     => {a=>10,y=>20},   # defines $WOZ as hash ref
+            WUZ     => sub { ... },     # defines $WUZ as code ref
+        },
         methods     => {                # create/bind methods
             wam     => sub { ... },
             bam     => sub { ... },
@@ -1763,6 +1830,25 @@ You do have an extensive test suite don't you?
         }
     }
 
+=head2 vars
+
+This allows you to pre-define one or more package variables.  It works 
+rather like the L<vars> module.
+
+    use Badger::Class
+        vars => '$FOO @BAR %BAZ';
+
+It also allows you to provide values for variables, like so:
+
+    use Badger::Class
+        vars => {
+            '$FOO' => 'Hello World',
+            '@BAR' => [1.618,2.718,3.142],
+            '%BAZ' => { x=>10, y=>20 },
+        };
+
+See the L<vars()> method for further information.
+
 =head2 exports 
 
 This allows you to declare the symbols that your module can export.
@@ -2442,6 +2528,62 @@ L<words> import hook.
     
     print yes;          # yes
     print no;           # no
+
+=head2 vars($vars)
+
+This allows you to pre-declare one or more package variables. This is usually
+called via the corresponding L<vars> import hook.
+
+    use Badger::Class
+        vars => '$FOO @BAR %BAZ';   
+
+In the simple case, it works just like the C<vars.pm> module in pre-declaring
+the variables named. 
+
+Unlike C<vars.pm>, this method will I<only> define scalar, list and hash
+package variables (e.g. C<$SOMETHING>, C<@SOMETHING> or C<%SOMETHING>). If you
+want to define a subroutine/method then use the L<methods> import hook or
+L<methods()> method. If you want to define a glob reference then you're
+already operating in I<Wizard Mode> and you don't need our help.
+
+If you don't specify a leading sigil (i.e. C<$>, C<@> or C<%>) then it will
+default to C<$> and create a scalar variable.
+
+    use Badger::Class
+        vars => 'FOO BAR BAZ';      # declares $FOO, $BAR and $BAZ
+
+You can also use a reference to a hash array to define values for variables.
+
+    use Badger::Class
+        vars => {                           # Equivalent code:
+            '$FOO' => 42,                   #   our $FOO = 25
+            '@WIZ' => [100, 200, 300],      #   our @WIZ = (100, 200, 300)
+            '%WOZ' => {ping => 'pong'},     #   our %QOZ = (ping => 'pong')
+        };
+
+Scalar package variables can be assigned any scalar value or a reference to
+some other data type. Again, the leading C<$> is optional on the variable
+names. Note the difference in the equivalent code - this time we end up with
+scalar variables and references exclusively.
+
+    use Badger::Class
+        vars => {                           # Equivalent code:
+            FOO => 42,                      #   our $FOO = 42
+            BAR => [100, 200, 300],         #   our $BAR = [100, 200, 300]
+            BAZ => {ping => 'pong'},        #   our $BAZ = {ping => 'pong'}
+            HAI => sub {                    #   our $HAI = sub { ... }
+                'Hello ' . (shift || 'World') 
+            },
+        };
+
+You can also assign any kind of data to a package list variable.  If it's
+not already a list reference then the value will be treated as a single
+item list.
+
+    use Badger::Class
+        vars => {                           # Equivalent code:
+            '@FOO' => 42,                   #   our @FOO = (42)
+        };
 
 =head2 exports($symbols)
 
