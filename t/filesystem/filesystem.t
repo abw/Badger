@@ -17,7 +17,7 @@ use warnings;
 use File::Spec;
 use Badger::Filesystem 'FS VFS :types :dirs cwd getcwd $Bin';
 use Badger::Test 
-    tests => 49,
+    tests => 50,
     debug => 'Badger::Filesystem',
     args  => \@ARGV;
 
@@ -131,6 +131,7 @@ ok( $fs, 'created a new filesystem' );
 is( $fs->rootdir, ROOTDIR, 'root is ' . ROOTDIR );
 is( $fs->updir, UPDIR, 'updir is ' . UPDIR );
 is( $fs->curdir, CURDIR, 'curdir is ' . CURDIR );
+is( $fs->separator, $PATHSEP, 'separator is ' . $PATHSEP );
 ok( ! $fs->virtual, 'filesystem is not virtual' );
 
 
