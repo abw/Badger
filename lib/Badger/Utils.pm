@@ -16,29 +16,68 @@ use strict;
 use warnings;
 use base 'Badger::Exporter';
 use File::Path;
-use Scalar::Util qw( blessed reftype );
-use Badger::Constants 'HASH';
+use Scalar::Util qw( blessed );
+use Badger::Constants 'HASH PKG DELIMITER';
+use Badger::Debug ':dump';
 use constant {
     UTILS  => 'Badger::Utils',
+    CLASS  => 0,
+    FILE   => 1,
+    LOADED => 2,
 };
 
 our $VERSION  = 0.01;
 our $DEBUG    = 0 unless defined $DEBUG;
 our $ERROR    = '';
 our $MESSAGES = { };
+our $HELPERS  = {       # keep this compact in case we don't need to use it
+    'Digest::MD5'     => 'md5 md5_hex md5_base64',
+    'Scalar::Util'    => 'blessed dualvar isweak readonly refaddr reftype 
+                          tainted weaken isvstring looks_like_number 
+                          set_prototype',
+    'List::Util'      => 'first max maxstr min minstr reduce shuffle sum',
+    'List::MoreUtils' => 'any all none notall true false firstidx 
+                          first_index lastidx last_index insert_after 
+                          insert_after_string apply after after_incl before 
+                          before_incl indexes firstval first_value lastval 
+                          last_value each_array each_arrayref pairwise 
+                          natatime mesh zip uniq minmax',
+    'Hash::Util'      => 'lock_keys unlock_keys lock_value unlock_value
+                          lock_hash unlock_hash hash_seed',
+
+};
+our $DELEGATES;         # fill this from $HELPERS on demand
+
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed reftype is_object params self_params plural xprintf
+    UTILS blessed is_object params self_params plural xprintf
 ));
 
-__PACKAGE__->export_hooks(
-    md5_hex => sub {
-        my ($class, $target, $symbol, $more_symbols) = @_;
-        require Digest::MD5;
-        $class->export_symbol($target, $symbol, \&Digest::MD5::md5_hex);
-        return 1;
+__PACKAGE__->export_fail(\&_export_fail);
+
+sub _export_fail {    
+    my ($class, $target, $symbol, $more_symbols) = @_;
+    $DELEGATES ||= _expand_helpers($HELPERS);
+    my $helper = $DELEGATES->{ $symbol } || return 0;
+    require $helper->[FILE] unless $helper->[LOADED];
+    $class->export_symbol($target, $symbol, \&{ $helper->[CLASS].PKG.$symbol });
+    return 1;
+}
+
+sub _expand_helpers {
+    # invert { x => 'a b c' } into { a => 'x', b => 'x', c => 'x' }
+    my $helpers   = shift;
+    return {
+        map {
+            my $name = $_;                      # e.g. Scalar::Util
+            my $file = module_file($name);      # e.g. Scalar/Util.pm
+            map { $_ => [$name, $file, 0] }     # third item is loaded flag
+            split(DELIMITER, $helpers->{ $name })
+        }
+        keys %$helpers
     }
-);
+}
+        
 
 sub is_object($$) {
     blessed $_[1] && $_[1]->isa($_[0]);
@@ -109,33 +148,30 @@ Badger::Utils - various utility functions
 
 =head1 DESCRIPTION
 
-This module implements various utility functions.  
+This module implements a number of utility functions.  It also provides 
+access to all of the utility functions in L<Scalar::Util>, L<List::Util>,
+L<List::MoreUtils>, L<Hash::Util> and L<Digest::MD5> as a convenience.
 
-TODO: At present it is very basic, implementing only the core utilities that I
-need right now. I plan to extend it to autoload and delegate to the other
-*::Util modules.
+    use Badger::Utils 'blessed reftype first max any all lock_hash md5_hex';
+
+The single line of code shown here will import C<blessed> and C<reftype> from
+L<Scalar::Util>, C<first> and C<max> from L<List::Util>, C<any> and C<all>
+from L<List::Util>, C<lock_hash> from L<Hash::Util>, and C<md5_hex> from 
+L<Digest::MD5>.
+
+These modules are loaded on demand so there's no overhead incurred if you
+don't use them (other than a lookup table so we know where to find them).
 
 =head1 EXPORTABLE FUNCTIONS
+
+The following exportable function are defined in addition to those that
+C<Badger::Utils> can load from L<Scalar::Util>, L<List::Util>,
+L<List::MoreUtils>, L<Hash::Util> and L<Digest::MD5>.
 
 =head2 UTILS
 
 Exports a C<UTILS> constant which contains the name of the C<Badger::Utils>
 class.  
-
-=head2 blessed($ref)
-
-Exports a reference to the L<Scalar::Util> L<blessed()|Scalar::Util/blessed()>
-function.
-
-=head2 reftype($ref)
-
-Exports a reference to the L<Scalar::Util> L<reftype()|Scalar::Util/reftype()>
-function.
-
-=head2 md5_hex
-
-Exports a reference to the L<Digest::MD5> L<md5_hex()|Digest::MD5/md5_hex()>
-function.
 
 =head2 is_object($class,$object)
 
