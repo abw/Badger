@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 119,
+    tests => 135,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -554,6 +554,61 @@ is( class('No::Such::Module')->maybe_load, 0, 'cannot load No::Such::Module' );
 #$Badger::Class::DEBUG = 1;
 ok( ! eval { class('My::BadModule')->maybe_load }, 'maybe_load threw error' );
 like( $@, qr/^Can't locate object method/, "Can't locate object method error" );
+
+
+#-----------------------------------------------------------------------
+# test vars
+#-----------------------------------------------------------------------
+
+package Badger::Test::Vars::One;
+
+use Badger::Test;
+use Badger::Class
+    vars => '$FOO @BAR %BAZ';
+
+$FOO = 'ten';
+@BAR = (10, 20, 30);
+%BAZ = (x => 100, y => 200);
+ok( defined $FOO, '$FOO is defined' );
+ok( defined @BAR, '@BAR is defined' );
+ok( defined %BAZ, '%BAZ is defined' );
+
+
+package Badger::Test::Vars::Two;
+
+use Badger::Test;
+use Badger::Class
+    vars => {
+        X      => 1,
+        Y      => [2, 3],
+        Z      => { a => 99 },
+        HAI    => sub { 'Hello ' . (shift || 'World') },
+        '$FOO' => 25,
+        '$BAR' => [11, 21, 31],
+        '$BAZ' => { wam => 'bam' },
+        '$BAI' => sub { 'Goodbye ' . (shift || 'World') },
+        '@WIZ' => [100, 200, 300],
+        '@WAZ' => 99,
+        '%WOZ' => { ping => 'pong' },
+    };
+
+is( $X, 1, 'vars X is 1' );
+is( join(',', @$Y), '2,3', 'vars Y is [2,3]' );
+is( $Z->{ a }, 99, 'vars Z is { a => 99 }' );
+is( $HAI->(), 'Hello World', 'vars HAI is sub' );
+is( $HAI->('Badger'), 'Hello Badger', 'vars HAI is sub with arg' );
+
+is( $FOO, 25, 'vars $FOO is 25' );
+is( join(',', @$BAR), '11,21,31', 'vars $BAR is [11,21,31]' );
+is( $BAZ->{ wam }, 'bam', 'vars $BAZ is { wam => "bam" }' );
+is( $BAI->(), 'Goodbye World', 'vars BAI is sub' );
+is( $BAI->('Badger'), 'Goodbye Badger', 'vars BAI is sub with arg' );
+
+is( join(',', @WIZ), '100,200,300', 'vars @WIZ is (100, 200, 300)' );
+is( join(',', @WAZ), '99', 'vars @WAZ is (99)' );
+is( join(',', map { "$_ => $WOZ{$_}" } keys %WOZ), 'ping => pong', 'vars %WOZ is (ping => "pong")' );
+
+package main;
 
 __END__
 #-----------------------------------------------------------------------
