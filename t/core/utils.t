@@ -15,10 +15,10 @@ use strict;
 use warnings;
 
 use lib qw( t/core/lib ./lib ../lib ../../lib );
-use Badger::Utils 'UTILS blessed xprintf';
+use Badger::Utils 'UTILS blessed xprintf reftype';
 use Badger::Debug;
 use Badger::Test 
-    tests => 20,
+    tests => 29,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -111,7 +111,39 @@ is( xprintf('<1> is <2:4.3f>', e => 2.71828),
     'e is 2.718', 'pi is 2.718' );
 
 
-    
+
+#-----------------------------------------------------------------------
+# test we can import utility functions from Scalar::Util, List::Util,
+# List::MoreUtils and Hash::Util.
+#-----------------------------------------------------------------------
+
+use Badger::Utils 'reftype looks_like_number first max any all true lock_hash';
+
+my $object = bless [ ], 'Badger::Test::Object';
+is( reftype $object, 'ARRAY', 'reftype imported' );
+
+ok( looks_like_number 23, 'looks_like_number imported' );
+
+my @items = (10, 22, 33, 42);
+my $first = first { $_ > 25 } @items;
+is( $first, 33, 'list first imported' );
+
+my $max = max 2.718, 3.14, 1.618;
+is( $max, 3.14, 'list max imported' );
+
+my $any = any { $_ % 11 == 0 } @items;      # divisible by 11
+ok( $any, 'any list imported' );
+
+my $all = all { $_ % 11 == 0 } @items;      # divisible by 11
+ok( ! $all, 'all list imported' );
+
+my $true = true { $_ % 11 == 0 } @items;    # divisible by 11
+is( $true, 2, 'true list imported' );
+
+my %hash = (x => 10);
+lock_hash(%hash);
+ok( ! eval { $hash{x} = 20 }, 'could not modify read-only hash' );
+like( $@, qr/Modification of a read-only value attempted/, 'got read-only error' );
 
 
 __END__
