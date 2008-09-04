@@ -9,7 +9,7 @@ use Badger::Class
     import  => 'class',
     words   => 'HUB';
 
-our $VERSION = 0.01;
+our $VERSION = '0.01_01';
 our $HUB     = 'Badger::Hub';
 our $AUTOLOAD;
 
@@ -179,12 +179,13 @@ import hooks.
 
 =item Standard utilities and constants.
 
-The L<Badger::Utils> module provides a number of simple utility functions of
-its own as well as acting as a delegate to various other standard utility
-modules (e.g. L<Scalar::Util>, L<Digest::MD5>, etc). L<Badger::Constants>
-defines various constants used by the Badger modules and also of general
-use.  Both these modules are designed to be subclassed so that you can 
-create your own collections of utility functions, constants, and so on.
+The L<Badger::Utils> module provides a number of simple utility functions. It
+also acts as a delegate to various other standard utility modules
+(L<Scalar::Util>, L<List::Util>, L<List::MoreUtils>, L<Hash::Util> and
+L<Digest::MD5>). L<Badger::Constants> defines various constants used by the
+Badger modules and also of general use. Both these modules are designed to be
+subclassed so that you can create your own collections of utility functions,
+constants, and so on.
 
 =item Filesystem modules
 
