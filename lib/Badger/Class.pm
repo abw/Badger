@@ -615,7 +615,7 @@ sub vars {
         # expand destination to full package name ($Your::Module::WORD)
         $dest = $pkg.PKG.$name;
 
-        _debug("$sigil$name => ", $ref || '\\'.$sigil.$dest, "\n");
+        _debug("$sigil$name => ", $ref || '\\'.$sigil.$dest, "\n") if $DEBUG;
         
         if ($sigil eq '$') {
             *$dest = defined $ref
