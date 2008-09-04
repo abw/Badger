@@ -54,6 +54,7 @@ use Badger::Class
         open_failed   => 'Failed to open %s %s: %s',
         delete_failed => 'Failed to delete %s %s: %s',
         bad_volume    => 'Volume mismatch: %s vs %s',
+        bad_stat      => 'Nothing known about %s',
     };
 
 use Badger::Filesystem::File;
@@ -345,6 +346,18 @@ sub file_exists {
 sub directory_exists {
     my $self = shift;
     return -d $self->definitive_read(shift);
+}
+
+sub stat_path {
+    my $self  = shift;
+    my @stats = (stat($self->definitive_read(shift)), -r _, -w _, -x _, -o _);
+
+    return $self->error_msg( bad_stat => $self->{ path } )
+        unless @stats;
+
+    return wantarray
+        ?  @stats
+        : \@stats;
 }
     
 
@@ -1136,6 +1149,39 @@ Returns true if the path exists and is a file, false if not.
 =head2 dir_exists($path) / directory_exists($path)
 
 Returns true if the path exists and is a directory, false if not.
+
+=head2 stat_path($path)
+
+Performs a C<stat()> on the filesystem path.  It returns a list (in list 
+context) or a reference to a list (in scalar context) containing 17 items.
+The first 13 are those returned by Perl's inbuilt C<stat()> function.  The
+next 3 items are flags indicating if the file is readable, writeable and/or
+executable.  The final item is a flag indicating if the file is owned by the
+current user (i.e. owner of the current process.
+
+A summary of the fields is shown below. See C<perldoc -f stat> and the
+L<stat()|Badger::Filesystem::Path/stat()> method in
+L<Badger::Filesystem::Path> for further details.
+
+    Field   Description
+    --------------------------------------------------------
+      0     device number of filesystem
+      1     inode number
+      2     file mode  (type and permissions)
+      3     number of (hard) links to the file
+      4     numeric user ID of file’s owner
+      5     numeric group ID of file’s owner
+      6     the device identifier (special files only)
+      7     total size of file, in bytes
+      8     last access time in seconds since the epoch
+      9     last modify time in seconds since the epoch
+     10     inode change time in seconds since the epoch (*)
+     11     preferred block size for file system I/O
+     12     actual number of blocks allocated
+     13     file is readable by current process
+     14     file is writeable by current process
+     15     file is executable by current process
+     16     file is owned by current process
 
 =head1 FILE MANIPULATION METHODS
 

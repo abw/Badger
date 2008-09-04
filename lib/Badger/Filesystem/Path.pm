@@ -49,7 +49,7 @@ our $FILESYSTEM  = 'Badger::Filesystem';
 our @VDN_FIELDS  = qw( volume directory name );
 our @VD_FIELDS   = qw( volume directory );
 our @STAT_FIELDS = qw( device inode mode links user group device_type 
-                       size accessed modified created block_size blocks 
+                       size accessed modified created block_size blocks
                        readable writeable executable owner );
 
 # generate methods to access stat fields
@@ -246,13 +246,10 @@ sub create {
 
 sub stat {
     my $self  = shift->must_exist;
-    my @stats = (CORE::stat($self->{ path }), -r _, -w _, -x _, -o _);
-    return $self->error_msg( bad_stat => $self->type, $self->{ path } )
-        unless @stats;
-    $self->{ stats } = \@stats;
+    my $stats = $self->{ stats } = $self->filesystem->stat_path($self->{ path });
     return wantarray 
-        ?  @stats
-        : \@stats;
+        ? @$stats
+        :  $stats;
 }
 
 sub stats {
@@ -666,19 +663,122 @@ L<Badger::Filesystem::Directory> subclasses.
 
 Performs a filesystem C<stat> on the path and returns a list (in list
 context), or a reference to a list (in scalar context) containing the 13 
-information elements.  See C<perldoc -f stat> for further details on what
-they are.
+information elements.
 
     @list = $path->stat;                    # list context
     $list = $path->stat;                    # scalar context
 
-=head2 stats
+A summary of the fields is shown below. See C<perldoc -f stat> for complete
+details. Each of the individual fields can also be accessed via their own
+methods, also listed in the table.
+
+    Field   Method          Description
+    ------------------------------------------------------------------------
+      0     device()        device number of filesystem
+      1     inoode()        inode number
+      2     mode()          file mode  (type and permissions)
+      3     links()         number of (hard) links to the file
+      4     user()          numeric user ID of file’s owner
+      5     group()         numeric group ID of file’s owner
+      6     device_type()   the device identifier (special files only)
+      7     size()          total size of file, in bytes
+      8     accessed()      last access time in seconds since the epoch
+      9     modified()      last modify time in seconds since the epoch
+     10     created()       inode change time in seconds since the epoch (*)
+     11     block_size()    preferred block size for file system I/O
+     12     blocks()        actual number of blocks allocated
+
+In addition to those that are returned by Perl's inbuilt C<stat> function,
+this method returns four additional flags.
+
+     13     readable()      file is readable by current process
+     14     writeable()     file is writeable by current process
+     15     executable()    file is executable by current process
+     16     owner()         file is owned by current process
+
+=head2 stats()
 
 A wrapper around the L<stat()> method which caches the results to avoid 
 making repeated filesystem calls.
 
     @list = $path->stats;                   # list context
     $list = $path->stats;                   # scalar context
+
+=head2 device
+
+Returns the device number for the file.  See L<stat()>.
+
+=head2 inode 
+
+Returns the inode number for the file.  See L<stat()>.
+
+=head2 mode
+
+Returns the file mode for the file.  See L<stat()>.
+
+=head2 links
+
+Returns the number of hard links to the file.  See L<stat()>.
+
+=head2 user
+
+Returns the numeric user ID of the file's owner.  See L<stat()>.
+
+=head2 group
+
+Returns the numeric group ID of the file's group.  See L<stat()>.
+
+=head2 device_type 
+
+Returns the device identifier (for special files only).  See L<stat()>.
+
+=head2 size
+
+Returns the total size of the file in bytes.  See L<stat()>.
+
+=head2 accessed
+
+Returns the time (in seconds since the epoch) that the file was last accessed.
+See L<stat()>.
+
+=head2 modified
+
+Returns the time (in seconds since the epoch) that the file was last modified.
+See L<stat()>.
+
+=head2 created
+
+Returns the time (in seconds since the epoch) that the file was created. See
+L<stat()>.
+
+=head2 block_size
+
+Returns the preferred block size for file system I/O on the file. See
+L<stat()>.
+
+=head2 blocks 
+
+Returns the actual number of blocks allocated to the file. See L<stat()>.
+
+=head2 readable
+
+Returns a true value if the file is readable by the current user (i.e. the
+owner of the current process), false if not.  See L<stat()>.
+
+=head2 writeable
+
+Returns a true value if the file is writeable by the current user (i.e. the
+owner of the current process), false if not.  See L<stat()>.
+
+=head2 executable
+
+Returns a true value if the file is executable by the current user (i.e. the
+owner of the current process), false if not.  See L<stat()>.
+
+=head2 owner                       
+
+Returns a true value if the file is owned by the current user (i.e. the
+owner of the current process), false if not.  See L<stat()>.
 
 =head2 filesystem
 
