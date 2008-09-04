@@ -391,10 +391,10 @@ sub exportables {
 }
 
 sub export_symbol {
-    my ($self, $target, $symbol, $coderef) = @_;
+    my ($self, $target, $symbol, $ref) = @_;
     no strict   REFS;
     no warnings ONCE;
-    *{ $target.PKG.$symbol } = $coderef;
+    *{ $target.PKG.$symbol } = $ref;
 }
 
 
