@@ -1324,6 +1324,34 @@ if you want a L<Badger::Filesystem::Directory> object instead.
 Returns a L<Badger::Filesystem::Directory> object representing the root
 directory for the filesystem.
 
+=head2 rootdir
+
+Returns a text string containing the representation of the root directory
+for your filesystem.  
+
+    print $fs->rootdir;             # e.g. '/' on Unix-based file systems
+
+=head2 updir
+
+Returns a text string containing the representation of the parent directory
+for your filesystem.  
+
+    print $fs->updir;               # e.g. '..' on Unix-based file systems
+
+=head2 curdir
+
+Returns a text string containing the representation of the current directory
+for your filesystem.  
+
+    print $fs->curdir;              # e.g. '.' on Unix-based file systems
+
+=head2 separator
+
+Returns a text string containing the representation of the path separator
+for your filesystem.  
+
+    print $fs->separator;           # e.g. '/' on Unix-based file systems
+
 =head1 EXPORTABLE CONSTANTS
 
 =head2 FS
