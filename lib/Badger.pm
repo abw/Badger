@@ -215,7 +215,7 @@ sequences.
 
 =item Free
 
-Badger is Open Source and "free" in both "free beer" and "free speech" senese
+Badger is Open Source and "free" in both "free beer" and "free speech" senses
 of the word. It's 100% pure Perl and has no external dependencies on any
 modules that aren't part of the Perl core. Badger is the base platform for
 version 3 of the Template Toolkit (coming RSN) and has portability and ease of
@@ -323,15 +323,32 @@ Here's a teaser:
 
 Another handy base class (itself derived from L<Badger::Base>) which allows
 you to create prototype objects. To cut a long story short, it means you can
-call class methods and have them get automatigcally applied to a default
+call class methods and have them get automagically applied to a default
 object (the prototype). It's a little like a singleton, but slightly more
 flexible.
+
+    Badger::Example->method;        # delegated to prototype object
+
+The benefit is that you don't have to worry about providing support in
+your methods for both class and object method calls.  Simply call the 
+C<prototype()> method and it'll make sure that any class method calls
+are "upgraded" to object calls.
+
+    sub example {
+        my $self = shift->prototype;
+        # $self is *always* an object now
+    }
 
 =head2 Badger::Mixin
 
 Yet another handy base class, this time for creating mixin objects that can 
 be mixed into other objects, rather like a generous handful of nuts and 
 berries being mixed into an ice cream sundae.  Yummy!  Is it tea-time yet?
+
+    package My::Sundae;
+    
+    use Badger::Class
+        mixin => 'My::Nuts My::Berries';
 
 =head2 Badger::Class
 
@@ -447,11 +464,12 @@ provides a base class from which you can derive your own constants modules.
 =head2 Badger::Debug
 
 This provides some debugging methods that you can mix into your own modules
-as and when required.  And hey, we can do colour!  woot!
+as and when required.  And hey, we can do colour!  woot!  Thirty Love!
 
 =head2 Badger::Exception
 
 An exception object used by the Badger's inbuilt error handling system.
+Try.  Throw.  Catch.  Forty Love!
 
 =head2 Badger::Filesystem
 
@@ -502,6 +520,8 @@ all the miscellaneous bits and pieces. It defines some basic utility functions
 and can act as a base class if and when you need to define your own custom
 utility collection modules. You are *so* lucky. 
 
+Game, set and match: Mr Badger.
+
 =head1 METHODS
 
 Some, but not properly documented yet.  Use the source, Luke.
@@ -524,6 +544,11 @@ return a L<Badger::Codec> object.
 Delegates to the L<Badger::Hub> L<codec()|Badger::Hub/codec()> method to 
 return a L<Badger::Config> object.  This is still experimental.
 
+=head1 TODO
+
+This module doesn't actually do much at the moment.  It's just the front
+door.  Or the frame where the front door is supposed to go.
+
 =head1 AUTHOR
 
 Andy Wardley  E<lt>abw@wardley.orgE<gt>
@@ -537,7 +562,7 @@ modify it under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
-L<badgerpower.com>
+L<http://badgerpower.com/>
 
 =cut
 
