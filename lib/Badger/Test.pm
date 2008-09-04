@@ -224,7 +224,13 @@ Pass a test.
 
 Fail a test.
 
-    fail('Stonehenge crushed by a dwarf');
+    fail('Stonehenge in danger of being crushed by a dwarf');
+
+=head2 skip($reason)
+
+Skip a single test.
+
+    skip("That's just nit-picking isn't it?");
 
 =head2 skip_all($reason)
 
