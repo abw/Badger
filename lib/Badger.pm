@@ -71,19 +71,20 @@ Badger - Perl Application Programming Toolkit
 
 =head1 WARNING
 
-This is the first version of the Badger Toolkit.  It should be treated as
+This is the second version of the Badger Toolkit. It should treated as
 I<alpha> quality code.
 
 The code as it stands is almost certainly packed full of B<FAIL> and should be
 handled as if it's likely to explode at any second. Everything is subject to
 change without notice. B<Mr T pities the fool that attempts to builds a
-production system based on Badger version 0.01!>
+production system based on Badger version 0.02>
 
-That said, the code is I<believed> to be reliable. Badger is based on code and
-concepts that have been used in production systems for a number of years. Most
-of the API is well-defined and unlikely to change significantly in future
-versions. However, we're not ruling anything out given that the Badger has
-only just been incarnated in his current form.  
+That said, the code is I<believed> to be reliable and the release of version
+0.01 didn't throw up any major problems. Badger is based on code and concepts
+that have been used in production systems for a number of years. Most of the
+API is well-defined and unlikely to change significantly in future versions.
+However, we're not ruling anything out given that the Badger has only just
+been incarnated in his current form.
 
 Despite the fact that Badger is built on (mostly) tried and tested code, the
 entire code base has been rebuilt from the ground up, shuffled about, jiggled
@@ -160,13 +161,13 @@ metaprogramming modules tailored to your particular needs.
 Base classes and mixin modules provide functionality for both I<hard errors>
 in the form of exception-based error handling and I<soft errors> for declining
 requests (e.g. to fetch a resource that doesn't exist) that aren't failures
-but require special handling. Methods for debugging and raising general
-warnings are also provided. Generic hooks are provided for receiving
-notification of, or implementing custom handling for errors, warnings and
-declines. Running alongside this is a generic message formatting system that
-allow you to define all error/warning/debug messages in one place where they
-can easily be localised (e.g. to a different spoken language) or customised
-(e.g. to generate HTML format instead of plain text).
+but require special handling. Methods for debugging (see L<Badger::Debug>) and
+raising general warnings are also provided. Generic hooks are provided for
+receiving notification of, or implementing custom handling for errors,
+warnings and declines. Running alongside this is a generic message formatting
+system that allow you to define all error/warning/debug messages in one place
+where they can easily be localised (e.g. to a different spoken language) or
+customised (e.g. to generate HTML format instead of plain text).
 
 =item Symbol Exporter
 
@@ -226,6 +227,12 @@ Badger core will always be dependency-free to keep it upload-to-your-ISP
 friendly.
 
 =back
+
+=head2 What's New?
+
+Version 0.02 features some improvements to L<Badger::Debug> and
+L<Badger::Utils> as well as various additions and updates to the
+documentation.
 
 =head2 Background
 
@@ -464,8 +471,12 @@ provides a base class from which you can derive your own constants modules.
 
 =head2 Badger::Debug
 
-This provides some debugging methods that you can mix into your own modules
-as and when required.  And hey, we can do colour!  woot!  Thirty Love!
+This provides some debugging methods that you can mix into your own modules as
+and when required. It supports both compile time and run time debugging
+statements ("compile time" in the sense that we can eliminate debugging
+statements at compile time so that they don't have any performance impact,
+"run time" statements aren't eliminated but can be turned on or off by a
+flag). And hey, we can do colour! woot! Thirty Love!
 
 =head2 Badger::Exception
 
@@ -518,8 +529,10 @@ the Rainbow someone left lying around in our back garden!
 Rather like the kitchen drawer where you put all the things that don't have a
 place of their own, the L<Badger::Utils> module provides a resting place for
 all the miscellaneous bits and pieces. It defines some basic utility functions
-and can act as a base class if and when you need to define your own custom
-utility collection modules. You are *so* lucky. 
+of its own and also acts as a delegate in case you need any of the functions
+from L<Scalar::Util>, L<List::Util>, L<List::MoreUtils>, L<Hash::Util> or
+L<Digest::MD5>. It can also act as a base class if and when you need to define
+your own custom utility collection modules. You are *so* lucky.
 
 Game, set and match: Mr Badger.
 
