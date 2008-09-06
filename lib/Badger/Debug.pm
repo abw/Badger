@@ -398,7 +398,7 @@ having to go and edit the source code of your module.
     $Your::Module::DEBUG = 1;
     require Your::Module;
 
-Alternately, you can let C<Badger::Debug> do it for you.  The C<modules>
+Alternately, you can let C<Badger::Debug> do it for you.  The L<modules>
 import option allows you to specify one or more modules that you want 
 debugging enabled for.  
 
@@ -635,12 +635,12 @@ packages.  This ensures that any debugging will be enabled in those modules.
 
     use Badger::Debug
         modules => 'My::Module::One My::Module::Two';
-
+        
     use My::Module::One;        # debugging enabled in both modules
     use My::Module::Two;
-    
+
 Modules that haven't yet been loaded will have both compile time (L<DEBUG>)
-and run time ($<$DEBUG>) debugging enabled.  Modules that have already been
+and run time (L<$DEBUG>) debugging enabled.  Modules that have already been
 loaded will only have run time debugging enabled.
 
 =head2 colour / color
