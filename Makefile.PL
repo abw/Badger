@@ -9,7 +9,7 @@ my %opts = (
         'SUFFIX'   => 'gz',
     },
     'test'         => {
-        TESTS      => 't/*.t t/*/*.t',
+        'TESTS'    => join(' ', glob 't/*/*.t'),
     },
 );
 
