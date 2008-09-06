@@ -6,7 +6,7 @@ use Badger::Class
     base      => 'Badger::Base',
     import    => 'CLASS class',
     constants => 'ARRAY DELIMITER PKG',
-    words     => 'DEBUG',
+    words     => 'DEBUG DEBUG_MODULES',
     exports   => {
         all   => 'plan ok is isnt like unlike pass fail     
                   skip_some skip_rest skip_all',        # NOTE: changed skip...
@@ -18,9 +18,11 @@ use Badger::Class
         },
     };
 
+use Badger::Debug;
 use Badger::Test::Manager;
-our $MANAGER = 'Badger::Test::Manager';
-our ($DEBUG, $DEBUGGING);
+our $MANAGER  = 'Badger::Test::Manager';
+our $DEBUGGER = 'Badger::Debug';
+our ($DEBUG, $DEBUG_MODULES);
 
 *color = \&colour;
 
@@ -38,13 +40,13 @@ sub _debug_hook {
 
     # define $DEBUG in caller
     no strict 'refs';
-    *{ $target.PKG.DEBUG } = \$DEBUGGING;
+    *{ $target.PKG.DEBUG } = \$DEBUG;
 
-    # set $DEBUG in this class to contain the argument passed - a list
+    # set $DEBUG_MODULE in this class to contain the argument passed - a list
     # of class names to enable $DEBUG in when/if debugging is enabled
-    my $value = shift @$symbols;
-    return unless $value;           # zero/false for no debugging
-    $class->debug($value);
+    my $modules = shift @$symbols;
+    return unless $modules;           # zero/false for no debugging
+    $class->debug_modules($modules);
 }
 
 sub _skip_hook {
@@ -98,20 +100,16 @@ sub tests {
     plan(@_);
 }
 
-sub debug {
+sub debug_modules {
     my $self = shift;
-    $self->class->var( DEBUG => shift );
+    $self->class->var( DEBUG_MODULES => shift );
 }
 
 sub debugging {
-    my $self  = shift;
-    my $flag  = $DEBUGGING = shift || 1;
-    my $debug = $self->class->var('DEBUG') || return;
-    $debug = [ split(DELIMITER, $debug) ] unless ref $debug eq ARRAY;
-    
-    foreach my $pkg (@$debug) {
-        class($pkg)->load->var( DEBUG => $flag );
-    }
+    my $self    = shift;
+    my $flag    = $DEBUG = shift || 1;
+    my $modules = $self->class->var(DEBUG_MODULES) || return;
+    $DEBUGGER->debug_modules($modules);
 }
 
 class->methods(
@@ -298,7 +296,7 @@ be removed.
     Badger::Test->args(@ARGV);      # either
     Badger::Test->args(\@ARGV);     # or
 
-=head2 debug($modules)
+=head2 debug_modules($modules)
 
 This method can be called to define one or more modules that should have their
 C<$DEBUG> flag enabled when running in debug mode (i.e. with the C<-d> command
@@ -314,10 +312,13 @@ Multiple modules can be specified in a single string or by reference to a list.
     # list reference
     Badger::Test->debug(['My::Badger::Module', 'Your::Badger::Module']);  
 
+This method simply stores the list of modules in the C<$DEBUG_MODULES> 
+package variable for the L<debugging()> method to use.
+
 =head2 debugging($flag)
 
 This method enables or disables debugging for all modules named in the 
-C<$DEBUG> list.  It also sets the C<$DEBUGGING> flag.
+C<$DEBUG_MODULES> list.  It also sets the internal C<$DEBUG> flag.
 
     Badger::Test->debugging(1);         # enable debugging
     Badger::Test->debugging(0);         # disable debugging
