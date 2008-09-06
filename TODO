@@ -1,3 +1,7 @@
+TODO
+----
+Update Badger::Class to use new Badger::Debug hooks.
+
 Badger::Class
 -------------
 
@@ -5,21 +9,16 @@ Badger::Class
   (or pre-defined $DEBUG variable if possible).  Unlike $DEBUG which is 
   evaluated at runtime and thus, is dynamic, the DEBUG constant subroutine
   would be statically resolved at compile time.  Slightly different usage,
-  but worthwhile.
-  
-* finish cleanup and documentation
-
-* AUTOLOAD method to delegate to real class if possible?
-
-* fix up id() / base_id() to do something better
+  but worthwhile.  This should really be moved into Badger::Debug.  Also
+  think about different debug flags, e.g. DEBUG_THIS, DEBUG_THAT
+  UPDATE: Badger::Debug now does this - just need to hook class in
 
 * make debug hook work better: allow import of other items, e.g.
   debug => ':dump'.  Also generate DEBUG constant using any existing
   value of $DEBUG.
-
-* Document hooks() method and hook.  Create new section on subclassing
-  Badger::Class
   
+* AUTOLOAD method to delegate to real class if possible?
+
 * add 'hook' subroutine attribute
 
 * add a way for B::C subclasses to register hooks that automatically
@@ -40,17 +39,17 @@ Badger::Codec
   codecs via Encode/Encoding modules.
 
 
-Badger::Debug
--------------
-
-* See if we can make this a low-level mixin that we can import into 
-  Badger::Utils et al.
-
 Badger::Config
 --------------
 
 * Just a basic implementation at moment.  Merge in TT3 config, AppConfig
   and other stuff.
+
+Badger::Debug
+-------------
+
+* See if we can make this a low-level mixin that we can import into 
+  Badger::Utils et al.
 
 
 Badger::Docs
@@ -78,14 +77,11 @@ Badger::Factory
 * Subclass out into base class (returns loaded module name), object
   creator, object creator + cache (e.g. for hub), or whatever.
 
+
 Badger::Filesystem
 ------------------
 
-* finish documentation - move VFS docs out of B::FS into B::FS::Virtual
-
 * directory files/directories/dirs as grep across children
-
-* virtual filesystems composed across several real filesystems
 
 * need to handle encoding better in read_file() and write_file() methods.
 
@@ -121,12 +117,8 @@ Badger::Test
 Badger::Utils
 -------------
 
-* make methods exportable subroutines
+* Consider subclassing.
 
-* maybe_load_module can be done using try() (although that requires us to
-  call a class method.
-
-* look into merging load_module() with Badger::Class::_autoload
 
 Badger::Factory
 ---------------
