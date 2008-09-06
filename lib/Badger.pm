@@ -9,7 +9,7 @@ use Badger::Class
     import  => 'class',
     words   => 'HUB';
 
-our $VERSION = '0.01_01';
+our $VERSION = '0.02';
 our $HUB     = 'Badger::Hub';
 our $AUTOLOAD;
 
