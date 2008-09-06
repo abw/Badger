@@ -19,7 +19,7 @@ package Badger::Exporter;
 use strict;
 use warnings;
 use Carp;
-use constant {              
+use constant {
     ALL          => 'all',             # Alas, we can't pull these in from 
     NONE         => 'none',            # Badger::Constants because it's a 
     DEFAULT      => 'default',         # subclass of Badger::Exporter which
@@ -40,6 +40,10 @@ use constant {
     ONCE         => 'once',
     PKG          => '::',
     DELIMITER    => qr/(?:,\s*)|\s+/,  # match a comma or whitespace
+    MISSING      => "Missing value for the '%s' option%s",
+    BAD_HOOK     => "Invalid export hook handler specified for the '%s' option: %s",
+    WANTED       => " (%s wanted, %s specified)",
+    UNDEFINED    => " (argument %s of %s is undefined)",
 };
 
 our $VERSION   = 0.01;
@@ -167,7 +171,8 @@ sub export {
     my $can_hook  = (%$hooks ? 1 : 0);
     my $added_all = 0;
     my $count     = 0;
-    my ($symbol, $symbols, $source, $hook, $pkg, %done, @errors);
+    my ($symbol, $symbols, $source, $hook, $pkg, $nargs, 
+        %done, @args, @errors);
 
     no strict   REFS;
     no warnings ONCE;
@@ -220,8 +225,15 @@ sub export {
 #           _debug("expanded export pair: $symbol => $source\n") if $DEBUG;
         }
         elsif ($can_hook && ($hook = $hooks->{ $symbol })) {
+            # a hook can be specified as [$code,$nargs] in which case we 
+            # generate a closure around the $code which shifts $nargs off
+            # the symbols list and passes them as arguments to $code
+            $hook = $hooks->{ $symbol } = $class->export_hook_generator($symbol, $hook)
+                unless ref $hook eq CODE;
+
             # fire off handler hooked to this import item
             &$hook($class, $target, $symbol, $imports);
+
             # hooks can be repeated so pretend we haven't done it
             $done{ $symbol }--;     
             next SYMBOL;
@@ -397,7 +409,6 @@ sub export_symbol {
     *{ $target.PKG.$symbol } = $ref;
 }
 
-
 sub export_variable {
     my ($self, $name, $default) = @_;
     my $class = ref $self || $self;
@@ -413,6 +424,54 @@ sub export_variable {
     }
     
     return $item;
+}
+
+sub export_hook_generator {
+    my $self = shift;
+    my $name = shift;
+    my $hook = @_ == 1 ? shift : [ @_ ];
+    
+    # do nothing if we've already got a code ref that doesn't require args
+    return $hook 
+        if ref $hook eq CODE;
+    
+    # anything else must be a list ref containing [$code_ref, $n_args]
+    croak sprintf(BAD_HOOK, $name, $hook) 
+        unless ref $hook eq ARRAY;
+
+    my ($code, $nargs) = @$hook;
+
+    # user is trying to confuse us with [$non_code_ref, ...]
+    croak sprintf(BAD_HOOK, $name, $code) 
+        unless ref $code eq CODE;
+
+    # [$code, 0] or [$code] is fine as just $code, also reject $nargs < 0
+    return $code
+        unless $nargs && $nargs > 0;
+
+    # OK it's safe to proceed
+    return sub {
+        my ($this, $target, $symbol, $symbols) = @_;
+        my $n = 1;
+        # check we've got enough arguments
+        croak sprintf(MISSING, $symbol, sprintf(WANTED, $nargs, scalar @$symbols)) 
+            if @$symbols < $nargs;
+        
+        # call the code ref with the first $nargs arguments, making sure
+        # they all have defined values
+        $code->(
+            $this, $target, $symbol,
+            ( map {
+                croak sprintf(MISSING, $symbol, sprintf(UNDEFINED, $n, $nargs)) 
+                    unless defined $_;
+                $n++; 
+                $_
+              } 
+              splice(@$symbols, 0, $nargs)
+            ),
+            $symbols,
+        );
+    }
 }
 
 sub _debug {
@@ -756,6 +815,27 @@ C<$more_symbols> list to indicate that they have been successfully handled.
 Any symbols left in the C<$more_symbols> list will continue to be imported 
 as usual.
 
+You can also define export hooks as an array reference. The code reference
+should be the first item in the array. The second item is the number of
+arguments it expects. These will be shifted off the C<$more_symbols> list
+(automatically raising an error if one or more values are missing or
+undefined) and passed as separate arguments to your handler. The
+C<$more_symbols> reference will be passed as the final argument.
+
+    __PACKAGE__->export_hooks(
+        example => [ \&my_export_hook, 2 ],
+    );
+    
+    sub my_export_hook {
+        my ($self, $target, $symbol, $arg1, $arg2, $more_symbols) = @_;
+        # your code...
+    }
+
+Hooks expressed this way will have closures created around them on demand
+by the L<export_hook_generator()> method.  Don't worry if that doesn't
+mean anything much to you.  It simply means that we can delay doing any
+extra preparation work until we're sure that it's going to be used.
+
 =head2 export_fail(\&handler)
 
 This method can be used to register a subroutine to handle any export
@@ -810,6 +890,56 @@ This method can be used to install a code reference as a symbol in a
 package.  
 
     Badger::Exporter->export_symbol('My::Package', 'Foo', \&foosub);
+
+=head2 export_hook_generator($name,\&code,$nargs)
+
+This method is used to generate a closure (a fancy way of saying "wrapper
+subroutine") around an existing export hook subroutine.  Bare naked export
+hooks are typically written like this:
+
+    sub code {
+        my ($self, $target, $symbol, $more_symbols) = @_
+        # your code...
+    }
+
+Your code is responsible for shifting any arguments it expects off the front
+of the C<$more_symbols> list. It I<should> also being doing all the messy
+stuff like making sure the C<$more_symbols> list contains enough arguments and
+that they're all set to defined values.  But I bet you forget sometimes, 
+don't you?  That's OK, it's easily done.
+
+The purpose of the C<export_hook_generator()> method is to simplify argument 
+processing so that hooks can be specified as:
+
+    [\&my_code, $nargs]
+
+and written as:
+
+    sub code {
+        my (
+            $self, $target, $symbol,    # the usual first three items
+            $arg1, $arg2, ..., $argn,   # your $nargs items
+            $more_symbols               # the remaining items
+        ) = @_
+    }
+
+The method should be called like something like this:
+
+    my $hook = Badger::Exporter->export_hook_generator(
+        'wibble', \&code, 2
+    );
+
+The first argument should be the name of the option that the hook is being
+generated for.  This is used to report any argument errors, e.g.
+
+    Missing value for the 'wibble' option (2 wanted, 1 available)
+
+Or:
+
+    Missing value for the 'wibble' option (argument 2 of 2 is undefined)
+
+The second argument is a reference to your handler subroutine.  The third
+argument is the number of additional arguments your subroutine expects.
 
 =head1 AUTHOR
 
