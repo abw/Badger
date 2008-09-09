@@ -664,7 +664,7 @@ $text = Badger::Test::AsText->new( text => '0' );
 ok( ! $text, 'no boolean overload' );
 
 #-----------------------------------------------------------------------
-# test as_bool
+# test is_true
 #-----------------------------------------------------------------------
 
 package Badger::Test::AsBool;
@@ -673,7 +673,7 @@ use Badger::Class
     base      => 'Badger::Base',
     accessors => 'text',
     as_text   => 'text',
-    as_bool   => 1;
+    is_true   => 1;
 
 sub init {
     my ($self, $config) = @_;

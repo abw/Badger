@@ -46,7 +46,7 @@ our @HOOKS      = qw(
     base uber mixin mixins version debug constant constants words vars exports 
     throws messages utils codec codecs filesystem hooks
     methods slots accessors mutators get_methods set_methods overload 
-    as_text as_bool
+    as_text is_true
 );
 our $HOOKS = { 
     map { $_ => $_ }
@@ -826,7 +826,7 @@ sub as_text {
     $self->overload( '""' => $method, fallback => 1 );
 }
 
-sub as_bool {
+sub is_true {
     my ($self, $arg) = @_;
     my $method = 
         $arg eq FALSE ? \&FALSE :      # allow 0/1 as shortcut 
@@ -988,7 +988,7 @@ Badger::Class - class metaprogramming module
         accessors   => 'foo bar',       # create accessor methods
         mutators    => 'wiz bang',      # create mutator methods
         as_text     => 'text',          # auto-stringify via text() method
-        as_bool     => 1,               # overload boolean operator
+        is_true     => 1,               # overload boolean operator
         overload    => {                # overload other operators
             '>'     => 'more_than',
             '<'     => 'less_than',
@@ -2094,17 +2094,17 @@ object.  The method can be specified by name or as a code reference.
         # your code
     }
 
-=head2 as_bool
+=head2 is_true
 
 This is a shortcut to the C<overload> module. It can be used to define an
-method that is used for boolean comparisons.  This can be useful in 
-conjunction with the L<as_text> hook to ensure that an object reference 
-always evaluates true, even if the auto-stringification method returns a 
-string that Perl considers false (e.g. an empty string or C<0>).  
+method that is used for boolean truth comparisons. This can be useful in
+conjunction with the L<as_text> hook to ensure that an object reference always
+evaluates true, even if the auto-stringification method returns a string that
+Perl considers false (e.g. an empty string or C<0>).
 
     use Badger::Class
         as_text => 'your_text_method',
-        as_bool => sub { 1 };           # always true
+        is_true => sub { 1 };           # always true
 
 The method can be specified as a method name or code reference.  For simple
 false/true values you can also specify C<0> or C<1> and leave it up to 
@@ -2112,7 +2112,7 @@ C<Badger::Class> to alias it to an appropriate subroutine.
 
     use Badger::Class
         as_text => 'your_text_method',
-        as_bool => 1;                   # always true
+        is_true => 1;                   # always true
 
 =head2 filesystem
 
@@ -2895,10 +2895,10 @@ implement the L<overload> import hook.
 This method provides a simple wrapper around the L<overload()> method to
 implement the L<as_text> import hook.
 
-=head2 as_bool($method)
+=head2 is_true($method)
 
 This method provides a simple wrapper around the L<overload()> method to
-implement the L<as_bool> import hook.
+implement the L<is_true> import hook.
 
 =head2 filesystem(@symbols)
 
