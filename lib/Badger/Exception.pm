@@ -18,12 +18,9 @@ use Badger::Class
     version     => 0.01,
     debug       => 0,
     set_methods => 'type',
-    constants   => 'TRUE';
-
-use overload 
-    q|""|    => 'text', 
-    bool     => 'TRUE',
-    fallback => 1;
+    constants   => 'TRUE',
+    as_text     => 'text',
+    is_true     => 1;
 
 our $FORMAT  = '<type> error - <info>'  unless defined $FORMAT;
 our $TYPE    = 'undef'                  unless defined $TYPE;

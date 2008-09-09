@@ -22,6 +22,8 @@ use Badger::Class
     constants    => 'HASH ARRAY TRUE',
     get_methods  => 'path name volume directory',
     utils        => 'blessed',
+    as_text      => 'path',
+    is_true      => 1,
     constant     => {
         is_file      => 0,
         is_directory => 0,
@@ -36,11 +38,6 @@ use Badger::Class
         bad_look => 'No path specified to look %s',
         missing  => 'No %s specified',
     };
-
-use overload
-    '""'     => \&path,
-    bool     => \&TRUE,
-    fallback => 1;
 
 use Badger::Filesystem;
 use Badger::Filesystem::Directory;
