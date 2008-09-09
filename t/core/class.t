@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 135,
+    tests => 141,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -608,7 +608,85 @@ is( join(',', @WIZ), '100,200,300', 'vars @WIZ is (100, 200, 300)' );
 is( join(',', @WAZ), '99', 'vars @WAZ is (99)' );
 is( join(',', map { "$_ => $WOZ{$_}" } keys %WOZ), 'ping => pong', 'vars %WOZ is (ping => "pong")' );
 
+
+#-----------------------------------------------------------------------
+# test overload
+#-----------------------------------------------------------------------
+
+package Badger::Test::Overload;
+
+use Badger::Class
+    base      => 'Badger::Base',
+    constants => 'TRUE',
+    accessors => 'text',
+    overload  => {
+        '""'     => \&text,
+        bool     => sub { 1 },
+        fallback => 1,
+    };
+
+sub init {
+    my ($self, $config) = @_;
+    $self->{ text } = $config->{ text };
+    return $self;
+}
+
 package main;
+
+my $text = Badger::Test::Overload->new( text => 'Hello World' );
+is( $text, 'Hello World', 'overloaded text method' );
+$text = Badger::Test::Overload->new( text => '' );
+ok( $text, 'boolean overload true' );
+
+#-----------------------------------------------------------------------
+# test as_text
+#-----------------------------------------------------------------------
+
+package Badger::Test::AsText;
+
+use Badger::Class
+    base      => 'Badger::Base',
+    constants => 'TRUE',
+    accessors => 'text',
+    as_text   => 'text';
+
+sub init {
+    my ($self, $config) = @_;
+    $self->{ text } = $config->{ text };
+    return $self;
+}
+
+package main;
+
+$text = Badger::Test::AsText->new( text => 'Hello Badger' );
+is( $text, 'Hello Badger', 'as_text method' );
+$text = Badger::Test::AsText->new( text => '0' );
+ok( ! $text, 'no boolean overload' );
+
+#-----------------------------------------------------------------------
+# test as_bool
+#-----------------------------------------------------------------------
+
+package Badger::Test::AsBool;
+
+use Badger::Class
+    base      => 'Badger::Base',
+    accessors => 'text',
+    as_text   => 'text',
+    as_bool   => 1;
+
+sub init {
+    my ($self, $config) = @_;
+    $self->{ text } = $config->{ text };
+    return $self;
+}
+
+package main;
+
+$text = Badger::Test::AsBool->new( text => 'Hello Moose' );
+is( $text, 'Hello Moose', 'is true as_text method' );
+$text = Badger::Test::AsBool->new( text => '0' );
+ok( $text, 'is true boolean overload' );
 
 __END__
 #-----------------------------------------------------------------------
