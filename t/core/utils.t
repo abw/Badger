@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Utils 'UTILS blessed xprintf reftype';
 use Badger::Debug;
 use Badger::Test 
-    tests => 29,
+    tests => 26,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -117,7 +117,7 @@ is( xprintf('<1> is <2:4.3f>', e => 2.71828),
 # List::MoreUtils and Hash::Util.
 #-----------------------------------------------------------------------
 
-use Badger::Utils 'reftype looks_like_number first max any all true lock_hash';
+use Badger::Utils 'reftype looks_like_number first max lock_hash';
 
 my $object = bless [ ], 'Badger::Test::Object';
 is( reftype $object, 'ARRAY', 'reftype imported' );
@@ -131,6 +131,17 @@ is( $first, 33, 'list first imported' );
 my $max = max 2.718, 3.14, 1.618;
 is( $max, 3.14, 'list max imported' );
 
+my %hash = (x => 10);
+lock_hash(%hash);
+ok( ! eval { $hash{x} = 20 }, 'could not modify read-only hash' );
+like( $@, qr/Modification of a read-only value attempted/, 'got read-only error' );
+
+__END__
+
+# Hmmm... I didn't realise that List::MoreUtils wasn't a core Perl module.
+
+use Badger::Utils 'any all';
+    
 my $any = any { $_ % 11 == 0 } @items;      # divisible by 11
 ok( $any, 'any list imported' );
 
@@ -139,11 +150,6 @@ ok( ! $all, 'all list imported' );
 
 my $true = true { $_ % 11 == 0 } @items;    # divisible by 11
 is( $true, 2, 'true list imported' );
-
-my %hash = (x => 10);
-lock_hash(%hash);
-ok( ! eval { $hash{x} = 20 }, 'could not modify read-only hash' );
-like( $@, qr/Modification of a read-only value attempted/, 'got read-only error' );
 
 
 __END__
