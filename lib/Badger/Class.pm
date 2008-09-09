@@ -15,8 +15,10 @@ package Badger::Class;
 
 use strict;
 use warnings;
+use Carp;
 use base 'Badger::Exporter';
-use Badger::Constants 'DELIMITER SCALAR ARRAY HASH CODE PKG REFS ONCE';
+use Badger::Constants 
+    'DELIMITER SCALAR ARRAY HASH CODE PKG REFS ONCE TRUE FALSE';
 use constant {
     FILESYSTEM => 'Badger::Filesystem',
     CONSTANTS  => 'Badger::Constants',
@@ -33,7 +35,6 @@ use constant {
     ISA        => 'ISA',
     base_id    => 'Badger',
 };
-use Carp;
 use overload 
     '""' => 'name',
     fallback => 1;
@@ -44,7 +45,8 @@ our $LOADED     = { };
 our @HOOKS      = qw( 
     base uber mixin mixins version debug constant constants words vars exports 
     throws messages utils codec codecs filesystem hooks
-    methods slots accessors mutators get_methods set_methods
+    methods slots accessors mutators get_methods set_methods overload 
+    as_text as_bool
 );
 our $HOOKS = { 
     map { $_ => $_ }
@@ -810,6 +812,34 @@ sub mutators {
     return $self;
 }
 
+sub overload {
+    my $self = shift;
+    my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
+    require overload;
+    _debug("overload on $self->{name} : { ", join(', ', %$args), " }\n") if $DEBUG;
+    overload::OVERLOAD($self->{name}, %$args);
+    return $self;
+}
+
+sub as_text {
+    my ($self, $method) = @_;
+    $self->overload( '""' => $method, fallback => 1 );
+}
+
+sub as_bool {
+    my ($self, $arg) = @_;
+    my $method = 
+        $arg eq FALSE ? \&FALSE :      # allow 0/1 as shortcut 
+        $arg eq TRUE  ? \&TRUE  :
+        $arg;
+    $self->overload( bool => $method, fallback => 1 );
+}
+    
+
+#-----------------------------------------------------------------------
+# misc methods
+#-----------------------------------------------------------------------
+
 sub filesystem {
     my $self = shift;
     my $syms = @_ == 1 ? shift : { @_ };
@@ -957,6 +987,12 @@ Badger::Class - class metaprogramming module
         words       => 'yes no quit',   # define constant words
         accessors   => 'foo bar',       # create accessor methods
         mutators    => 'wiz bang',      # create mutator methods
+        as_text     => 'text',          # auto-stringify via text() method
+        as_bool     => 1,               # overload boolean operator
+        overload    => {                # overload other operators
+            '>'     => 'more_than',
+            '<'     => 'less_than',
+        },
         vars        => {
             '$FOO'  => 'Hello World',   # defines $FOO package var
             '@BAR'  => [10,20,30],      # defines @BAR
@@ -2032,6 +2068,52 @@ You can use C<set_methods> as an alias for C<mutators> if you prefer.
 
 See the L<mutators()> method for further details.
 
+=head2 overload
+
+This can be used as a shortcut to the C<overload> module to overload
+operators for your class.
+
+    use Badger::Class
+        overload => {
+            '""'     => \&text,
+            bool     => sub { 1 },
+            fallback => 1,
+        };
+
+=head2 as_text
+
+This is a shortcut to the C<overload> module. It can be used to define an
+auto-stringification method that generates a text representation of your
+object.  The method can be specified by name or as a code reference.
+
+    use Badger::Class
+        as_text => 'your_text_method';
+        
+    sub your_text_method {
+        my $self = shift;
+        # your code
+    }
+
+=head2 as_bool
+
+This is a shortcut to the C<overload> module. It can be used to define an
+method that is used for boolean comparisons.  This can be useful in 
+conjunction with the L<as_text> hook to ensure that an object reference 
+always evaluates true, even if the auto-stringification method returns a 
+string that Perl considers false (e.g. an empty string or C<0>).  
+
+    use Badger::Class
+        as_text => 'your_text_method',
+        as_bool => sub { 1 };           # always true
+
+The method can be specified as a method name or code reference.  For simple
+false/true values you can also specify C<0> or C<1> and leave it up to 
+C<Badger::Class> to alias it to an appropriate subroutine.
+
+    use Badger::Class
+        as_text => 'your_text_method',
+        as_bool => 1;                   # always true
+
 =head2 filesystem
 
 This can be used to load and import symbols from the L<Badger::Filesystem>
@@ -2802,6 +2884,21 @@ The methods generated are mutators.  That is, you can pass an argument
 to update the slot value.
 
     $bus->size('large');
+
+=head2 overload(\%operators)
+
+This method provides a simple shortcut to the C<overload> core module to
+implement the L<overload> import hook.
+
+=head2 as_text($method)
+
+This method provides a simple wrapper around the L<overload()> method to
+implement the L<as_text> import hook.
+
+=head2 as_bool($method)
+
+This method provides a simple wrapper around the L<overload()> method to
+implement the L<as_bool> import hook.
 
 =head2 filesystem(@symbols)
 
