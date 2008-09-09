@@ -58,8 +58,13 @@ sub new {
     }
     my $args  = @_ && ref $_[0] eq HASH ? shift : { @_ };
     my $self  = bless { }, ref $class || $class;
-    return $self->init($args)
-        || $self->error("init() method failed\n");
+       $self  = $self->init($args);
+
+    # be careful to account for object that overload the boolean comparison
+    # operator and may return false to a simple truth test.
+    return defined $self
+        ? $self
+        : $self->error("init() method failed\n");
 }
 
 sub init {
@@ -125,7 +130,7 @@ sub decline {
     my $self   = shift;
     my $class  = ref     $self || $self;
     my $type   = reftype $self || BLANK;
-    my $reason = join(BLANK, @_);
+    my $reason = @_ == 1 ? shift : join(BLANK, @_);
     no strict   REFS;
     no warnings ONCE;
     
