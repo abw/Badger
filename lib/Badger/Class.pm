@@ -815,7 +815,6 @@ sub mutators {
 sub overload {
     my $self = shift;
     my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
-    require overload;
     _debug("overload on $self->{name} : { ", join(', ', %$args), " }\n") if $DEBUG;
     overload::OVERLOAD($self->{name}, %$args);
     return $self;
