@@ -2,6 +2,11 @@ TODO
 ----
 Update Badger::Class to use new Badger::Debug hooks.
 
+Write/generate CHANGES files
+
+Fix problem with List::MoreUtils not being a core module!  My Bad.
+
+
 Badger::Class
 -------------
 
@@ -19,7 +24,7 @@ Badger::Class
   
 * AUTOLOAD method to delegate to real class if possible?
 
-* add 'hook' subroutine attribute
+* add 'hook' subroutine attribute 
 
 * add a way for B::C subclasses to register hooks that automatically
   get called on import, e.g. for B::Factory::Class to push base()
@@ -55,7 +60,7 @@ Badger::Debug
 Badger::Docs
 ------------
 
-* Finish writing it so we can build the web site.
+* Finish writing it / cleaning it up and release.
 
 
 Badger::Exception
@@ -151,8 +156,6 @@ Longer Terms Goals / Larger Projects
 * Finish refactoring Badger-Database and release
 
 
-
 docs
 ----
-links sections
 Badger::Factory
