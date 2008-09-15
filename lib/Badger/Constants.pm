@@ -26,6 +26,7 @@ use constant {
     ARRAY           => 'ARRAY',
     HASH            => 'HASH',
     CODE            => 'CODE',
+    GLOB            => 'GLOB',
     REGEX           => 'Regexp',
     
     # constant values
@@ -59,7 +60,7 @@ CONSTANTS->export_any(qw(
 
 CONSTANTS->export_tags({
     types => [qw( 
-        SCALAR ARRAY HASH CODE REGEX
+        SCALAR ARRAY HASH CODE GLOB REGEX
     )],
     values => [qw(
         FALSE TRUE OFF ON ALL NONE DEFAULT
@@ -132,6 +133,14 @@ The literal word C<HASH>, typically used for testing references.
 The literal word C<CODE>, typically used for testing references.
 
     if (ref $data eq CODE) {
+        ...
+    }
+
+=head2 GLOB
+
+The literal word C<GLOB>, typically used for testing references.
+
+    if (ref $data eq GLOB) {
         ...
     }
 
