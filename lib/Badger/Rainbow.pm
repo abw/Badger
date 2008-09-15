@@ -16,7 +16,6 @@ use Carp;
 use Badger::Debug 'debug';
 use Badger::Class
     version   => 0.01,
-    debug     => 0,
     base      => 'Badger::Exporter',
     constants => 'DELIMITER ARRAY REFS PKG',
     exports   => {
@@ -40,6 +39,8 @@ use Badger::Class
         },
     };
 
+# can't import this via Badger::Debug as it depends on Badger::Rainbow
+our $DEBUG = 0 unless defined $DEBUG;
 
 sub _export_ANSI_colours {
     my ($class, $target, $symbol, $more_symbols) = @_;
