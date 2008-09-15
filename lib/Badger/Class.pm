@@ -26,12 +26,12 @@ use constant {
     MIXIN      => 'Badger::Mixin',
     CODECS     => 'Badger::Codecs',
     UTILS      => 'Badger::Utils',
+    DEBUG      => 'Badger::Debug',
     LOADED     => 'BADGER_LOADED',
     MESSAGES   => 'MESSAGES',
     VERSION    => 'VERSION',
     MIXINS     => 'MIXINS',
     THROWS     => 'THROWS',
-    DEBUG      => 'DEBUG',
     ISA        => 'ISA',
     base_id    => 'Badger',
 };
@@ -43,7 +43,7 @@ our $VERSION    = 0.01;
 our $DEBUG      = 0 unless defined $DEBUG;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
-    base uber mixin mixins version debug constant constants words vars exports 
+    base uber mixin mixins version constant constants words vars exports 
     throws messages utils codec codecs filesystem hooks
     methods slots accessors mutators get_methods set_methods overload 
     as_text is_true
@@ -52,6 +52,7 @@ our $HOOKS = {
     map { $_ => $_ }
     @HOOKS
 };
+
 
 *get_methods = \&accessors;
 *set_methods = \&mutators;
@@ -122,6 +123,7 @@ our $HOOKS = {
 
 # define custom hooks for load options
 CLASS->export_hooks({
+    debug    => \&_debug_hook,
     map { $_ => \&_export_hook } 
     @HOOKS
 });
@@ -155,6 +157,17 @@ sub export {
     ${$package.PKG.LOADED} ||= 1;
     $class->SUPER::export($package, @args);
 }
+
+sub _debug_hook {
+    my ($class, $target, $key, $symbols) = @_;
+    croak "You didn't specify a value for the '$key' load option."
+        unless @$symbols;
+    my $debug = shift @$symbols;
+    $debug = { default => $debug }
+        unless ref $debug eq HASH;
+    _autoload($class->DEBUG)->export($target, %$debug);
+}
+
 
 
 #-----------------------------------------------------------------------
@@ -474,66 +487,6 @@ sub version {
         unless defined *{ $pkg.PKG.'version' };
 
     return $self;
-}
-
-sub debug {
-    my ($self, $debug) = @_;
-    my $pkg = $self->{ name };
-    no strict REFS;
-
-    # define a new debugging() method in the target class (if one doesn't
-    # already exist) which calls the debugging() method on it's class object
-    unless (defined *{ $pkg.PKG.'debugging' }) {
-        _debug("Defining $pkg debugging() method\n") if $DEBUG;
-        *{ $pkg.PKG.'debugging' } = sub { 
-            class(shift)->debugging(@_) 
-        };
-    }
-
-    # On this one occasion, we won't force the $DEBUG value to be set
-    # to $debug if it's already been pre-defined to a value.  This 
-    # emulates the idiom: our $DEBUG = $debug unless defined $DEBUG;
-    # so that we can set $DEBUG flags *before* loading a module (which
-    # might happen on demand)
-
-
-    $debug = ${ $pkg.PKG.DEBUG }
-        if defined ${ $pkg.PKG.DEBUG };
-        
-    _debug("debug() Setting $pkg \$DEBUG to $debug\n") if $DEBUG;
-    *{ $pkg.PKG.DEBUG } = \$debug;
-
-    return $self;
-}
-
-sub debugging {
-    my $self = shift;
-    my $pkg = $self->{ name };
-    no strict REFS;
-
-    # return current $DEBUG value when called without args
-    return ${ $pkg.PKG.DEBUG } || 0
-        unless @_;
-    
-    # set new debug value when called with an argument
-    my $debug = shift;
-    $debug = 0 if $debug =~ /^off$/i;
-
-    # TODO: consider setting different parts of the flag, like TT2, 
-
-    _debug("debugging() Setting $pkg debug to $debug\n") if $DEBUG;
-    
-    if (defined ${ $pkg.PKG.DEBUG }) {
-        # update existing variable
-        ${ $pkg.PKG.DEBUG } = $debug;
-    }
-    else {
-        # define new variable, poking it into the symbol table using
-        # *{...} rather than ${...} so that it's visible at compile time,
-        # thus preventing any "Variable $DEBUG not defined errors
-        *{ $pkg.PKG.DEBUG } = \$debug;
-    }
-    return $debug;
 }
 
 sub constants {
@@ -2983,12 +2936,6 @@ C<Badger::Utils>
 These constants are I<really> internal. You really don't need to know about
 them. In fact, even I<I> don't need to know about them. I'm only documenting
 then to keep L<Pod::Coverage> quiet.
-
-=head2 DEBUG
-
-This is defined to contain the word C<DEBUG> (see, I said you didn't
-need to know about this).  It's the name of the C<$DEBUG> variable that
-the L<debug()> method hooks into.
 
 =head2 VERSION
 
