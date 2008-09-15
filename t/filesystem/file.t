@@ -18,7 +18,7 @@ use Badger::Filesystem 'FS';
 use Badger::Filesystem::File '@STAT_FIELDS';
 use Badger::Filesystem::Directory;
 use Badger::Test 
-    tests => 37,
+    tests => 39,
     debug => 'Badger::Filesystem::File',
     args  => \@ARGV;
 
@@ -76,6 +76,8 @@ else {
 ok( ! $file3->exists, 'newfile does not exist' );
 ok( $file3->create, 'created file' );
 ok( $file3->exists, 'newfile now exists' );
+ok( $file3->print("Hello World!\n"), 'printed to newfile' );
+is( $file3->text, "Hello World!\n", 'read text from newfile' );
 ok( $file3->touch, 'touched newfile' );
 
 

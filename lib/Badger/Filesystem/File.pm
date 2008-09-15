@@ -16,7 +16,7 @@ use Badger::Class
     version     => 0.01,
     debug       => 0,
     base        => 'Badger::Filesystem::Path',
-    constants   => 'ARRAY',
+    constants   => 'ARRAY BLANK',
     constant    => {
         type    => 'File',
         is_file => 1,
@@ -87,6 +87,11 @@ sub read {
 sub write {
     my $self = shift;
     $self->filesystem->write_file($self->{ path }, @_);
+}
+
+sub print {
+    my $self = shift;
+    $self->write( join(BLANK, @_) );
 }
 
 sub append {
@@ -290,6 +295,15 @@ When called with arguments, the method opens the file, writes the argument to
 it, and then closes the file again.
 
     $file->write("Hello World!\n");
+
+=head2 print(@content)
+
+This method concatentates all arguments into a single string which it then
+forwards to the L<write()> method.  This effectively forces the L<write()>
+method to always write something to the file, even if it's an empty string.
+
+    $file->print("hello");      
+    $file->print(@stuff);       # works OK if @stuff is empty 
 
 =head2 append(@content)
 
