@@ -16,7 +16,7 @@ use strict;
 use warnings;
 use File::Spec;
 use Badger::Test 
-    tests => 29,
+    tests => 39,
     debug => 'Badger::Filesystem::X Badger::Filesystem::Virtual',
     args  => \@ARGV;
 use Badger::Filesystem 'FS';
@@ -125,6 +125,50 @@ foreach my $kid (@kids) {
     next if $kid =~ /\.svn/;
     ok( $kid->exists, "$kid exists" );
 }
+
+
+#-----------------------------------------------------------------------
+# try dynamic root generators
+#-----------------------------------------------------------------------
+
+sub gen1 {
+    return [ map { $tfdir->dir("vdir_$_") } qw( one two ) ];
+}
+
+sub gen2 {
+    return [ map { $tfdir->dir("vdir_$_") } qw( three four ) ];
+}
+
+my $paths = [\&gen1, [\&gen2]];
+    
+$vfs = VFS->new( root => $paths );
+ok( $vfs, 'created a new virtual filesystem with root generator' );
+
+is( $vfs->file('foo')->text, "This is foo in vdir_one\n", 'got foo from dynamic vdir_one' );
+is( $vfs->file('bar')->text, "This is bar in vdir_two\n", 'got bar from dynamic vdir_two' );
+is( $vfs->file('baz')->text, "This is baz in vdir_three\n", 'got baz from dynamic vdir_three' );
+
+# changing the path shouldn't make any difference because we didn't set the
+# dynamic flag.
+@$paths = [\&gen2, \&gen1];
+is( $vfs->file('foo')->text, "This is foo in vdir_one\n", 'got foo from dynamic vdir_one' );
+
+unshift(@$paths, $tfdir->dir('vdir_two'));
+is( $vfs->file('foo')->text, "This is foo in vdir_one\n", 'got foo from dynamic vdir_one again' );
+
+$paths = [\&gen1, \&gen2];
+
+$vfs = VFS->new( root => $paths, dynamic => 1 );
+ok( $vfs, 'created a new dynamic virtual filesystem with root generator' );
+is( $vfs->file('foo')->text, "This is foo in vdir_one\n", 'got foo from dynamic vdir_one yet again' );
+
+# now that the dynamic flag is set, we can change the path
+@$paths = [\&gen2, \&gen1];
+is( $vfs->file('foo')->text, "This is foo in vdir_three\n", 'got foo from dynamic vdir_three' );
+
+unshift(@$paths, $tfdir->dir('vdir_two'));
+is( $vfs->file('foo')->text, "This is foo in vdir_two\n", 'got foo from dynamic vdir_two' );
+
 
 
 
