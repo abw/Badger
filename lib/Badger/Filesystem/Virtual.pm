@@ -14,21 +14,31 @@
 
 package Badger::Filesystem::Virtual;
 
+use Badger::Debug ':dump';
 use Badger::Class
     version   => 0.01,
     debug     => 0,
     base      => 'Badger::Filesystem',
-    constants => 'ARRAY',
+    accessors => 'root',
+    constants => 'ARRAY CODE',
     constant  => {
-        VFS     => __PACKAGE__,
-        virtual => __PACKAGE__,
+        VFS          => __PACKAGE__,
+        virtual      => __PACKAGE__,
+        PATH_METHOD  => 'path',
+        PATHS_METHOD => 'paths',
+        ROOTS_METHOD => 'roots',
     },
     exports   => {
         any   => 'VFS',
+    },
+    messages => {
+        bad_root  => 'Invalid root directory: %s', 
+        max_roots => 'The number of virtual filesystem roots exceeds the max_roots limit of %s',
     };
 
 *definitive = \&definitive_write;
 
+our $MAX_ROOTS = 32 unless defined $MAX_ROOTS;
 
 sub init {
     my ($self, $config) = @_;
@@ -40,6 +50,15 @@ sub init {
     my $root = $config->{ root } || $self->{ rootdir };
     $root = [$root] unless ref $root eq ARRAY;
     $self->{ root } = $root;
+
+    # dynamic flag indicates that the list of roots can change so we must
+    # recompute them each time.  max_roots sets a limit on the expansion
+    # to prevent runaways
+    $self->{ dynamic   } = $config->{ dynamic   };
+    $self->{ max_roots } = 
+        defined $config->{ max_roots } 
+              ? $config->{ max_roots }
+              : $MAX_ROOTS;
     
     # we must set cwd to / so that the relative -> absolute path translation
     # works as expected.  The concept of having a current working directory 
@@ -51,10 +70,92 @@ sub init {
     return $self;
 }
 
+sub roots {
+    my $self = shift;
+
+    return $self->{ roots }
+        if $self->{ roots };
+
+    my $static = $self->{ dynamic } ? 0 : 1;
+    my $max    = $self->{ max_roots };
+    my @paths  = @{ $self->{ root } };
+    my (@roots, $type, $paths, $dir, $code);
+
+    # If a positive max_roots is defined then we'll limit the number of 
+    # roots we resolve.  If it's zero or negative then it will pre-decrement
+    # before being tested so will always be true
+    while (@paths && --$max) {
+        $dir = shift @paths || next;
+
+        $type = ref $dir || do {
+            # non-reference paths get added as they are
+            $self->debug("discovered root directory: $dir\n") if DEBUG;
+            push(@roots, $dir);
+            next;
+        };
+
+        # anything else can expand out to one or more paths, each of which
+        # can expand recursively, so we push all new paths back onto the
+        # candidate list and test each in turn.
+        $static = 0;
+        
+        if ($type eq CODE) {
+            # call code ref
+            $paths = $dir->();
+            $self->debug(
+                "discovered root directories from code ref: ",
+                $self->dump_data_inline($paths), "\n"
+            ) if DEBUG;
+            unshift(@paths, ref $paths eq ARRAY ? @$paths : $paths);
+            next;
+        }
+        elsif ($type eq ARRAY) {
+            # expand list ref
+            $self->debug(
+                "discovered root directories from code ref: ",
+                join(', ', @$dir), "\n"
+            ) if DEBUG;
+            unshift(@paths, @$dir);
+            next;
+        }
+        elsif (blessed $dir) {
+            # see if object has a path(), paths() or roots() method
+            if ($code = $dir->can(PATH_METHOD)
+                     || $dir->can(PATHS_METHOD)
+                     || $dir->can(ROOTS_METHOD) ) {
+                $paths = $code->($dir);
+                $self->debug(
+                    "discovered root directories from $type object: $paths / ", 
+                    $self->dump_data_inline($paths), "\n"
+                ) if DEBUG;
+                unshift(@paths, ref $paths eq ARRAY ? @$paths : $paths);
+                next;
+            }
+        }
+
+        $self->error( bad_root => $dir );
+    }
+
+    # anything left in @paths means we must have blown the max_roots limit
+    return $self->error_msg( max_roots => $self->{ max_roots } )
+        if @paths;
+
+    # we can cache roots if all are static and the dynamic flag isn't set
+    $self->{ roots } = \@roots
+        if $static;
+    
+    $self->debug("resolved roots: [", join(', ', @roots), "]\n") if DEBUG;
+    
+    return wantarray
+        ?  @roots
+        : \@roots;
+}
+
 sub definitive_write {
     my $self = shift;
+    $self->debug("definitive_write(", join(', ', @_), ")\n") if DEBUG;
     my $path = $self->absolute(@_);
-    return $self->join_directory($self->{ root }->[0], $path);
+    return $self->join_directory($self->roots->[0], $path);
 }
 
 sub definitive_read {
@@ -62,9 +163,9 @@ sub definitive_read {
     my $path = $self->absolute(@_);
     my ($base, $full);
 
-    foreach $base (@{ $self->{ root } }) {
+    foreach $base ($self->roots) {
         $full = $self->merge_paths($base, $path);
-        $self->debug("looking for $full\n") if $DEBUG;
+        $self->debug("looking for [$base] + [$path] => $full\n") if DEBUG;
         return $full if -e $full;
     }
 }
@@ -73,14 +174,13 @@ sub read_directory {
     my $self = shift;
     my $path = $self->absolute(shift);
     my $all  = shift;
-    my $root = $self->{ root };
     my ($base, $full, $dirh, $item, @items, %seen);
 
     require IO::Dir;
 
-    foreach $base (@{ $self->{ root } }) {
+    foreach $base ($self->roots) {
         $full = $self->join_directory($base, $path);
-        $self->debug("Opening directory: $full\n") if $DEBUG;
+        $self->debug("Opening directory: $full\n") if DEBUG;
         $dirh = IO::Dir->new($full)
             || $self->error_msg( open_failed => directory => $full => $! );
         while (defined ($item = $dirh->read)) {
@@ -259,6 +359,15 @@ at some point in the future - be aware for now that the append() method may
 not work correctly if you're trying to append to a file that isn't under the
 first root directory).
 
+=head2 Dynamic Root Directories
+
+TODO: we now support code refs and objects as root directories which are
+evaluated dynamically to generate a list of root directories.  An object
+should have a C<path()>, C<paths()> or C<roots()> method which returns a 
+single path or refererence to a list of path.  Any of those can be further
+dynamic components which will be evaluated recursively until all have been
+resolved or the C<max_roots> limit has been reached.
+
 =head1 METHODS
 
 L<Badger::Filesystem::Virtual> inherits all the methods of
@@ -268,6 +377,16 @@ L<Badger::Filesystem>.  The following methods are added or amended.
 
 This custom initialisation method allows one or more C<root> (or C<rootdir>)
 directories to be specified as the base of the virtual filesystem.
+
+=head2 roots()
+
+This method returns a list (in list context) or reference to a list (in
+scalar context) of the root directories for the virtual filesystem.  Any
+dynamic components in the roots will be evaluated and expanded.  This
+include subroutine references and objects implementing a C<path()>, 
+C<paths()> or C<roots()> method.  Dynamic components can return a single
+items or reference to a list of items, any of which can be a static directory
+or dynamic component.
 
 =head2 definitive($path)
 
@@ -290,6 +409,18 @@ then an undefined value is returned.
 Custom method to read a directory in a virtual filesystem.  This returns
 a composite index of all entries in a particular directory across all 
 roots of the virtual filesystem.
+
+=head1 OPTIONS
+
+=head2 root
+
+The root directory or directories of the virtual filesystem.  
+
+=head2 max_roots
+
+A limit to the maximum number of root directories allowed.  This is used 
+to prevent potential runaways when evaluating dynamic root components.
+See L<Dynamic Root Directories> for further information.
 
 =head1 AUTHOR
 
