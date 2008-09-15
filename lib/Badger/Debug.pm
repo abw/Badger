@@ -36,7 +36,6 @@ use Badger::Class
             '$DEBUG' => [\&_export_debug_variable, 1],
         },
     };
-
     
 our $PAD       = '    ';
 our $MAX_TEXT  = 48;
