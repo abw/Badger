@@ -15,12 +15,12 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use File::Spec;
-use Badger::Filesystem 'FS';
-use Badger::Filesystem::Virtual 'VFS';
 use Badger::Test 
     tests => 29,
-    debug => 'Badger::Filesystem Badger::Filesystem::Virtual',
+    debug => 'Badger::Filesystem::X Badger::Filesystem::Virtual',
     args  => \@ARGV;
+use Badger::Filesystem 'FS';
+use Badger::Filesystem::Virtual 'VFS';
 
 # ugly hack to grok file separator on local filesystem
 my $PATHSEP  = File::Spec->catdir(('badger') x 2);
