@@ -15,10 +15,10 @@ use strict;
 use warnings;
 
 use lib qw( t/core/lib ./lib ../lib ../../lib );
-use Badger::Utils 'UTILS blessed xprintf reftype';
+use Badger::Utils 'UTILS blessed xprintf reftype textlike';
 use Badger::Debug;
 use Badger::Test 
-    tests => 26,
+    tests => 31,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -60,12 +60,19 @@ is( params(%$hash)->{ a }, 10, 'params merged named param list' );
 
 
 package Selfish;
-use base 'Badger::Base';
-use Badger::Utils 'self_params';
+
+use Badger::Class
+    base    => 'Badger::Base',
+    as_text => 'text',                  # for testing textlike()
+    utils   => 'self_params';
 
 sub test1 {
     my ($self, $params) = self_params(@_);
     return ($self, $params);
+}
+
+sub text {                              # for testing textlike()
+    return 'Hello World';
 }
 
 package main;
@@ -77,6 +84,16 @@ is( $p, $hash, 'self_params returns params' );
 is( $s, $selfish, 'self_params returns self again' );
 is( $p->{a}, 10, 'self_params returns params again' );
 
+
+#-----------------------------------------------------------------------
+# test textlike
+#-----------------------------------------------------------------------
+
+ok( textlike 'hello', 'string is textlike' );
+ok( textlike $selfish, 'selfish object is textlike' );
+ok( ! textlike $obj, 'object is not textlike' );
+ok( ! textlike [10], 'list is not textlike' );
+ok( ! textlike sub { 'foo' }, 'sub is not textlike' );
 
 
 #-----------------------------------------------------------------------

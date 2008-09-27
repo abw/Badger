@@ -19,6 +19,7 @@ use File::Path;
 use Scalar::Util qw( blessed );
 use Badger::Constants 'HASH PKG DELIMITER';
 use Badger::Debug ':dump';
+use overload;
 use constant {
     UTILS  => 'Badger::Utils',
     CLASS  => 0,
@@ -50,7 +51,7 @@ our $DELEGATES;         # fill this from $HELPERS on demand
 
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed is_object params self_params plural xprintf
+    UTILS blessed is_object textlike params self_params plural xprintf
 ));
 
 __PACKAGE__->export_fail(\&_export_fail);
@@ -66,7 +67,7 @@ sub _export_fail {
 
 sub _expand_helpers {
     # invert { x => 'a b c' } into { a => 'x', b => 'x', c => 'x' }
-    my $helpers   = shift;
+    my $helpers = shift;
     return {
         map {
             my $name = $_;                      # e.g. Scalar::Util
@@ -78,9 +79,14 @@ sub _expand_helpers {
     }
 }
         
-
 sub is_object($$) {
     blessed $_[1] && $_[1]->isa($_[0]);
+}
+
+sub textlike($) {
+    !  ref $_[0]                        # check if $[0] is a non-reference
+    || blessed $_[0]                    # or an object with an overloaded
+    && overload::Method($_[0], '""');   # '""' stringification operator
 }
 
 sub params {
@@ -183,6 +189,19 @@ Returns true if the C<$object> is a blessed reference which isa C<$class>.
     if (is_object( FS => $object )) {       # FS == Badger::Filesystem
         print $object, ' isa ', FS, "\n";
     }
+
+=head2 textlike($item)
+
+Returns true if C<$item> is a non-reference scalar or an object that
+has an overloaded stringification operator.
+
+    use Badger::Filesystem 'File';
+    use Badger::Utils 'textlike';
+    
+    # Badger::Filesystem::File objects have overloaded string operator
+    my $file = File('example.txt'); 
+    print $file;                                # example.txt
+    print textlike $file ? 'ok' : 'not ok';     # ok
 
 =head2 params(@args)
 
