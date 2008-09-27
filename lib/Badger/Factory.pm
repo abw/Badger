@@ -30,6 +30,7 @@ use Badger::Class
         bad_method => qq{Can't locate object method "%s" via package "%s" at %s line %s},
     };
 
+our $RUNAWAY = 0;
 our $AUTOLOAD;
 our %LOADED;
 our %MAPPED;
@@ -101,8 +102,8 @@ sub item {
     # in Badger::Codecs found_ref_ARRAY
     
     if (! defined $item) {
-        # we haven't got an entry in the $CODECS table so let's try 
-        # autoloading some modules using the $CODEC_PATH
+        # we haven't got an entry in the items table so let's try 
+        # autoloading some modules using the module path
         $item = $self->load($type)
             || return $self->error_msg( not_found => $self->{ item }, $type );
         $item = $item->new(@args);
@@ -126,6 +127,8 @@ sub item {
 #    return $item;
 }
 
+# TODO: make this more generic and have a selectable/pluggable strategy
+
 sub type_args {
     my $self   = shift;
     my $type   = shift;
@@ -133,7 +136,6 @@ sub type_args {
     $params->{ $self->{ items } } ||= $self;
     return ($type, $params);
 }
-
 
 sub module_names {
     my ($self, $base, $type) = @_;
@@ -167,7 +169,7 @@ sub load {
             $self->debug("maybe load $module ?\n") if $DEBUG;
             # Some filesystems are case-insensitive (like Apple's HFS), so an 
             # attempt to load Badger::Example::foo may succeed, when the correct 
-            # package name is actually Badger::Codec::Foo
+            # package name is actually Badger::Example::Foo
             return $module 
                 if ($loaded || class($module)->maybe_load && ++$loaded)
                 && @{ $module.PKG.ISA };
@@ -216,6 +218,10 @@ sub AUTOLOAD {
 
     $self->debug("AUTOLOAD $name\n") if $DEBUG;
 
+    local $RUNAWAY = $RUNAWAY;
+    $self->error("AUTOLOAD went runaway on $name")
+        if ++$RUNAWAY > 10;
+
     # upgrade class methods to calls on prototype
     $self = $self->prototype unless ref $self;
     
@@ -224,6 +230,9 @@ sub AUTOLOAD {
     }
     elsif ($name eq $self->{ items }) {
         $self->class->method( $name => $self->can('items') )
+    }
+    elsif (my $item = $self->try( item => $name, @args )) {
+        return $item;
     }
     else {
         my ($pkg, $file, $line) = caller;
