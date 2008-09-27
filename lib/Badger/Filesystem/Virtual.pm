@@ -51,10 +51,10 @@ sub init {
     $root = [$root] unless ref $root eq ARRAY;
     $self->{ root } = $root;
 
-    # dynamic flag indicates that the list of roots can change so we must
-    # recompute them each time.  max_roots sets a limit on the expansion
-    # to prevent runaways
-    $self->{ dynamic   } = $config->{ dynamic   };
+    # the dynamic flag indicates that the list of roots can change so we must 
+    # recompute them each time we use them.  max_roots sets a limit on the 
+    # expansion to prevent runaways
+    $self->{ dynamic   } = $config->{ dynamic };
     $self->{ max_roots } = 
         defined $config->{ max_roots } 
               ? $config->{ max_roots }
@@ -73,10 +73,12 @@ sub init {
 sub roots {
     my $self = shift;
 
-    return $self->{ roots }
-        if $self->{ roots };
+    if (my $roots = $self->{ roots }) {
+        return wantarray
+            ? @$roots
+            :  $roots;
+    }
 
-    my $static = $self->{ dynamic } ? 0 : 1;
     my $max    = $self->{ max_roots };
     my @paths  = @{ $self->{ root } };
     my (@roots, $type, $paths, $dir, $code);
@@ -97,7 +99,6 @@ sub roots {
         # anything else can expand out to one or more paths, each of which
         # can expand recursively, so we push all new paths back onto the
         # candidate list and test each in turn.
-        $static = 0;
         
         if ($type eq CODE) {
             # call code ref
@@ -120,6 +121,9 @@ sub roots {
         }
         elsif (blessed $dir) {
             # see if object has a path(), paths() or roots() method
+            # TODO: this is broken - we don't want to recompute paths 
+            # each time just because we're using an object that has a 
+            # path
             if ($code = $dir->can(PATH_METHOD)
                      || $dir->can(PATHS_METHOD)
                      || $dir->can(ROOTS_METHOD) ) {
@@ -142,13 +146,22 @@ sub roots {
 
     # we can cache roots if all are static and the dynamic flag isn't set
     $self->{ roots } = \@roots
-        if $static;
+        unless $self->{ dynamic };
     
-    $self->debug("resolved roots: [", join(', ', @roots), "]\n") if DEBUG;
+    $self->debug("resolved roots: [\n  ", join("\n  ", @roots), "\n]\n") if DEBUG;
     
     return wantarray
         ?  @roots
         : \@roots;
+}
+
+sub definitive_paths {
+    my $self  = shift;
+    my $path  = $self->absolute(@_);
+    my @paths = map { $self->merge_paths($_, $path) } $self->roots;
+    return wantarray
+        ?  @paths
+        : \@paths;
 }
 
 sub definitive_write {
@@ -168,6 +181,7 @@ sub definitive_read {
         $self->debug("looking for [$base] + [$path] => $full\n") if DEBUG;
         return $full if -e $full;
     }
+    return undef;
 }
 
 sub read_directory {
@@ -403,6 +417,13 @@ Maps a virtual file path to a definitive one for read operations.  The
 path will be mapped to the first virtual root directory in which the 
 item exists.  If it does not exists in any of the virtual root directories
 then an undefined value is returned.
+
+=head2 definitive_paths($path)
+
+Returns a list (in list context) or reference to a list (in scalar context) of
+all the definitive paths that the file path could be mapped to. This is
+generating by adding the C<$path> argument onto each of the L<root>
+directories.
 
 =head2 read_directory($path)
 

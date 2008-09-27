@@ -334,23 +334,25 @@ sub relative {
 #-----------------------------------------------------------------------
 
 sub path_exists {
-    my $self = shift;
-    return -e $self->definitive_read(shift);
+    shift->stat_path(@_);
 }
 
 sub file_exists {
-    my $self = shift;
-    return -f $self->definitive_read(shift);
+    my $self  = shift;
+    my $stats = $self->stat_path(shift) || return; 
+    return -f _ ? $stats : 0;       # relies on cached stat
 }
 
 sub directory_exists {
     my $self = shift;
-    return -d $self->definitive_read(shift);
+    my $stats = $self->stat_path(shift) || return; 
+    return -d _ ? $stats : 0;       # relies on cached stat
 }
 
 sub stat_path {
     my $self  = shift;
-    my @stats = (stat($self->definitive_read(shift)), -r _, -w _, -x _, -o _);
+    my $path  = $self->definitive_read(shift) || return; 
+    my @stats = (stat($path), -r _, -w _, -x _, -o _, $path);
 
     return $self->error_msg( bad_stat => $self->{ path } )
         unless @stats;
@@ -1000,7 +1002,7 @@ name into a single path.  This is a wrapper around the
 L<catpath()|File::Spec/catpath()> and L<canonpath()|File::Spec/canonpath()> 
 functions in L<File::Spec>.
 
-    my $path = $fs−>join_path($volume, $directory, $file);
+    my $path = $fs->join_path($volume, $directory, $file);
 
 =head2 split_dir($dir) / split_directory($dir)
 
@@ -1014,11 +1016,11 @@ around the L<splitdir()|File::Spec/splitdir()> function in L<File::Spec>.
 Combines multiple directory names into a single path.  This is a wrapper
 around the L<catdir()|File::Spec/catdir()> function in L<File::Spec>.
 
-    my $dir = $fs−>join_dir('path', 'to', 'my', 'dir');
+    my $dir = $fs->join_dir('path', 'to', 'my', 'dir');
 
 The final element can also be a file name.   TODO: is that portable?
 
-    my $dir = $fs−>join_dir('path', 'to', 'my', 'file');
+    my $dir = $fs->join_dir('path', 'to', 'my', 'file');
 
 =head2 collapse_dir($dir) / collapse_directory($dir)
 

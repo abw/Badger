@@ -61,7 +61,8 @@ sub file {
 
 sub exists {
     my $self = shift;
-    $self->filesystem->file_exists($self->{ path });
+    # cache the stats returned in case we want them later
+    return ($self->{ stats } = $self->filesystem->file_exists($self->{ path }));
 }
 
 sub create {
