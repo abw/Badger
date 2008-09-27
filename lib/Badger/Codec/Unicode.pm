@@ -55,8 +55,8 @@ sub decode {
             # does the string start with the bom?
             if ($bom eq substr($data, 0, length($bom))) {
                 # decode it and hand it back
-                return Encode::decode($enc, $data);
-                return Encode::decode($enc, substr($data, length($bom)));
+#                return Encode::decode($enc, $data);
+                return Encode::decode($enc, substr($data, length($bom)), 1);
             }
         }
         return $data;

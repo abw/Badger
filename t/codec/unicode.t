@@ -26,8 +26,10 @@ use Encode qw();
 use bytes;
 
 my ($encode, $decode);
-our $moose   = "\x{ef}\x{bb}\x{bf}m\x{c3}\x{b8}\x{c3}\x{b8}se\x{e2}\x{80}\x{a6}";
-our $uncoded = Encode::decode( utf8 => $moose );
+
+# This is 'moose...' (with slashes in the 'o's them, and the '...' as one char).
+our $uncoded = "m\x{f8}\x{f8}se\x{2026}";
+our $moose   = Encode::encode( utf8 => $uncoded );
 our $encoded = {
     'UTF-8'    => "\x{ef}\x{bb}\x{bf}m\x{c3}\x{b8}\x{c3}\x{b8}se\x{e2}\x{80}\x{a6}",
     'UTF-16BE' => "\x{fe}\x{ff}\x{0}m\x{0}\x{f8}\x{0}\x{f8}\x{0}s\x{0}e &",
