@@ -181,7 +181,7 @@ package main;
 
 $dbgmsg = '';
 My::Debugger2->hello;
-is( $dbgmsg, '[My::Debugger2 line 23] Hello world', 'got debug message' );
+is( $dbgmsg, "[My::Debugger2 line 23] Hello world\n", 'got debug message' );
 
 #-----------------------------------------------------------------------
 # test debug load option

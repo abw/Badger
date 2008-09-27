@@ -134,7 +134,7 @@ ok( $widgets->widget('dangly'), 'got dangly from class constructed factory' );
 # test AUTOLOAD spits out warnings
 #-----------------------------------------------------------------------
 
-ok( ! $widgets->try( answer => 42 ), 'cannot answer' );
+ok( ! $widgets->try( answer => x => 42 ), 'cannot answer' );
 like( $widgets->reason, qr/^Can't locate object method "answer" via package "My::Widgets" at/, 'Error message'  );
 
 
