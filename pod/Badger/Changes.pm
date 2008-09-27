@@ -6,10 +6,28 @@ Badger::Changes - Summary of changes in the Badger toolkit
 
 =head2 Version 0.03
 
+Added delegate loaders to Badger
+
+Added diff to Badger::Test::Manager
+
+Added textlike() to Badger::Utils
+
 Added the L<overload|Badger::Class/overload>
 L<as_text|Badger::Class/as_text> and 
 L<is_true|Badger::Class/is_true> import hooks and related method to
 L<Badger::Class>.  These delegate to the C<overload> module.
+
+Added the L<print|Badger::Filesystem::File/print()> method to 
+L<Badger::Filesystem::File>.
+
+Added support for 
+L<dynamic root directories|Badger::Filesystem::Virtual/"virtual root directories">
+to L<Badger::Filesystem::Virtual>.
+
+Added the defaults method/hook to Badger::Class
+
+Fixed up some stat handling in Badger::Filesystem to help with subclassing
+virtual filesystems and made B::FS::Path cache stats returned from exists()
 
 =head2 Version 0.02
 

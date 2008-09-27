@@ -95,6 +95,33 @@ Badger::Filesystem
 * write_file() should have an option for writing to a temporary file and
   renaming into place to avoid race conditions.
 
+* I'm considering refactoring this.  I'd like to unify the different
+  filesystem-specific formats to an underlying URI-based one.  It would
+  require a lens (combined parser + presenter) for each O/S.  Unix (inc
+  Mac OSX) are simple, Win32 isn't hard.  Delegate to File::Spec for 
+  everything else.
+
+  Some info about Win32 path <-> uri translation, snarfed from 
+  http://blogs.msdn.com/ie/archive/2006/12/06/file-uris-in-windows.aspx
+  
+  For the UNC Windows file path
+     \\laptop\My Documents\FileSchemeURIs.doc
+
+  The corresponding valid file URI in Windows is the following:
+     file://laptop/My%20Documents/FileSchemeURIs.doc
+
+  For the local Windows file path
+     C:\Documents and Settings\davris\FileSchemeURIs.doc
+
+  The corresponding valid file URI in Windows is:
+     file:///C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc 
+  
+  Functions currently used from File::Spec are: catpath, catdir, 
+  canonpath, splitpath, splitdir, filename_is_absolute, abs2rel, 
+  no_upwards.  Most of those can be moved out to lenses.  Path 
+  manipulation becomes much easier internally when the path can be
+  stored as a list of path nodes.
+
 
 Badger::Storage
 ---------------
