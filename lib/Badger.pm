@@ -1,17 +1,35 @@
 package Badger;
 
 use 5.008;
+use Carp;
 use Badger::Hub;
 use Badger::Class
-    debug   => 0,
-    base    => 'Badger::Base',
-    utils   => 'UTILS',
-    import  => 'class',
-    words   => 'HUB';
+    debug     => 0,
+    version   => 0.03,
+    base      => 'Badger::Base',
+    utils     => 'UTILS',
+    import    => 'class',
+    words     => 'HUB',
+    constants => 'PKG',
+    exports   => { 
+        fail  => \&_export_handler,
+    };
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 our $HUB     = 'Badger::Hub';
 our $AUTOLOAD;
+
+sub _export_handler {
+    my ($class, $target, $key, $symbols) = @_;
+    croak "You didn't specify a value for the '$key' load option."
+        unless @$symbols;
+    my $module = join(PKG, $class, $key);
+    my $option = shift @$symbols;
+    class($module)->load;
+    $module->export($target, $option);
+    return 1;
+}
+
 
 sub init {
     my ($self, $config) = @_;
