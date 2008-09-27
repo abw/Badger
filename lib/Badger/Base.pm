@@ -47,7 +47,7 @@ our $MESSAGES  = {
 
 sub new {
     my $class = shift;
-    if ($DEBUG && ((@_ == 1 && ref $_[0] ne HASH) || (@_ > 2 and @_ % 2))) {
+    if (DEBUG && ((@_ == 1 && ref $_[0] ne HASH) || (@_ > 2 and @_ % 2))) {
         # catch any "Odd number of elements..." warnings before they happen
         # so we can report where this method was called from.
         my ($pkg, $file, $line) = caller();
@@ -82,7 +82,7 @@ sub warn {
     my $message  = join(BLANK, @_);
     my $handlers = $self->on_warn;
 
-    $self->debug("dispatching handlers for warn: ", $self->dump_data_inline($handlers), "\n") if $DEBUG;
+    $self->debug("dispatching handlers for warn: ", $self->dump_data_inline($handlers), "\n") if DEBUG;
     $self->_dispatch_handlers( warn => $handlers => $message )
         if $handlers && @$handlers;
     
@@ -181,11 +181,11 @@ sub throw {
         #   throw($info)
         
         if (blessed $type && $type->isa($emod)) {
-            $self->debug("returning exception object: ", ref $type, " => $type\n") if $DEBUG;
+            $self->debug("returning exception object: ", ref $type, " => [$type]\n") if DEBUG;
             $e = $type;
         }
         else {
-            $self->debug("creating new exception object chain: info => $type\n") if $DEBUG;
+            $self->debug("creating new exception object chain: info => $type\n") if DEBUG;
             $e = $emod->new( type => $self->throws, info => $type );
         }
     }
@@ -209,7 +209,7 @@ sub throw {
             # construct a new exception from $type and $info fields
             $config->{ type } = $type;
             $config->{ info } = $info;
-            $self->debug("creating new exception object: ", $self->dump_hash($config), "\n") if $DEBUG;
+            $self->debug("creating new exception object: ", $self->dump_hash($config), "\n") if DEBUG;
             $e = $emod->new($config);
         }
     }
@@ -248,7 +248,7 @@ sub throws {
               ||= $self->{ config } 
               &&  $self->{ config }->{ throws };
     }
-
+    
     # fall back on looking for any package variable in class / base classes
     return $throws 
         || $self->class->any_var(THROWS)
@@ -369,7 +369,7 @@ class->methods(
                 # careful!  the config value might be a single handler
                 $list = $self->{ $ON_EVENT } = [$list]
                     unless ref $list eq ARRAY;
-                $self->debug("got $on_event handlers: ", $self->dump_data_inline($list), "\n") if $DEBUG
+                $self->debug("got $on_event handlers: ", $self->dump_data_inline($list), "\n") if DEBUG
             }
             else {
                 # class method or non-hash objects use pkg vars only
@@ -410,11 +410,11 @@ class->methods(
 sub _dispatch_handlers {
     my ($self, $type, $handlers, @args) = @_;
 
-    $self->debug("_dispatch handlers: ", $self->dump_data_inline($handlers), "\n") if $DEBUG;
+    $self->debug("_dispatch handlers: ", $self->dump_data_inline($handlers), "\n") if DEBUG;
 
     foreach (@$handlers) {
         my $handler = $_;        # don't alias list items
-        $self->debug("dispatch handler: $handler\n") if $DEBUG;
+        $self->debug("dispatch handler: $handler\n") if DEBUG;
         if (! ref $handler) {
             if ($handler eq WARN) {         # 'warn' - we make sure that the 
                 my $msg = join('', @args);  # message is newline terminated
@@ -436,12 +436,12 @@ sub _dispatch_handlers {
         else {
             $self->fatal("Invalid on_$type handler: $handler");
         }
-        $self->debug("mid-dispatch args: [", join(', ', @args), "]\n") if $DEBUG;
+        $self->debug("mid-dispatch args: [", join(', ', @args), "]\n") if DEBUG;
         # bail out if we got an empty list of return values or a single
         # false value
         last if ! @args || @args == 1 && ! $args[0];
     }
-    $self->debug("returning ", join(', ', @args), "\n") if $DEBUG;
+    $self->debug("returning ", join(', ', @args), "\n") if DEBUG;
     return @args;
 }
     
