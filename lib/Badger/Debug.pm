@@ -23,7 +23,7 @@ use Badger::Class
     import    => 'class',
     exports   => {
         tags  => {
-            debug => 'debugging debug debug_up debug_caller',
+            debug => 'debugging debug debug_up debug_caller debug_args',
             dump  => 'dump dump_data dump_data_inline 
                       dump_hash dump_list dump_text'
         },
@@ -128,6 +128,7 @@ sub debug {
     my $format = $FORMAT;
     my ($pkg, $file, $line) = caller($CALLER_UP);
     $class .= " ($pkg)" unless $class eq $pkg;
+    $msg .= "\n" unless $msg =~ /\n$/;
     my $data = {
         msg   => $msg,
         class => $class,
@@ -153,6 +154,15 @@ sub debug_caller {
     $self->debug($msg);
 }
 
+sub debug_args {
+    my $self = shift;
+    $self->debug_up( 
+        2, "args: ",  
+        join(', ', map { $self->dump_data_inline($_) } @_),
+        "\n"
+    );
+}
+
 sub debug_modules {
     my $self    = shift;
     my $modules = @_ == 1 ? shift : [ @_ ];
@@ -162,7 +172,7 @@ sub debug_modules {
         unless ref $modules eq ARRAY;
         
     # TODO: handle other refs?
-    
+
     foreach my $pkg (@$modules) {
         no strict REFS;
         *{ $pkg.PKG.DEBUG } = \$debug;
