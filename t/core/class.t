@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 141,
+    tests => 145,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -687,6 +687,23 @@ $text = Badger::Test::AsBool->new( text => 'Hello Moose' );
 is( $text, 'Hello Moose', 'is true as_text method' );
 $text = Badger::Test::AsBool->new( text => '0' );
 ok( $text, 'is true boolean overload' );
+
+
+#-----------------------------------------------------------------------
+# test defaults
+#-----------------------------------------------------------------------
+
+no warnings 'once';
+$My::Defaults::FOO = 100;
+$My::Defaults::BAR = 0;
+use warnings 'once';
+
+require My::Defaults;
+
+is( My::Defaults->foo, 100, 'foo defaulted to 100' );
+is( My::Defaults->bar, 0, 'bar defaulted to 0' );
+is( My::Defaults->baz, 30, 'bar defaulted to 30' );
+is( My::Defaults->defaults, "BAR => 20, BAZ => 30, FOO => 10", '$DEFAULTS set' );
 
 __END__
 #-----------------------------------------------------------------------

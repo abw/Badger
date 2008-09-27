@@ -26,11 +26,12 @@ use constant {
     MIXIN      => 'Badger::Mixin',
     CODECS     => 'Badger::Codecs',
     UTILS      => 'Badger::Utils',
-    DEBUG      => 'Badger::Debug',
+    DEBUGGER   => 'Badger::Debug',
     LOADED     => 'BADGER_LOADED',
     MESSAGES   => 'MESSAGES',
     VERSION    => 'VERSION',
     MIXINS     => 'MIXINS',
+    DEFAULTS   => 'DEFAULTS',
     THROWS     => 'THROWS',
     ISA        => 'ISA',
     base_id    => 'Badger',
@@ -43,8 +44,8 @@ our $VERSION    = 0.01;
 our $DEBUG      = 0 unless defined $DEBUG;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
-    base uber mixin mixins version constant constants words vars exports 
-    throws messages utils codec codecs filesystem hooks
+    base uber mixin mixins version constant constants words vars defaults
+    exports throws messages utils codec codecs filesystem hooks
     methods slots accessors mutators get_methods set_methods overload 
     as_text is_true
 );
@@ -165,7 +166,7 @@ sub _debug_hook {
     my $debug = shift @$symbols;
     $debug = { default => $debug }
         unless ref $debug eq HASH;
-    _autoload($class->DEBUG)->export($target, %$debug);
+    _autoload($class->DEBUGGER)->export($target, %$debug);
 }
 
 
@@ -597,7 +598,30 @@ sub vars {
     }
     return $self;
 }
+
+sub defaults {
+    my $self = shift;
+    my $vars = @_ == 1 && ref $_[0] eq HASH ? shift : { @_ };
+    my $pkg  = $self->{ name };
+    my $val;
+    no strict REFS;
     
+    foreach my $key (keys %$vars) {
+        if (defined ${ $pkg.PKG.$key }) {
+            # alias ${...} into *{...} to make variable visible
+            *{ $pkg.PKG.$key } = \${ $pkg.PKG.$key };
+        }
+        else {
+            my $value = $vars->{ $key };
+            *{ $pkg.PKG.$key } = \$value
+        }
+    }
+    *{ $pkg.PKG.DEFAULTS } = \$vars
+        unless defined ${ $pkg.PKG.DEFAULTS };
+
+    return $self;
+}
+
 sub exports {
     my $self = shift;
     my $pkg  = $self->{ name };
@@ -1837,6 +1861,29 @@ It also allows you to provide values for variables, like so:
 
 See the L<vars()> method for further information.
 
+=head2 defaults
+
+This is similar to the L<vars> hook in allowing you to define one or more
+default values for scalar package variables. If a package variable is already
+defined then it is not changed. It also defines the C<$DEFAULTS> package
+variable (if not already defined) which contains a reference to the hash array
+of default values specified.
+
+    use Badger::Class
+        defaults => {
+            FOO => 10,
+            BAR => 20,
+        };
+
+The above example is equivalent to the following code:
+
+    our $FOO = 10 
+        unless defined $FOO;
+    our $BAR = 20 
+        unless defined $BAR;
+    our $DEFAULTS = { FOO => 10, BAR => 20 }
+        unless defined $DEFAULTS;
+
 =head2 exports 
 
 This allows you to declare the symbols that your module can export.
@@ -2618,6 +2665,16 @@ item list.
         vars => {                           # Equivalent code:
             '@FOO' => 42,                   #   our @FOO = (42)
         };
+
+=head2 default($vars)
+
+This method implements the functionality for the L<default> export hook. At
+present it only works with scalar package variables.
+
+    use Badger::Class
+        default => {                        # Equivalent code:
+            ANSWER => 42,                   #   our $ANSWER = 42 
+        };                                  #       unless defined $ANSWER
 
 =head2 exports($symbols)
 
