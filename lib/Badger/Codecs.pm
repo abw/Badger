@@ -31,6 +31,7 @@ use Badger::Factory::Class
 our $CODECS     = {
     # any codecs with non-standard capitalisation can go here, but 
     # generally we grok the module name from the $CODEC_PATH, e.g.
+    uri      => 'Badger::Codec::URI',
     url      => 'Badger::Codec::URL',
     yaml     => 'Badger::Codec::YAML',
     json     => 'Badger::Codec::JSON',
