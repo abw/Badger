@@ -30,9 +30,8 @@ our $ANON    = 'unknown'                unless defined $ANON;
 
 sub init {
     my ($self, $config) = @_;
-    $self->{ type } = $config->{ type } || $self->class->var('TYPE');
+    $self->{ type } = $config->{ type } || $self->class->any_var('TYPE');
     $self->{ info } = $config->{ info } || '';
-    $self->{ text } = $config->{ text } || '';
     $self->{ file } = $config->{ file };
     $self->{ line } = $config->{ line };
     return $self;
@@ -68,7 +67,7 @@ sub line {
 
 sub text {
     my $self   = shift;
-    my $format = shift || $self->class->var('FORMAT');
+    my $format = shift || $self->class->any_var('FORMAT');
 
     $format =~ s/<(\w+)>/defined $self->{ $1 } ? $self->{ $1 } : "(no $1)"/eg;
     $format .= " in $self->{ file }" if $self->{ file };
