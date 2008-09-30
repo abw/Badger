@@ -27,11 +27,11 @@ use constant {
     CODECS     => 'Badger::Codecs',
     UTILS      => 'Badger::Utils',
     DEBUGGER   => 'Badger::Debug',
+    DEFAULTS   => 'Badger::Defaults',
     LOADED     => 'BADGER_LOADED',
     MESSAGES   => 'MESSAGES',
     VERSION    => 'VERSION',
     MIXINS     => 'MIXINS',
-    DEFAULTS   => 'DEFAULTS',
     THROWS     => 'THROWS',
     ISA        => 'ISA',
     base_id    => 'Badger',
@@ -601,24 +601,9 @@ sub vars {
 
 sub defaults {
     my $self = shift;
-    my $vars = @_ == 1 && ref $_[0] eq HASH ? shift : { @_ };
-    my $pkg  = $self->{ name };
-    my $val;
-    no strict REFS;
-    
-    foreach my $key (keys %$vars) {
-        if (defined ${ $pkg.PKG.$key }) {
-            # alias ${...} into *{...} to make variable visible
-            *{ $pkg.PKG.$key } = \${ $pkg.PKG.$key };
-        }
-        else {
-            my $value = $vars->{ $key };
-            *{ $pkg.PKG.$key } = \$value
-        }
-    }
-    *{ $pkg.PKG.DEFAULTS } = \$vars
-        unless defined ${ $pkg.PKG.DEFAULTS };
-
+    _autoload($self->DEFAULTS)->export(
+        $self->{ name }, @_
+    );
     return $self;
 }
 
