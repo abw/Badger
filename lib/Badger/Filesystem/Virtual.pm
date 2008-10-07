@@ -19,7 +19,7 @@ use Badger::Class
     version   => 0.01,
     debug     => 0,
     base      => 'Badger::Filesystem',
-    accessors => 'root',
+#   accessors => 'root',                    # interferes
     constants => 'ARRAY CODE',
     constant  => {
         VFS          => __PACKAGE__,
