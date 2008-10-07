@@ -1,6 +1,8 @@
 lib/Badger.pm
 lib/Badger/Base.pm
 lib/Badger/Class.pm
+lib/Badger/Class/Aliases.pm
+lib/Badger/Class/Defaults.pm
 lib/Badger/Codec.pm
 lib/Badger/Codec/Base64.pm
 lib/Badger/Codec/Chain.pm
@@ -9,6 +11,7 @@ lib/Badger/Codec/Encoding.pm
 lib/Badger/Codec/JSON.pm
 lib/Badger/Codec/Storable.pm
 lib/Badger/Codec/Unicode.pm
+lib/Badger/Codec/URI.pm
 lib/Badger/Codec/YAML.pm
 lib/Badger/Codecs.pm
 lib/Badger/Config.pm
@@ -44,6 +47,8 @@ t/codec/encoding.t
 t/codec/lib/My/Codec/Foo.pm
 t/codec/storable.t
 t/codec/unicode.t
+t/codec/uri.t
+t/core/aliases.t
 t/core/base.t
 t/core/class.t
 t/core/config.t
@@ -62,6 +67,7 @@ t/core/lib/My/Constants.pm
 t/core/lib/My/Debugger1.pm
 t/core/lib/My/Debugger2.pm
 t/core/lib/My/Debugger3.pm
+t/core/lib/My/Defaults.pm
 t/core/lib/My/Exporter/Base1.pm
 t/core/lib/My/Exporter/Base2.pm
 t/core/lib/My/Exporter/Explicit.pm
@@ -115,6 +121,7 @@ t/filesystem/testfiles/visitor/two/hello.html
 t/filesystem/testfiles/visitor/two/hello.txt
 t/filesystem/virtual.t
 t/filesystem/visitor.t
+t/misc/badger.t
 t/misc/moose.t
 t/pod/coverage.t
 t/pod/kwalitee.t

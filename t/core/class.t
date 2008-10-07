@@ -14,7 +14,7 @@
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Class;
 use Badger::Test
-    tests => 149,
+    tests => 153,
     debug => 'Badger::Class Badger::Defaults',
     debug => 'Badger::Defaults',
     args  => \@ARGV;
@@ -708,10 +708,15 @@ is( My::Defaults->defaults, "BAR => 20, BAZ => 30, FOO => 10, wam => bam, wig =>
 
 my $defaults = My::Defaults->new;
 ok( $defaults, 'created defaults object' );
-
 is( $defaults->foo, 100, 'object foo defaulted to 100' );
 is( $defaults->bar, 0, 'object bar defaulted to 0' );
 is( $defaults->baz, 30, 'object bar defaulted to 30' );
+
+$defaults = My::Defaults->new( FOO => 99, wig => 'syrup' );
+ok( $defaults, 'created customised defaults object' );
+is( $defaults->foo, 99, 'object foo set to 99' );
+is( $defaults->bar, 0, 'object bar defaulted to 0' );
+is( $defaults->wig, 'syrup', 'object wig set to syrup' );
 
 
 __END__

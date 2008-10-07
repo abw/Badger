@@ -16,8 +16,8 @@ use Badger::Class
 sub foo { ref $_[0] ? $_[0]->{ FOO } : $FOO }
 sub bar { ref $_[0] ? $_[0]->{ BAR } : $BAR }
 sub baz { ref $_[0] ? $_[0]->{ BAZ } : $BAZ }
-sub wig { ref $_[0] ? $_[0]->{ wig } : $wig }
-sub wam { ref $_[0] ? $_[0]->{ wam } : $wam }
+sub wig { ref $_[0] ? $_[0]->{ wig } : $WIG }
+sub wam { ref $_[0] ? $_[0]->{ wam } : $WAM }
 
 sub defaults {
     join(', ', map { "$_ => $DEFAULTS->{$_}" } sort keys %$DEFAULTS);

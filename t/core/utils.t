@@ -15,10 +15,10 @@ use strict;
 use warnings;
 
 use lib qw( t/core/lib ./lib ../lib ../../lib );
-use Badger::Utils 'UTILS blessed xprintf reftype textlike';
+use Badger::Utils 'UTILS blessed xprintf reftype textlike plural';
 use Badger::Debug;
 use Badger::Test 
-    tests => 31,
+    tests => 33,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -152,6 +152,14 @@ my %hash = (x => 10);
 lock_hash(%hash);
 ok( ! eval { $hash{x} = 20 }, 'could not modify read-only hash' );
 like( $@, qr/Modification of a read-only value attempted/, 'got read-only error' );
+
+
+#-----------------------------------------------------------------------
+# test plural()
+#-----------------------------------------------------------------------
+
+is( plural('gateway'), 'gateways', 'pluralised gateway/gateways' );
+is( plural('fairy'), 'fairies', 'pluralised fairy/fairies' );
 
 __END__
 
