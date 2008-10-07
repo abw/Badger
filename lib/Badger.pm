@@ -89,29 +89,31 @@ Badger - Perl Application Programming Toolkit
 
 =head1 WARNING
 
-This is the second version of the Badger Toolkit. It should treated as
-I<alpha> quality code.
+This is the third version of the Badger Toolkit. It should treated as
+I<alpha> quality code, edging towards I<beta>.
 
-The code as it stands is almost certainly packed full of B<FAIL> and should be
-handled as if it's likely to explode at any second. Everything is subject to
-change without notice. B<Mr T pities the fool that attempts to builds a
-production system based on Badger version 0.02>
+The code as it stands is quite possibly packed with fragments of B<FAIL> 
+and should be handled as if it could explode when dropped onto a hard
+surface from a height.  Everything is still subject to change, but not
+without prior warning.  B<Mr T pities the fool that attempts to builds a
+production system based on Badger version 0.03 without first evaluating it 
+carefully and reading the documentation>.
 
-That said, the code is I<believed> to be reliable and the release of version
-0.01 didn't throw up any major problems. Badger is based on code and concepts
-that have been used in production systems for a number of years. Most of the
-API is well-defined and unlikely to change significantly in future versions.
-However, we're not ruling anything out given that the Badger has only just
-been incarnated in his current form.
+That said, the code is I<believed> to be reliable and the release of versions
+0.01 and 0.02 didn't throw up any major problems. Badger is based on code and
+concepts that have been used in production systems for a number of years. Most
+of the API is well-defined and unlikely to change significantly in future
+versions. However, we're not ruling anything out given that the Badger has
+only just been incarnated in his current form.
 
 Despite the fact that Badger is built on (mostly) tried and tested code, the
 entire code base has been rebuilt from the ground up, shuffled about, jiggled
 around, extended, reduced, recycled and repackaged many times over. As such,
 it is inevitable that some things will be broken. You should start out with
-the assumption that these modules contain a significant number of careless
-bugs, incorrect design decisions, bad implementation choices, and various
-other shades of B<FAIL> that need to be corrected. That way you'll be
-pleasantly surprised when you find that I<most> of it works as advertised.
+the assumption that these modules still contain a handful of careless bugs,
+incorrect design decisions, bad implementation choices, and various other
+shades of B<FAIL> that need to be corrected. That way you'll be pleasantly
+surprised when you find that it actually works as advertised.
 
 The documentation isn't complete, but it's not far off. Most, if not all of
 the important core modules are fully documented and believed to be accurate.
@@ -123,14 +125,9 @@ thousand tests, all of which pass on the system that it has been tested on
 (Linux, Mac OSX, Windows XP).
 
 Having read this warning in detail (as I'm sure you have), you will now
-understand why you would be as mad as a brain-bamboozled badger, hell-bent on
-self-destruction and careering wildly down the rocky path to the collapse of
-civilisation as we know it, if you were to even I<consider> using this in
-production code right now. 
-
-Okay, go on then, you can if you want. But on your head be it. I'm sure you
-religiously test all of your code anyway, so you'll spot any bugs quickly and
-help me fix them, right? But don't say I didn't warn you....
+understand why caution is advised before embarking on a major project
+based around Badger.  You would be well advised to discuss it on the 
+Badger mailing list first to make sure you've got the latest information.
 
 So, with that warning nailed firmly to the door and a "welcome" mat reading
 "HEED THE SIGN ON THE DOOR!" lest anyone should miss it, pray come hither 
@@ -248,9 +245,9 @@ friendly.
 
 =head2 What's New?
 
-Version 0.02 features some improvements to L<Badger::Debug> and
-L<Badger::Utils> as well as various additions and updates to the
-documentation.
+Version 0.03 features some improvements to the front-end L<Badger> module,
+L<Badger::Filesystem>, L<Badger::Class>, and various other cleanups and
+bug fixes.
 
 =head2 Background
 

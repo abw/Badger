@@ -1,0 +1,65 @@
+NAME
+    Badger::Changes - Summary of changes in the Badger toolkit
+
+CHANGES
+  Version 0.03
+    Added delegate loaders to Badger. This provides some semantic sugar for
+    loading a bunch of different "Badger::*" modules in one go.
+
+        use Badger
+            Filesystem  => 'FS $Bin',
+            Codecs      => 'storable base64',
+            Debug       => {
+                modules => 'My::Module',
+            };
+
+    Added different() to Badger::Test::Manager.
+
+    Added textlike() to Badger::Utils
+
+    Added the overload as_text and is_true import hooks and related method
+    to Badger::Class. These delegate to the "overload" module.
+
+    Added the print method to Badger::Filesystem::File.
+
+    Added support for dynamic root directories to
+    Badger::Filesystem::Virtual.
+
+    Added the defaults and aliases hooks to Badger::Class, implemented by
+    Badger::Class::Defaults and Badger::Class::Aliases, respectively. There
+    are still experimental.
+
+    Fixed up some stat handling in Badger::Filesystem to help with
+    subclassing in Badger::Filesystem::Virtual
+
+    Mr T pities the fool that attempts to builds a production system based
+    on Badger version 0.03 without first evaluating it carefully and reading
+    the documentation.
+
+  Version 0.02
+    Badger::Class got the vars method and hook for declaring and defining
+    variables.
+
+    Badger::Utils gained the ability to load and export functions from
+    Scalar::Util, List::Util, List::MoreUtils, Hash::Util and Digest::MD5.
+
+    Various documentation updates.
+
+    Mr T admires the tenacity of anyone attempting to build a production
+    system based on Badger v0.02 and hopes they have a thorough test suite.
+
+  Version 0.01
+    This was the first release version.
+
+    Mr T pities the fool who builds a production system based on Badger
+    v0.01.
+
+AUTHOR
+    Andy Wardley <abw@wardley.org>
+
+COPYRIGHT
+    Copyright (C) 2008 Andy Wardley. All Rights Reserved.
+
+    This module is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
+
