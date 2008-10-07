@@ -103,8 +103,8 @@ sub plural {
     if ($name =~ /(ss|sh|ch|x)$/) {
         $name .= 'es';
     }
-    elsif ($name =~ s/y$//) {
-        $name .= 'ies';
+    elsif ($name =~ s/([^aeiou])y$//) {
+        $name .= $1.'ies';
     }
     elsif ($name =~ /([^s\d\W])$/) {
         $name .= 's';
