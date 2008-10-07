@@ -21,7 +21,8 @@ use Badger::Class
     constants => 'HASH ARRAY REFS PKG',
     words     => 'COMPONENTS DELEGATES COMP_CACHE DELG_CACHE',
     messages => {
-        no_module => 'No %s module defined.',
+        no_module  => 'No %s module defined.',
+        bad_method => "Invalid method '%s' called on %s at %s line %s",
     };
 
 use Badger::Config;
