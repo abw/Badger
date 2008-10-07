@@ -106,7 +106,7 @@ sub item {
         # autoloading some modules using the module path
         $item = $self->load($type)
             || return $self->error_msg( not_found => $self->{ item }, $type );
-        $item = $item->new(@args);
+        $item = $self->construct($item, @args);
     }
     elsif ($iref = ref $item) {
         my $method 
@@ -120,7 +120,7 @@ sub item {
     else {
         # otherwise we load the module and create a new object
         class($item)->load unless $LOADED{ $item }++;
-        $item = $item->new(@args);
+        $item = $self->construct($item, @args);
     }
 
     return $self->found( $name => $item );
@@ -137,6 +137,11 @@ sub type_args {
     return ($type, $params);
 }
 
+sub construct {
+    shift;
+    shift->new(@_);
+}
+    
 sub module_names {
     my ($self, $base, $type) = @_;
 #    (ucfirst $type, $type, uc $type);   # Foo, foo, FOO
