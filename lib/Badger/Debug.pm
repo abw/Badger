@@ -665,8 +665,8 @@ of this in use.
 
 =head2 :debug
 
-Imports all of the L<debug()>, L<debugging()>, L<debug_up()> and 
-L<debug_caller()> methods.
+Imports all of the L<debug()>, L<debugging()>, L<debug_up()>, 
+L<debug_caller()> and L<debug_args()> methods.
 
 =head2 :dump
 
@@ -727,6 +727,15 @@ Prints debugging information about the current caller.
     sub wibble {
         my $self = shift;
         $self->debug_caller;
+    }
+
+=head2 debug_args()
+
+Prints debugging information about the arguments passed.
+
+    sub wibble {
+        my $self = shift;
+        $self->debug_args(@_);
     }
 
 =head2 debugging($flag)

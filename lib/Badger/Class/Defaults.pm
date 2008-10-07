@@ -88,3 +88,63 @@ sub init_defaults {
 }
     
 1;
+
+=head1 NAME
+
+Badger::Class::Default - class mixin for creating parameter defaults
+
+=head1 SYNOPSIS
+
+    package My::Module;
+    
+    use Badger::Class
+        base => 'Badger::Base';
+    
+    use Badger::Class::Defaults
+        username => 'testuser',
+        password => 'testpass';
+        
+    sub init {
+        my ($self, $config) = @_;
+        $self->init_defaults($config);
+        return $self;
+    }
+
+=head1 DESCRIPTION
+
+This class mixin module allows you to define default values for configuration
+parameters.
+
+It is still experimental and subject to change.
+
+=head1 METHODS
+
+=head2 init_defaults($config)
+
+This method is mixed into classes that use it.  It creates a composite
+hash of all C<$DEFAULTS> defined in package variables and updates the 
+C<$self> object using values provided explicitly in the C<$config> hash,
+or falling back on the C<$DEFAULTS>
+
+See L<Badger::Class> for further details.
+
+=head1 AUTHOR
+
+Andy Wardley L<http://wardley.org/>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2008 Andy Wardley.  All Rights Reserved.
+
+This module is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=cut
+
+# Local Variables:
+# mode: perl
+# perl-indent-level: 4
+# indent-tabs-mode: nil
+# End:
+#
+# vim: expandtab shiftwidth=4:

@@ -357,6 +357,13 @@ to object constructor
 
 TODO: Method to load a module for an object type
 
+=head2 construct($class,@args)
+
+TODO: Method to instantiate a $class object using the arguments provided.
+In the base class this method  simply calls:
+
+    $class->new(@args);
+
 =head2 module_names($type)
 
 TODO: Method to expand an object type into a candidate list of module names.

@@ -153,32 +153,6 @@ sub is ($$$;$) {
         return $self->fail($msg, $self->different($expect, $result));
     }
 }
-
-sub different {
-    my ($self, $expect, $result) = @_;
-    my ($pad_exp, $pad_res) = ($expect, $result);
-    for ($pad_exp, $pad_res) {
-        s/\n/\n#         |/g;
-    }
-    my $msg = $self->message( not_eq => $pad_exp, $pad_res );
-
-    return $msg 
-        unless $CAN_DIFF;
-
-    my $diffs = diff( map { [ split(/\n/) ] } $expect, $result );
-    my $n     = 0;
-    my $m     = scalar @$diffs;
-    
-    foreach my $hunk (@$diffs) {
-        $msg .= $self->message( hunk => ++$n, $m );
-        foreach my $delta (@$hunk) {
-            $msg .= $self->message( delta => @$delta );
-        }
-#        $msg .= "\n";
-    }
-    return $msg;
-}
-
 sub isnt ($$$;$) {
     my $self = shift->prototype;
     my ($result, $expect, $msg) = @_;
@@ -302,6 +276,31 @@ sub test_name ($) {
     my $self = shift->prototype;
     my ($pkg, $file, $line) = caller(1);
     $self->message( name => $self->{ count }, $file, $line );
+}
+
+sub different {
+    my ($self, $expect, $result) = @_;
+    my ($pad_exp, $pad_res) = ($expect, $result);
+    for ($pad_exp, $pad_res) {
+        s/\n/\n#         |/g;
+    }
+    my $msg = $self->message( not_eq => $pad_exp, $pad_res );
+
+    return $msg 
+        unless $CAN_DIFF;
+
+    my $diffs = diff( map { [ split(/\n/) ] } $expect, $result );
+    my $n     = 0;
+    my $m     = scalar @$diffs;
+    
+    foreach my $hunk (@$diffs) {
+        $msg .= $self->message( hunk => ++$n, $m );
+        foreach my $delta (@$hunk) {
+            $msg .= $self->message( delta => @$delta );
+        }
+#        $msg .= "\n";
+    }
+    return $msg;
 }
 
 sub colour {
@@ -532,6 +531,14 @@ defined in the C<$MESSAGES> package variable.
 
 Use to generate a name for a test if one isn't explicitly provided.
 
+=head2 different($expect,$result)
+
+This method is call when a test find a result that doesn't match the 
+expected value.  If C<Algorithm::Diff> is installed on your machine, it
+will generate a message showing how the output and expected values differ.
+
+Otherwise it will generate a regular message reporting the mismatch.
+    
 =head1 AUTHOR
 
 Andy Wardley L<http://wardley.org/>

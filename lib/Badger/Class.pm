@@ -1879,6 +1879,51 @@ The above example is equivalent to the following code:
     our $DEFAULTS = { FOO => 10, BAR => 20 }
         unless defined $DEFAULTS;
 
+It also imports a L<init_defaults()> method into your class that you can
+call from your L<init()> method to initialise the object using named
+parameters from the C<$config> hash or the default values defined in 
+package variables.
+
+    sub init {
+        my ($self, $config) = @_;
+        $self->init_defaults($config);
+        return $self;
+    }
+
+This functionality is implemented by the L<Badger::Class::Defaults> 
+module.  It should be considered experimental and subject to change.
+
+=head2 aliases
+
+This hook can be used to define aliases for the configuration parameters 
+for your object class.  It stores them in a C<$ALIASES> package variable
+and exports an C<init_aliases()> method which you can call from your own
+C<init()> method.  This method will look for any aliases in the configuration
+and update the hash to contain the definitive name for the item.
+
+    use Badger::Class
+        base      => 'Badger::Base',
+        accessors => 'name user pass',
+        aliases   => {
+            name  => 'database',
+            user  => 'username',
+            pass  => 'password',
+        };
+
+    sub init {
+        my ($self, $config) = @_;
+        
+        $self->init_aliases($config);
+        
+        for (qw( name user pass )) {
+            $self->{ $_ } = $config->{ $_ };
+        }
+        return $self;
+    }
+
+This functionality is implemented by the L<Badger::Class::Aliases> 
+module.  It should be considered experimental and subject to change.
+
 =head2 exports 
 
 This allows you to declare the symbols that your module can export.

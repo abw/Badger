@@ -79,27 +79,39 @@ Badger::Codec::URI - URI encode/decode
 This module implements a subclass of L<Badger::Codec> for
 URI encoding and decoding.
 
+=head1 FUNCTIONS
+
+=head2 encode_uri($data)
+
+This function URI-encodes the C<$data> passed as an argument.
+
+=head2 decode_uri($data)
+
+This function URI-decodes the C<$data> passed as an argument.
+
 =head1 METHODS
 
 =head2 encode($data)
 
-URI-encodes the data referenced by the first argument.
+This method URI-encodes the data referenced by the first argument.
+It delegates to the L<encode_uri()> function.
 
     $encoded = Badger::Codec::URI->encode($data);   
 
 =head2 decode($data)
 
-Decodes the encoded data passed as the first argument.
+This method decodes the encoded data passed as the first argument.
+It delegates to the L<decode_uri()> function.
 
     $decoded = Badger::Codec::URI->decode($encoded);
 
 =head2 encoder()
 
-This method returns a reference to the L<encode_uri()> subroutine.
+This method returns a reference to the L<encode_uri()> function.
 
 =head2 decoder()
 
-This method returns a reference to the L<decode_uri()> subroutine.
+This method returns a reference to the L<decode_uri()> function.
 
 =head1 AUTHOR
 
