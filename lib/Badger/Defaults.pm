@@ -30,22 +30,25 @@ sub export {
     my $class    = shift;
     my $target   = shift;
     my $defaults = @_ == 1 ? shift : { @_ };
+    my ($key, $uckey);
 
     croak("Invalid defaults specified: $defaults")
         unless ref $defaults eq HASH;
 
     no strict REFS;
     
-    foreach my $key (keys %$defaults) {
+    foreach $key (keys %$defaults) {
+        $uckey = uc $key;
+        
         # if the package variable is already defined, we use that value
         # otherwise, create a new pacakge variable with the default value.
-        if (defined ${ $target.PKG.$key }) {
+        if (defined ${ $target.PKG.$uckey }) {
             # alias ${...} into *{...} to make variable visible
-            *{ $target.PKG.$key } = \${ $target.PKG.$key };
+            *{ $target.PKG.$uckey } = \${ $target.PKG.$uckey };
         }
         else {
             my $value = $defaults->{ $key };
-            *{ $target.PKG.$key } = \$value
+            *{ $target.PKG.$uckey } = \$value
         }
     }
     *{ $target.PKG.DEFAULTS } = \$defaults
@@ -75,7 +78,9 @@ sub init_defaults {
         $self->{ $key } =
             defined $config->{ $key }
                   ? $config->{ $key }
-                  : $class->any_var($key);
+                  : $class->any_var(uc $key);
+        $self->{ $key } = $defaults->{ $key }
+            unless defined $self->{ $key };
         CLASS->debug("default: $key => $self->{ $key }\n") if DEBUG;
     }
     
