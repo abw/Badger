@@ -27,7 +27,8 @@ use constant {
     CODECS     => 'Badger::Codecs',
     UTILS      => 'Badger::Utils',
     DEBUGGER   => 'Badger::Debug',
-    DEFAULTS   => 'Badger::Defaults',
+    DEFAULTS   => 'Badger::Class::Defaults',
+    ALIASES    => 'Badger::Class::Aliases',
     LOADED     => 'BADGER_LOADED',
     MESSAGES   => 'MESSAGES',
     VERSION    => 'VERSION',
@@ -45,7 +46,7 @@ our $DEBUG      = 0 unless defined $DEBUG;
 our $LOADED     = { }; 
 our @HOOKS      = qw( 
     base uber mixin mixins version constant constants words vars defaults
-    exports throws messages utils codec codecs filesystem hooks
+    aliases exports throws messages utils codec codecs filesystem hooks
     methods slots accessors mutators get_methods set_methods overload 
     as_text is_true
 );
@@ -67,7 +68,7 @@ our $HOOKS = {
     # lookup table mapping package names to Badger::Class objects
     my $CLASSES = { };
 
-    # class/package name
+    # class/package name - define this up-front so we can use it below
     sub CLASS {
         my $class = @_ ? shift : (caller())[0];
         ref $class || $class;
@@ -104,7 +105,9 @@ our $HOOKS = {
             $class_sub->($class)->heritage;
         };
 
-        no strict 'refs';
+        no strict REFS;
+        no warnings 'redefine';
+#        *{ $pkg.PKG.'CLASS'     } = sub () { $pkg };
         *{ $pkg.PKG.'class'     } = $class_sub;
         *{ $pkg.PKG.'classes'   } = $classes_sub;
         *{ $pkg.PKG.'_autoload' } = \&_autoload;
@@ -114,7 +117,6 @@ our $HOOKS = {
 
     # call the UBER method to generate class() and classes() for this module
     __PACKAGE__->UBER;
-
 }
 
 
@@ -602,6 +604,14 @@ sub vars {
 sub defaults {
     my $self = shift;
     _autoload($self->DEFAULTS)->export(
+        $self->{ name }, @_
+    );
+    return $self;
+}
+
+sub aliases {
+    my $self = shift;
+    _autoload($self->ALIASES)->export(
         $self->{ name }, @_
     );
     return $self;

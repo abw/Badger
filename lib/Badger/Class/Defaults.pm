@@ -1,6 +1,6 @@
 #========================================================================
 #
-# Badger::Defaults
+# Badger::Class::Defaults
 #
 # DESCRIPTION
 #   Mixin module implementing functionality for defining defaults for
@@ -11,7 +11,7 @@
 #
 #========================================================================
 
-package Badger::Defaults;
+package Badger::Class::Defaults;
 
 use Carp;
 use Badger::Debug ':dump';
