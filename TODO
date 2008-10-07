@@ -1,21 +1,8 @@
-TODO
-----
-Update Badger::Class to use new Badger::Debug hooks.
-
-Write/generate CHANGES files
-
-Fix problem with List::MoreUtils not being a core module!  My Bad.
-
-
 Badger::Class
 -------------
 
-* Have DEBUG generate constant DEBUG subroutine fixed to value of flag
-  (or pre-defined $DEBUG variable if possible).  Unlike $DEBUG which is 
-  evaluated at runtime and thus, is dynamic, the DEBUG constant subroutine
-  would be statically resolved at compile time.  Slightly different usage,
-  but worthwhile.  This should really be moved into Badger::Debug.  Also
-  think about different debug flags, e.g. DEBUG_THIS, DEBUG_THAT
+* Have DEBUG generate constant DEBUG subroutine (UPDATE: now done)...
+  Also think about different debug flags, e.g. DEBUG_THIS, DEBUG_THAT
   UPDATE: Badger::Debug now does this - just need to hook class in
 
 * make debug hook work better: allow import of other items, e.g.
@@ -49,6 +36,7 @@ Badger::Config
 
 * Just a basic implementation at moment.  Merge in TT3 config, AppConfig
   and other stuff.
+
 
 Badger::Debug
 -------------
