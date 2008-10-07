@@ -15,6 +15,7 @@ package Badger::Factory::Class;
 use Carp;
 use Badger::Class
     version   => 0.01,
+    debug     => 0,
     uber      => 'Badger::Class',
     hooks     => 'item path',
     words     => 'ITEM ITEMS',
@@ -43,6 +44,8 @@ sub _export_fail_hook {
         my $item = $klass->var(ITEM);
         $items = plural($item) if $item;
     }
+
+#    $target->debug("looking for $items to match $symbol\n");
 
     # if the import symbols matches $items (e.g. widgets) then push the 
     # next argument into the relevant package var (e.g. $WIDGETS)
