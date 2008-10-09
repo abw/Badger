@@ -4,6 +4,10 @@ Badger::Changes - Summary of changes in the Badger toolkit
 
 =head1 CHANGES
 
+=head2 Version 0.04
+
+Moved a whole bunch of stuff out of Badger::Class into Badger::Class::*
+
 =head2 Version 0.03
 
 Added delegate loaders to L<Badger>.  This provides some semantic sugar
