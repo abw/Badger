@@ -17,9 +17,9 @@ use strict;
 use warnings;
 use Carp;
 use base 'Badger::Exporter';
-use Badger::Constants 
-    'DELIMITER SCALAR ARRAY HASH CODE PKG REFS ONCE TRUE FALSE';
 use constant {
+    base_id    => 'Badger',
+    BCLASS     => 'Badger::Class',
     FILESYSTEM => 'Badger::Filesystem',
     CONSTANTS  => 'Badger::Constants',
     EXPORTER   => 'Badger::Exporter',
@@ -27,37 +27,123 @@ use constant {
     CODECS     => 'Badger::Codecs',
     UTILS      => 'Badger::Utils',
     DEBUGGER   => 'Badger::Debug',
+    METHODS    => 'Badger::Class::Methods',
     DEFAULTS   => 'Badger::Class::Defaults',
     ALIASES    => 'Badger::Class::Aliases',
+    VARS       => 'Badger::Class::Vars',
     LOADED     => 'BADGER_LOADED',
     MESSAGES   => 'MESSAGES',
     VERSION    => 'VERSION',
     MIXINS     => 'MIXINS',
     THROWS     => 'THROWS',
     ISA        => 'ISA',
-    base_id    => 'Badger',
+    NO_VALUE   => "You didn't specify a value for the '%s' option",
 };
+use Badger::Constants 
+    'DELIMITER SCALAR ARRAY HASH CODE PKG REFS ONCE TRUE FALSE';
 use overload 
-    '""' => 'name',
+    '""'     => 'name',
     fallback => 1;
 
-our $VERSION    = 0.01;
-our $DEBUG      = 0 unless defined $DEBUG;
-our $LOADED     = { }; 
-our @HOOKS      = qw( 
-    base uber mixin mixins version constant constants words vars defaults
-    aliases exports throws messages utils codec codecs filesystem hooks
-    methods slots accessors mutators get_methods set_methods overload 
-    as_text is_true
-);
-our $HOOKS = { 
-    map { $_ => $_ }
-    @HOOKS
-};
 
+our $VERSION   = 0.01;
+our $DEBUG     = 0 unless defined $DEBUG;
+our $LOADED    = { }; 
+
+
+#-----------------------------------------------------------------------
+# Methods that we delegate to other modules.  The module name is 
+# determined by calling the constant method (first argument on RHS
+# which is auto-quoted by '=>', e.g. 'METHODS', 'ALIASES') against
+# $self, allowing for sub-classes of Badger::Class to define different
+# modules for this task.  The second argument on the RHS is the method.
+# The methods are generated a little further on in this module.
+#-----------------------------------------------------------------------
+
+our $DELEGATES = {
+    # note the first argument on RHS is quto-quoted by =>
+    accessors   => [ METHODS    => 'accessors'      ],
+    aliases     => [ ALIASES    => 'export'         ],
+    codec       => [ CODECS     => 'export_codec'   ],    
+    codecs      => [ CODECS     => 'export_codecs'  ],
+    constants   => [ CONSTANTS  => 'export'         ],
+    defaults    => [ DEFAULTS   => 'export'         ],
+    filesystem  => [ FILESYSTEM => 'export'         ],
+    mutators    => [ METHODS    => 'mutators'       ],
+    slots       => [ METHODS    => 'slots'          ],
+    utils       => [ UTILS      => 'export'         ],
+    vars        => [ VARS       => 'vars'           ],
+};
 
 *get_methods = \&accessors;
 *set_methods = \&mutators;
+
+
+#-----------------------------------------------------------------------
+# Define exportable items and export hooks (see Badger::Exporter)
+#-----------------------------------------------------------------------
+
+our $EXPORT_ANY   = ['BCLASS'];
+our $EXPORT_FAIL  = \&_export_fail;
+our $EXPORT_HOOKS = {
+    debug    => \&_debug_hook,
+    map { $_ => \&_export_hook } 
+    qw( 
+        base uber mixin mixins version constant constants words vars 
+        defaults aliases exports throws messages utils codec codecs 
+        filesystem hooks methods slots accessors mutators get_methods 
+        set_methods overload as_text is_true
+    )
+};
+
+
+sub export {
+    my ($class, $package, @args) = @_;
+    no strict   REFS;
+    no warnings ONCE;
+    ${ $package.PKG.LOADED } ||= 1;     # add $BADGER_LOADED to mark our scent
+    $class->SUPER::export($package, @args);
+}
+
+
+sub _export_hook {
+    my ($class, $target, $key, $symbols) = @_;
+
+    croak sprintf(NO_VALUE, $key)
+        unless @$symbols;
+        
+    class($target, $class)->$key(shift @$symbols);
+}
+
+
+sub _export_fail {
+    my ($class, $target, $key, $symbols, $import) = @_;
+
+    # look for any additional export hooks defined in $HOOKS, e.g. 
+    # by a subclass or poked in via the hooks() method
+    my $hook = class($class)->hash_value( HOOKS => $key ) || return;
+
+    croak sprintf(NO_VALUE, $key)
+        unless @$symbols;
+
+    class($target, $class)->$hook(shift @$symbols);
+}
+
+    
+sub _debug_hook {
+    my ($class, $target, $key, $symbols) = @_;
+    my $debug;
+    
+    croak sprintf(NO_VALUE, $key)
+        unless @$symbols;
+
+    $debug = shift @$symbols;
+    $debug = { default => $debug }
+        unless ref $debug eq HASH;
+
+    _autoload($class->DEBUGGER)->export($target, %$debug);
+}
+
 
 
 #-----------------------------------------------------------------------
@@ -120,56 +206,24 @@ our $HOOKS = {
 }
 
 
+
 #-----------------------------------------------------------------------
-# Define exportable items and export hook (see Badger::Exporter)
+# generate additional delegate methods listed in $DELEGATES
 #-----------------------------------------------------------------------
 
-# define custom hooks for load options
-CLASS->export_hooks({
-    debug    => \&_debug_hook,
-    map { $_ => \&_export_hook } 
-    @HOOKS
-});
+class(CLASS)->methods(
+    map {
+        my $info = $DELEGATES->{ $_ };
+        my ($module, $method) = @$info;
+        $_ => sub {
+            my $self = shift;
+            _autoload($self->$module)->$method($self->{ name }, @_);
+            return $self;
+        };
+    }
+    keys %$DELEGATES
+);
 
-CLASS->export_fail(\&_export_fail);
-
-sub _export_hook {
-    my ($class, $target, $key, $symbols) = @_;
-    croak "You didn't specify a value for the '$key' load option."
-        unless @$symbols;
-    # make sure we forward the $class to class() so this module can 
-    # be subclassed (e.g. Badger::Web::Class).  NOTE: I'm pretty sure
-    # this isn't required any more since I added the UBER method - must check
-    class($target, $class)->$key(shift @$symbols);
-}
-
-# define catch-all which allows sub-classes to declare hooks via $HOOKS
-sub _export_fail {
-    my ($class, $target, $key, $symbols, $import) = @_;
-#    _debug("_export_fail($class, $target, $key, $symbols)\n");
-    my $hook = class($class)->hash_value( HOOKS => $key ) || return;
-    croak "You didn't specify a value for the '$key' load option."
-        unless @$symbols;
-    class($target, $class)->$hook(shift @$symbols);
-}
-    
-sub export {
-    my ($class, $package, @args) = @_;
-    no strict   REFS;
-    no warnings ONCE;
-    ${$package.PKG.LOADED} ||= 1;
-    $class->SUPER::export($package, @args);
-}
-
-sub _debug_hook {
-    my ($class, $target, $key, $symbols) = @_;
-    croak "You didn't specify a value for the '$key' load option."
-        unless @$symbols;
-    my $debug = shift @$symbols;
-    $debug = { default => $debug }
-        unless ref $debug eq HASH;
-    _autoload($class->DEBUGGER)->export($target, %$debug);
-}
 
 
 
@@ -221,6 +275,13 @@ sub glob_ref   { *{ $_[0]->{ symbols }->{ $_[1] } || return }{ GLOB   } }
 sub scalar     { ${ scalar_ref(@_) || return } }
 sub array      { @{ array_ref(@_)  || return } }
 sub hash       { %{ hash_ref(@_)   || return } }
+
+sub import_symbol {
+    my ($self, $symbol, $ref) = @_;
+    no strict   REFS;
+    no warnings ONCE;
+    *{ $self->{ name }.PKG.$symbol } = $ref;
+}
 
 
 #-----------------------------------------------------------------------
@@ -492,20 +553,6 @@ sub version {
     return $self;
 }
 
-sub constants {
-    my $self = shift;
-    my $constants = @_ == 1 ? shift : { @_ };
-
-    $constants = [ split(DELIMITER, $constants) ] 
-        unless ref $constants eq ARRAY;
-
-    _autoload($self->CONSTANTS)->export(
-        $self->{ name }, @$constants
-    );
-    
-    return $self;
-}
-
 sub constant {
     my $self = shift;
     my $constants = @_ == 1 ? shift : { @_ };
@@ -544,79 +591,6 @@ sub words {
     return $self;
 }
 
-sub vars {
-    my $self = shift;
-    my $vars = @_ == 1 ? shift : [ @_ ];
-    my $pkg  = $self->{ name };
-    my ($symbol, $sigil, $name, $dest, $ref);
-
-    $vars = [ split(DELIMITER, $vars) ] 
-        unless ref $vars;
-
-    $vars = { map { $_ => undef } @$vars }
-        if ref $vars eq ARRAY;
-    
-    croak("Invalid vars specified: $vars\n")
-        unless ref $vars eq HASH;
-    
-    # This is a slightly simplified (stricter) version of the equivalent 
-    # code in vars.pm
-    
-    while (($symbol, $ref) = each %$vars) {
-        no strict REFS;
-
-        # only accept: $WORD @WORD %WORD WORD
-        $symbol =~ /^([\$\@\%])?(\w+)$/
-            || croak("Invalid variable name in vars: $_");
-        ($sigil, $name) = ($1 || '$', $2);
-        
-        # expand destination to full package name ($Your::Module::WORD)
-        $dest = $pkg.PKG.$name;
-
-        _debug("$sigil$name => ", $ref || '\\'.$sigil.$dest, "\n") if $DEBUG;
-        
-        if ($sigil eq '$') {
-            *$dest = defined $ref
-                ? (ref $ref eq SCALAR ? $ref : do { my $copy = $ref; \$copy })
-                : \$$dest;
-        }
-        elsif ($sigil eq '@') {
-            *$dest = defined $ref
-                ? (ref $ref eq ARRAY ? $ref : [$ref])
-                : \@$dest;
-        }
-        elsif ($sigil eq '%') {
-            *$dest = defined $ref
-                ? (ref $ref eq HASH 
-                     ? $ref 
-                     : croak("Invalid hash variable for $symbol in vars: $ref")
-                  )
-                : \%$dest;
-        }
-        else {
-            # should never happen
-            croak("Unrecognised sigil for $symbol in vars");
-        }
-    }
-    return $self;
-}
-
-sub defaults {
-    my $self = shift;
-    _autoload($self->DEFAULTS)->export(
-        $self->{ name }, @_
-    );
-    return $self;
-}
-
-sub aliases {
-    my $self = shift;
-    _autoload($self->ALIASES)->export(
-        $self->{ name }, @_
-    );
-    return $self;
-}
-
 sub exports {
     my $self = shift;
     my $pkg  = $self->{ name };
@@ -627,10 +601,7 @@ sub exports {
 
 sub throws {
     my ($self, $throws) = @_;
-    no strict   REFS;
-    no warnings ONCE;
-    _debug("defining $self THROWS $throws\n") if $DEBUG;
-    *{ $self->{name}.PKG.THROWS } = \$throws;
+    $self->import_symbol(THROWS, \$throws);
     return $self;
 }
 
@@ -654,43 +625,6 @@ sub messages {
         ${ $pkg.PKG.MESSAGES } = $messages = $args;
     }
     
-    return $self;
-}
-
-sub utils {
-    my $self = shift;
-    my $syms = @_ == 1 ? shift : [ @_ ];
-    my $pkg  = $self->{ name };
-
-    $syms = [ split(DELIMITER, $syms) ] 
-        unless ref $syms eq ARRAY;
-
-    _autoload($self->UTILS)->export(
-        $self->{ name }, @$syms
-    );
-
-    return $self;
-}
-
-sub codec {
-    my $self   = shift;
-    my $codecs = $self->CODECS;
-
-    _autoload($codecs)->export_codec(
-        $self->{ name }, shift
-    );
-
-    return $self;
-}
-
-sub codecs {
-    my $self = shift;
-    my $codecs = $self->CODECS;
-
-    _autoload($codecs)->export_codecs(
-        $self->{ name }, shift
-    );
-
     return $self;
 }
 
@@ -728,62 +662,6 @@ sub methods {
     return $self;
 }
 
-sub slots {
-    my ($self, $slots) = @_;
-    my $args = @_ && ref $_[0] eq HASH ? shift : [ @_ ];
-    my $pkg  = $self->{ name };
-    no strict REFS;
-
-    # slots can be a list of names or delimited string
-    $slots = [ split(DELIMITER, $slots) ]
-        unless ref $slots eq ARRAY;
-
-    my $index = 0;
-    foreach my $slot (@$slots) {
-        my $i = $index++;     # new lexical variable to bind in closure
-        *{ $pkg.PKG.$slot } = sub {
-            return @_ > 1
-                ? ($_[0]->[$i] = $_[1])
-                :  $_[0]->[$i];
-        };
-    }
-}
-
-sub accessors {
-    my ($self, $names) = @_;
-    $names = [ $names ] unless ref $names eq ARRAY;
-    $names = [ map { split DELIMITER } @$names ];
-    no strict REFS;
-
-    foreach (@$names) {
-        my $name = $_;      # new lexically scoped var for closure
-        *{ $self->{name}.PKG.$name } = sub {
-            $_[0]->{ $name };
-        };
-    }
-    return $self;
-}
-
-sub mutators {
-    my ($self, $names) = @_;
-    $names = [ $names ] unless ref $names eq ARRAY;
-    $names = [ map { split DELIMITER } @$names ];
-    no strict REFS;
-    
-    foreach (@$names) {
-        my $name = $_;
-        *{ $self->{name}.PKG.$name } = sub {
-            # You wouldn't ever want to write a real subroutine like this.
-            # But that's OK, because we're here to do it for you.  You get
-            # the efficiency without having to ever look at code like this:
-            @_ == 2 
-                ? ($_[0]->{ $name } = $_[1])
-                :  $_[0]->{ $name };
-        };
-    }
-    return $self;
-}
-
 sub overload {
     my $self = shift;
     my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
@@ -810,20 +688,6 @@ sub is_true {
 #-----------------------------------------------------------------------
 # misc methods
 #-----------------------------------------------------------------------
-
-sub filesystem {
-    my $self = shift;
-    my $syms = @_ == 1 ? shift : { @_ };
-
-    $syms = [ split(DELIMITER, $syms) ] 
-        unless ref $syms eq ARRAY;
-
-    _autoload($self->FILESYSTEM)->export(
-        $self->{ name }, @$syms
-    );
-    
-    return $self;
-}
 
 sub instance {
     my $self = shift;
@@ -903,7 +767,6 @@ sub _autoload {
     no warnings ONCE;
     
     unless ( $LOADED->{ $class }
-#         || %{ $class.PKG } ) {            # not good enough
           || defined ${ $class.PKG.LOADED  } 
           || defined ${ $class.PKG.VERSION }
           || @{ $class.PKG.ISA }) {
@@ -912,14 +775,8 @@ sub _autoload {
         $v = ${ $class.PKG.VERSION } ||= 0;
         local $SIG{__DIE__};
         eval "use $class";
-#        _debug("autoload error: $@\n") if $DEBUG && $@;
         die $@ if $@;
-#        _debug("autoloaded successfully\n") if $DEBUG;
         ${ $class.PKG.LOADED } ||= 1;
-#        die $@
-#            if $@ && $@ !~ /^Can't locate .*? at \(eval /;
-#        die sprintf("Module '%s' is empty in %s at %s line %s\n", $class, caller(2))
-#            unless *{"$class\::"};
     }
     return $class;
 }
@@ -2066,17 +1923,6 @@ This can be used to define methods for list-based objects.
     use Badger::Class
         slots => 'size colour object';
     
-    sub new {
-        my ($class, @stuff) = @_;
-        bless \@stuff, $class;
-    }
-    
-    package main;
-    my $bus = Badger::Test::Slots->new(qw(big red bus));
-    print $bus->size;       # big
-    print $bus->colour;     # red
-    print $bus->object;     # bus
-
 See the L<slots> method for further details.
 
 =head2 accessors / get_methods
@@ -2286,6 +2132,20 @@ Returns a reference to the package symbol table for the class.
 Returns a symbol table entry for a particular name.
 
     my $symbol = class->symbol('FOO');
+
+=head2 import_symbol($name,$ref)
+
+Adds a new value to the symbol table.
+
+    # important a subroutine/method
+    class->import_symbol(
+        foo => sub { ... }
+    );
+    
+    # importing a class variable
+    class->import_symbol(
+        BAR => \$bar,
+    )
 
 =head2 scalar_ref($name)
 
@@ -2658,58 +2518,13 @@ called via the corresponding L<vars> import hook.
     use Badger::Class
         vars => '$FOO @BAR %BAZ';   
 
-In the simple case, it works just like the C<vars.pm> module in pre-declaring
-the variables named. 
+The method delegates to the L<Badger::Class::Vars> module.
 
-Unlike C<vars.pm>, this method will I<only> define scalar, list and hash
-package variables (e.g. C<$SOMETHING>, C<@SOMETHING> or C<%SOMETHING>). If you
-want to define a subroutine/method then use the L<methods> import hook or
-L<methods()> method. If you want to define a glob reference then you're
-already operating in I<Wizard Mode> and you don't need our help.
+=head2 defaults($vars)
 
-If you don't specify a leading sigil (i.e. C<$>, C<@> or C<%>) then it will
-default to C<$> and create a scalar variable.
-
-    use Badger::Class
-        vars => 'FOO BAR BAZ';      # declares $FOO, $BAR and $BAZ
-
-You can also use a reference to a hash array to define values for variables.
-
-    use Badger::Class
-        vars => {                           # Equivalent code:
-            '$FOO' => 42,                   #   our $FOO = 25
-            '@WIZ' => [100, 200, 300],      #   our @WIZ = (100, 200, 300)
-            '%WOZ' => {ping => 'pong'},     #   our %QOZ = (ping => 'pong')
-        };
-
-Scalar package variables can be assigned any scalar value or a reference to
-some other data type. Again, the leading C<$> is optional on the variable
-names. Note the difference in the equivalent code - this time we end up with
-scalar variables and references exclusively.
-
-    use Badger::Class
-        vars => {                           # Equivalent code:
-            FOO => 42,                      #   our $FOO = 42
-            BAR => [100, 200, 300],         #   our $BAR = [100, 200, 300]
-            BAZ => {ping => 'pong'},        #   our $BAZ = {ping => 'pong'}
-            HAI => sub {                    #   our $HAI = sub { ... }
-                'Hello ' . (shift || 'World') 
-            },
-        };
-
-You can also assign any kind of data to a package list variable.  If it's
-not already a list reference then the value will be treated as a single
-item list.
-
-    use Badger::Class
-        vars => {                           # Equivalent code:
-            '@FOO' => 42,                   #   our @FOO = (42)
-        };
-
-=head2 default($vars)
-
-This method implements the functionality for the L<default> export hook. At
-present it only works with scalar package variables.
+This method implements the functionality for the L<defaults> export hook by
+delegating to the L<Badger::Class::Defaults> module. At present it only works
+with scalar package variables.
 
     use Badger::Class
         default => {                        # Equivalent code:
@@ -2817,6 +2632,9 @@ This method can be used to define new methods in the target class.
 =head2 accessors($name) / get_methods($name)
 
 This method can be used to generate accessor (read-only) methods for a class.
+It delegates to the L<accessors()|Badger::Class::Methods/accessors()> 
+method in L<Badger::Class::Methods>. 
+
 You can pass a list, reference to a list, or a whitespace delimited string
 of method names as arguments.  
 
@@ -2836,13 +2654,16 @@ equivalent to this:
 =head2 mutators / set_methods
 
 This method can be used to generate mutator (read/write) methods for a class.
+It delegates to the L<mutators()|Badger::Class::Methods/mutators()> 
+method in L<Badger::Class::Methods>. 
+
 You can pass a list, reference to a list, or a whitespace delimited string
 of method names as arguments.  
 
     # these all do the same thing
-    class->accessors('foo bar');
-    class->accessors('foo', 'bar');
-    class->accessors(['foo', 'bar']);
+    class->mutators('foo bar');
+    class->mutators('foo', 'bar');
+    class->mutators(['foo', 'bar']);
 
 A method will be generated in the target class for each that returns the
 object member data of the same name. If an argument is passed then the 
@@ -2856,55 +2677,14 @@ The code generated is equivalent to this:
             :  $_[0]->{ foo };
     }
 
-Ugly isn't it?   But of course you wouldn't ever write it like that, being 
-a conscientious Perl programmer concerned about the future readability and
-maintainability of your code.  Instead you might write it something like
-this:
-
-    sub foo {
-        my $self = shift;
-        if (@_) {
-            # an argument implies a set
-            return ($self->{ foo } = shift);
-        }
-        else {
-            # no argument implies a get
-            return $self->{ foo };
-        }
-    }
-
-Or perhaps like this:
-
-    sub foo {
-        my $self = shift;
-        # update value if an argument was passed
-        $self->{ foo } = shift if @_;
-        return $self->{ foo };
-    }
-
-Or even like this (my personal favourite):
-
-    sub foo {
-        my $self = shift;
-        return @_
-            ? ($self->{ foo } = shift)
-            :  $self->{ foo };
-    }
-
-Whichever way you do it is a waste of time, both for you and anyone who has to
-read your code at a later. Seriously, give it up! Let us generate the methods
-for you. We'll not only save you the effort of typing pages of code that
-no-one will ever read (or want to read), but we'll also generate the most
-efficient code for you. The kind that you wouldn't normally want to handle by
-yourself.
-
-So in summary, using this method will keep your code clean, your code 
-efficient, and will free up the rest of the afternoon so you can go out 
-skateboarding.  Tell your boss I said it was OK.
+See L<Badger::Class::Methods> for further discussion.
 
 =head2 slots($names)
 
 This method can be used to define methods for list-based object classes.
+It delegates to the L<mutators()|Badger::Class::Methods/mutators()> 
+method in L<Badger::Class::Methods>. 
+
 A list, reference to a list, or string of whitespace delimited method
 names should be passed an argument(s).  A method will be generated for
 each item specified.  The first method will reference the first (0th) item

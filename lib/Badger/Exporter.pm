@@ -351,6 +351,8 @@ sub exportables {
             # entries put in first by more specialised sub-classes are used 
             # in preference to those defined by more general super-classes.
             if ($symbols = ${ $pkg.PKG.EXPORT_ANY }) {
+                $symbols = [ split(DELIMITER, $symbols) ]
+                    unless ref $symbols eq ARRAY;
                 $any{ $_ } ||= $pkg
                     for @$symbols;
             }
@@ -358,6 +360,8 @@ sub exportables {
             # $EXPORT_ALL is merged into @all and all symbols are mapped 
             # to their packages in %any
             if ($symbols = ${ $pkg.PKG.EXPORT_ALL }) {
+                $symbols = [ split(DELIMITER, $symbols) ]
+                    unless ref $symbols eq ARRAY;
                 push(
                     @all,
                     map { $any{ $_ } ||= $pkg; $_ }
@@ -856,7 +860,7 @@ indicate failure which is then reported in the usual way.
             }
         }
     );
-    
+
 An C<export_fail> handler may also remove symbols from the C<$more_symbols>
 list to indicate that they have been handled, as per C<export_hooks()>.
 

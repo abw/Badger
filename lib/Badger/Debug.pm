@@ -46,6 +46,10 @@ our $CALLER_UP = 0;     # hackola to allow debug() to use a different caller
 our $DEBUG     = 0 unless defined $DEBUG;
 
 
+#-----------------------------------------------------------------------
+# export hooks
+#-----------------------------------------------------------------------
+
 sub _export_debug_default {
     my ($self, $target, $symbol, $value, $symbols) = @_;
     unshift(
@@ -57,6 +61,7 @@ sub _export_debug_default {
     );
     return $self;
 }
+
 
 sub _export_debug_variable {
     my ($self, $target, $symbol, $value) = @_;
@@ -70,6 +75,7 @@ sub _export_debug_variable {
     *{ $target.PKG.DEBUG } = \$value;
 }
 
+
 sub _export_debug_constant {
     my ($self, $target, $symbol, $value) = @_;
     no strict REFS;
@@ -82,10 +88,12 @@ sub _export_debug_constant {
     *{ $target.PKG.DEBUG } = sub () { $value };
 }
 
+
 sub _export_debug_modules {
     my ($self, $target, $symbol, $modules) = @_;
     $self->debug_modules($modules);
 }
+
 
 #-----------------------------------------------------------------------
 # exportable debugging methods
@@ -121,6 +129,7 @@ sub debugging {
     return $debug;
 } 
 
+
 sub debug {
     my $self   = shift;
     my $msg    = join('', @_),
@@ -139,11 +148,13 @@ sub debug {
     print STDERR $format;
 }
 
+
 sub debug_up {
     my $self = shift;
     local $CALLER_UP = shift;
     $self->debug(@_);
 }
+
 
 sub debug_caller {
     my $self = shift;
@@ -154,6 +165,7 @@ sub debug_caller {
     $self->debug($msg);
 }
 
+
 sub debug_args {
     my $self = shift;
     $self->debug_up( 
@@ -162,6 +174,7 @@ sub debug_args {
         "\n"
     );
 }
+
 
 sub debug_modules {
     my $self    = shift;
@@ -188,6 +201,7 @@ sub dump {
     my $self = shift;
     $self->dump_data($self);
 }
+
 
 sub dump_data {
     my ($self, $data, $indent) = @_;
@@ -217,12 +231,14 @@ sub dump_data {
     }
 }
 
+
 sub dump_data_inline {
     local $PAD = '';
     my $text = shift->dump_data(@_);
     $text =~ s/\n/ /g;
     return $text;
 }
+
 
 sub dump_hash {
     my ($self, $hash, $indent) = @_;
@@ -238,6 +254,7 @@ sub dump_hash {
         . "\n$pad}";
 }
 
+
 sub dump_list {
     my ($self, $list, $indent) = @_;
     $indent ||= 0;
@@ -250,6 +267,7 @@ sub dump_list {
             : '' )
         . "\n$pad]";
 }
+
 
 sub dump_text {
     my ($self, $text, $length) = @_;
