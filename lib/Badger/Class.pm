@@ -27,9 +27,8 @@ use constant {
     CODECS     => 'Badger::Codecs',
     UTILS      => 'Badger::Utils',
     DEBUGGER   => 'Badger::Debug',
+    CONFIG     => 'Badger::Class::Config',
     METHODS    => 'Badger::Class::Methods',
-    DEFAULTS   => 'Badger::Class::Defaults',
-    ALIASES    => 'Badger::Class::Aliases',
     VARS       => 'Badger::Class::Vars',
     LOADED     => 'BADGER_LOADED',
     MESSAGES   => 'MESSAGES',
@@ -63,11 +62,10 @@ our $LOADED    = { };
 our $DELEGATES = {
     # note the first argument on RHS is quto-quoted by =>
     accessors   => [ METHODS    => 'accessors'      ],
-    aliases     => [ ALIASES    => 'export'         ],
     codec       => [ CODECS     => 'export_codec'   ],    
     codecs      => [ CODECS     => 'export_codecs'  ],
+    config      => [ CONFIG     => 'export'         ],
     constants   => [ CONSTANTS  => 'export'         ],
-    defaults    => [ DEFAULTS   => 'export'         ],
     filesystem  => [ FILESYSTEM => 'export'         ],
     mutators    => [ METHODS    => 'mutators'       ],
     slots       => [ METHODS    => 'slots'          ],
@@ -90,9 +88,9 @@ our $EXPORT_HOOKS = {
     map { $_ => \&_export_hook } 
     qw( 
         base uber mixin mixins version constant constants words vars 
-        defaults aliases exports throws messages utils codec codecs 
-        filesystem hooks methods slots accessors mutators get_methods 
-        set_methods overload as_text is_true
+        config exports throws messages utils codec codecs filesystem
+        hooks methods slots accessors mutators get_methods set_methods 
+        overload as_text is_true
     )
 };
 
@@ -766,8 +764,7 @@ sub _autoload {
     no strict   REFS;
     no warnings ONCE;
     
-    unless ( $LOADED->{ $class }
-          || defined ${ $class.PKG.LOADED  } 
+    unless ( defined ${ $class.PKG.LOADED  } 
           || defined ${ $class.PKG.VERSION }
           || @{ $class.PKG.ISA }) {
 
@@ -1105,13 +1102,13 @@ on.
         };
 
 The trick here is to use the C<uber> hook instead of C<base>. This is a
-special case that applies only when you're subclassing C<Badger::Base> (or
-another module derived from C<Badger::Base>). In addition to adding
+special case that applies only when you're subclassing C<Badger::Class> (or
+another module derived from C<Badger::Class>). In addition to adding
 C<Badger::Class> (or whatever class module you specify) as a base class of the
 current module, it also performs some extra magic to ensure that the
 L<class()> and L<classes()> subroutines return objects of your new class (e.g.
 C<My::Class>) instead of C<Badger::Class>. You don't need to worry too much
-about the details. Just use C<uber> instead of C<base> when you're subclass a
+about the details. Just use C<uber> instead of C<base> when you subclass a
 C<Badger::Class> module and we'll take care of everything for you. See the
 L<uber()> and L<UBER()> methods for further details.
 
@@ -1264,7 +1261,7 @@ stringified (i.e. printed, appended to another string, etc).   That means
 that you can treat it like a string for most practical purposes, even
 though it's actually an object.
 
-    print class;            # Your Module
+    print class;            # Your::Module
 
 You can also call C<class> as an object method. Perl implicitly passes the
 object reference (traditionally called C<$self>) as the first argument So the
@@ -1713,74 +1710,6 @@ It also allows you to provide values for variables, like so:
 
 See the L<vars()> method for further information.
 
-=head2 defaults
-
-This is similar to the L<vars> hook in allowing you to define one or more
-default values for scalar package variables. If a package variable is already
-defined then it is not changed. It also defines the C<$DEFAULTS> package
-variable (if not already defined) which contains a reference to the hash array
-of default values specified.
-
-    use Badger::Class
-        defaults => {
-            FOO => 10,
-            BAR => 20,
-        };
-
-The above example is equivalent to the following code:
-
-    our $FOO = 10 
-        unless defined $FOO;
-    our $BAR = 20 
-        unless defined $BAR;
-    our $DEFAULTS = { FOO => 10, BAR => 20 }
-        unless defined $DEFAULTS;
-
-It also imports a L<init_defaults()> method into your class that you can
-call from your L<init()> method to initialise the object using named
-parameters from the C<$config> hash or the default values defined in 
-package variables.
-
-    sub init {
-        my ($self, $config) = @_;
-        $self->init_defaults($config);
-        return $self;
-    }
-
-This functionality is implemented by the L<Badger::Class::Defaults> 
-module.  It should be considered experimental and subject to change.
-
-=head2 aliases
-
-This hook can be used to define aliases for the configuration parameters 
-for your object class.  It stores them in a C<$ALIASES> package variable
-and exports an C<init_aliases()> method which you can call from your own
-C<init()> method.  This method will look for any aliases in the configuration
-and update the hash to contain the definitive name for the item.
-
-    use Badger::Class
-        base      => 'Badger::Base',
-        accessors => 'name user pass',
-        aliases   => {
-            name  => 'database',
-            user  => 'username',
-            pass  => 'password',
-        };
-
-    sub init {
-        my ($self, $config) = @_;
-        
-        $self->init_aliases($config);
-        
-        for (qw( name user pass )) {
-            $self->{ $_ } = $config->{ $_ };
-        }
-        return $self;
-    }
-
-This functionality is implemented by the L<Badger::Class::Aliases> 
-module.  It should be considered experimental and subject to change.
-
 =head2 exports 
 
 This allows you to declare the symbols that your module can export.
@@ -1859,6 +1788,42 @@ delegate to any symbols in any of the *::Util modules).
     }
 
 See the L<utils()> method and L<Badger::Utils> for further details.
+
+=head2 config
+
+This can be used to define configuration options for your module.
+It delegates to the L<Badger::Class::Config> module.
+
+    package Your::Module;
+    
+    use Badger::Class
+        base      => 'Badger::Base',
+        accessors => 'foo bar baz wig woot toot zoot zang',
+        config    => [
+            'foo',                      # optional item
+            'bar!',                     # mandatory item
+            'baz=42',                   # item with default
+            'wig|wam|bam',              # item with aliases
+            'woot|pkg:WOOT',            # fallback to $WOOT pkg var
+            'toot|class:WOOT',          # fallback to $WOOT class var
+            'zoot|method:ZOOT',         # fallback to ZOOT() method/constant
+            'zing|zang|pkg:ZING=99',    # combination of above
+        ];
+    
+    sub init {
+        my ($self, $config) = @_;
+        
+        # call the configure() method provided by the above
+        $self->configure($config);
+        
+        return $self;
+    }
+
+The L<configure()|Badger::Class::Config/configure()> method is exported into
+your module as a configuration method for initialising object instances.
+A C<$CONFIG> package variable is also exported containing a reduced (i.e.
+optimised for performance) version of the configuration scheme which the 
+L<configure()|Badger::Class::Config/configure()> method uses.
 
 =head2 codec
 
@@ -2520,16 +2485,10 @@ called via the corresponding L<vars> import hook.
 
 The method delegates to the L<Badger::Class::Vars> module.
 
-=head2 defaults($vars)
+=head2 config($schema)
 
-This method implements the functionality for the L<defaults> export hook by
-delegating to the L<Badger::Class::Defaults> module. At present it only works
-with scalar package variables.
-
-    use Badger::Class
-        default => {                        # Equivalent code:
-            ANSWER => 42,                   #   our $ANSWER = 42 
-        };                                  #       unless defined $ANSWER
+This method implements the functionality for the L<config> export hook by
+delegating to the L<Badger::Class::Config> module.
 
 =head2 exports($symbols)
 

@@ -260,12 +260,37 @@ Badger::Class::Config - class mixin for configuration
 
 =head1 SYNOPSIS
 
-TODO
+    package Your::Module;
+    
+    # via Badger::Class
+    use Badger::Class
+        base      => 'Badger::Base',
+        accessors => 'foo bar baz wig woot toot zoot zang',
+        config    => [
+            'foo',                      # optional item
+            'bar!',                     # mandatory item
+            'baz=42',                   # item with default
+            'wig|wam|bam',              # item with aliases
+            'woot|pkg:WOOT',            # fallback to $WOOT pkg var
+            'toot|class:WOOT',          # fallback to $WOOT class var
+            'zoot|method:ZOOT',         # fallback to ZOOT() method/constant
+            'zing|zang|pkg:ZING=99',    # combination of above
+        ];
+    
+    sub init {
+        my ($self, $config) = @_;
+        
+        # call the configure() method provided by the above
+        $self->configure($config);
+        
+        return $self;
+    }
 
 =head1 DESCRIPTION
 
-This class mixin module allows you to define configuration 
-parameters.
+This class mixin module allows you to define configuration parameters
+for an object class.  It exports a L<configure()> method which can be used
+to initialise your object instances.
 
 It is still experimental and subject to change.
 
