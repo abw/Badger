@@ -1,8 +1,8 @@
 #============================================================= -*-perl-*-
 #
-# t/core/class.t
+# t/class/methods.t
 #
-# Test the Badger::Class module.
+# Test the Badger::Class::Methods module.
 #
 # Written by Andy Wardley <abw@wardley.org>
 #
