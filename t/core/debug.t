@@ -210,5 +210,5 @@ is( My::Debugger3->debug_dynamic_status, 'off', 'debugger3 dynamic debugging is 
 
 Badger::Debug->export('foo', '$DEBUG' => 1);
 
-exit();
+
 
