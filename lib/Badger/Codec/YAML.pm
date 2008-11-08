@@ -15,11 +15,11 @@ package Badger::Codec::YAML;
 use Badger::Class
     version => 0.01,
     base    => 'Badger::Codec',
-    import  => 'class';
+    import  => 'class CLASS';
 
 BEGIN {
     eval { require 'YAML.pm' } 
-        || class->error("You don't have YAML installed");
+        || CLASS->error("You don't have YAML installed");
 }
 
 sub encode {
