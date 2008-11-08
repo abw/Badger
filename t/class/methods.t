@@ -13,7 +13,7 @@
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Test
-    tests => 38,
+    tests => 44,
     debug => 'Badger::Class::Methods',
     args  => \@ARGV;
 
@@ -28,16 +28,20 @@ use Badger::Class::Methods
     accessors => 'foo bar',
     mutators  => 'flic flac',
     get       => 'a',           # short aliases for above
-    set       => 'b';
+    set       => 'b',
+    hash      => 'users';
 
 package main;
 
 my $obj = bless { 
-    foo  => 10, 
-    bar  => 20, 
-    flic => 30,
-    a    => 31,
-    b    => 32,
+    foo   => 10, 
+    bar   => 20, 
+    flic  => 30,
+    a     => 31,
+    b     => 32,
+    users => {
+        tom => 'tom@example.com',
+    },
 }, 'Badger::Test::Methods1';
 
 is( $obj->foo, 10, 'foo accessor' );
@@ -55,6 +59,18 @@ is( $obj->a, 31, 'a get again' );
 is( $obj->b, 32, 'b get' );
 is( $obj->b(33), 33, 'b set' );
 is( $obj->b, 33, 'b get again' );
+is( $obj->users->{ tom }, 'tom@example.com', 'got users hash' );
+is( $obj->users('tom'), 'tom@example.com', 'got users item' );
+
+# add users via hash ref
+$obj->users({ dick => 'richard@example.com' });
+is( $obj->users('dick'), 'richard@example.com', 'dick added to users' );
+is( $obj->users('tom'), 'tom@example.com', 'tom is still in users' );
+
+# add users via named params
+$obj->users( harry => 'harold@example.com' );
+is( $obj->users('harry'), 'harold@example.com', 'harold added to users' );
+is( $obj->users('dick'), 'richard@example.com', 'richard is still in users' );
 
 
 #-----------------------------------------------------------------------

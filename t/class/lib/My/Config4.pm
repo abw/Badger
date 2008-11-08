@@ -5,7 +5,7 @@ use Badger::Class
     debug     => 0,
     base      => 'My::Config3',
     accessors => 'extra volume colour',
-    config    => 'extra|class:EXTRA volume|method:VOLUME=10 colour=black',
+    config    => 'extra|class:MORE:EXTRA volume|method:VOLUME=10 colour=black',
     constant  => {
         VOLUME => undef,
     };

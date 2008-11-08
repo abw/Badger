@@ -13,7 +13,7 @@
 
 use lib qw( t/class/lib ../t/class/lib ./lib ../lib ../../lib );
 use Badger::Test
-    tests => 24,
+    tests => 28,
     debug => 'Badger::Class::Config',
     args  => \@ARGV;
 
@@ -106,7 +106,15 @@ is( $obj->volume, 11, 'this one goes up to eleven' );
 use My::Config5;
 $obj = My::Config5->new( username => 'nigel' );
 is( $obj->volume, 11, "well, it's one louder" );
+is( $obj->cat, 'felix', 'got the cat' );
+is( $obj->dog, 'rover', 'got the dog' );
 
+
+# test we can target a different hash
+my $data = { };
+My::Config5->configure({ username => 'nigel' }, $data);
+is( $data->{ volume }, 11, 'got volume via hash target' );
+is( $data->{ username }, 'nigel', 'got name via hash target' );
 
 __END__
 use My::Config2;
