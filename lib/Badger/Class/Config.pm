@@ -23,6 +23,8 @@ use Badger::Class
     constants => 'HASH ARRAY DELIMITER',
     constant  => {
         CONFIG_METHOD => 'configure',
+        VALUE         => 1,
+        NOTHING       => 0,
     },
     messages => {
         bad_type   => 'Invalid type prefix specified for %s: %s',
@@ -59,13 +61,17 @@ sub schema {
     
     $config = [ split(DELIMITER, $config) ]
         unless ref $config;
-        
-    $config = { map { $_ => { } } @$config } 
-        if ref $config eq ARRAY;
+    
+    $config = { 
+        map { 
+            ref($_) eq HASH 
+                ? ($_->{ name } => $_)
+                : ($_           => { })
+        } @$config 
+    } if ref $config eq ARRAY;
 
     $class->debug("Canonical config: ", $class->dump_data($config))
         if DEBUG;
-
         
     while (($name, $info) = each %$config) {
         if (ref $info eq HASH) {
@@ -122,10 +128,13 @@ sub schema {
 #-----------------------------------------------------------------------
 
 sub configure {
-    my ($self, $config) = @_;
+    my ($self, $config, $target) = @_;
     my $class  = class($self);
     my $schema = $class->list_vars(CONFIG);
-    my ($element, $name, $alias, $value);
+    my ($element, $name, $alias, $code, @args, $ok, $value);
+    
+    # if a specific $target isn't defined then we default to updating $self
+    $target ||= $self;
 
     $self->debug("configure(", CLASS->dump_data_inline($config), ')') if DEBUG;
     $self->debug("schema: ", CLASS->dump_data($schema)) if DEBUG;
@@ -136,13 +145,16 @@ sub configure {
         FALLBACK: foreach $alias ($name, @{ $element->{ fallback } }) {
             if (ref $alias) {
                 $self->debug("Dispatching handler to set $name\n") if DEBUG;
-                my ($code, @args) = @$alias;
-                next ELEMENT
-                    if $code->($self, $class, $name, $config, @args);
+                ($code, @args) = @$alias;
+                ($ok, $value) = $code->($self, $class, $name, $config, @args);
+                if ($ok) {
+                    $target->{ $name } = $value;
+                    next ELEMENT;
+                }
             }
             elsif (defined $config->{ $alias }) {
                 $self->debug("Looking for $alias in config to set $name\n") if DEBUG;
-                $self->{ $name } = $config->{ $alias };
+                $target->{ $name } = $config->{ $alias };
                 next ELEMENT;
             }
             else {
@@ -151,7 +163,7 @@ sub configure {
         }
         
         if (exists $element->{ default }) {
-            $self->{ $name } = $element->{ default };
+            $target->{ $name } = $element->{ default };
             next ELEMENT;
         }
         
@@ -184,28 +196,24 @@ sub configure_pkg {
         defined $value ? $value : '<undef>'
     ) if DEBUG;
 
-    if (defined $value) {
-        $self->{ $name } = $value;
-        return 1;
-    }
-    return 0;
+    return defined $value
+        ? (VALUE => $value)
+        : (NOTHING);
 }
 
 
 sub configure_class {
     my ($self, $class, $name, $config, $var) = @_;
-    my $value = $class->any_var($var);
+    my $value = $class->any_var_in( split(':', $var) );
 
     $self->debug(
         "Looking for \$$var class variable in $class to set $name: ", 
         defined $value ? $value : '<undef>'
     ) if DEBUG;
 
-    if (defined $value) {
-        $self->{ $name } = $value;
-        return 1;
-    }
-    return 0;
+    return defined $value
+        ? (VALUE => $value)
+        : (NOTHING);
 }
 
 
@@ -218,11 +226,9 @@ sub configure_env {
         defined $value ? $value : '<undef>'
     ) if DEBUG;
 
-    if (defined $value) {
-        $self->{ $name } = $value;
-        return 1;
-    }
-    return 0;
+    return defined $value
+        ? (VALUE => $value)
+        : (NOTHING);
 }
 
 sub configure_method {
@@ -242,11 +248,9 @@ sub configure_method {
         defined $value ? $value : '<undef>'
     ) if DEBUG;
 
-    if (defined $value) {
-        $self->{ $name } = $value;
-        return 1;
-    }
-    return 0;
+    return defined $value
+        ? (VALUE => $value)
+        : (NOTHING);
 }
 
 
