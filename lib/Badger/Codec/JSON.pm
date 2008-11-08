@@ -33,11 +33,11 @@ sub decode {
 # shortcuts straight to the real encoder/decoder subs for efficient aliasing
 
 sub encoder {
-    \&encode_json;
+    \&JSON::encode_json;
 }
 
 sub decoder {
-    \&decode_json;
+    \&JSON::decode_json;
 }
 
 
