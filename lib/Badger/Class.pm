@@ -61,16 +61,17 @@ our $LOADED    = { };
 
 our $DELEGATES = {
     # note the first argument on RHS is quto-quoted by =>
-    accessors   => [ METHODS    => 'accessors'      ],
-    codec       => [ CODECS     => 'export_codec'   ],    
-    codecs      => [ CODECS     => 'export_codecs'  ],
-    config      => [ CONFIG     => 'export'         ],
-    constants   => [ CONSTANTS  => 'export'         ],
-    filesystem  => [ FILESYSTEM => 'export'         ],
-    mutators    => [ METHODS    => 'mutators'       ],
-    slots       => [ METHODS    => 'slots'          ],
-    utils       => [ UTILS      => 'export'         ],
-    vars        => [ VARS       => 'vars'           ],
+    accessors    => [ METHODS    => 'accessors'      ],
+    codec        => [ CODECS     => 'export_codec'   ],    
+    codecs       => [ CODECS     => 'export_codecs'  ],
+    config       => [ CONFIG     => 'export'         ],
+    constants    => [ CONSTANTS  => 'export'         ],
+    filesystem   => [ FILESYSTEM => 'export'         ],
+    hash_methods => [ METHODS    => 'hash'           ],
+    mutators     => [ METHODS    => 'mutators'       ],
+    slots        => [ METHODS    => 'slots'          ],
+    utils        => [ UTILS      => 'export'         ],
+    vars         => [ VARS       => 'vars'           ],
 };
 
 *get_methods = \&accessors;
@@ -90,7 +91,7 @@ our $EXPORT_HOOKS = {
         base uber mixin mixins version constant constants words vars 
         config exports throws messages utils codec codecs filesystem
         hooks methods slots accessors mutators get_methods set_methods 
-        overload as_text is_true
+        hash_methods overload as_text is_true
     )
 };
 
@@ -1918,6 +1919,16 @@ You can use C<set_methods> as an alias for C<mutators> if you prefer.
 
 See the L<mutators()> method for further details.
 
+=head2 hash_methods
+
+This can be used to define methods for accessing hash arrays inside an object
+
+    use Badger::Class
+        hash_methods => 'users addresses';
+
+See the L<hash_methods()> method and the L<hash()|Badger::Class::Methods/hash()> 
+method in L<Badger::Class::Methods> for further information.
+
 =head2 overload
 
 This can be used as a shortcut to the C<overload> module to overload
@@ -2588,7 +2599,7 @@ This method can be used to define new methods in the target class.
         bar => sub { ... },
     )       
 
-=head2 accessors($name) / get_methods($name)
+=head2 accessors($names) / get_methods($names)
 
 This method can be used to generate accessor (read-only) methods for a class.
 It delegates to the L<accessors()|Badger::Class::Methods/accessors()> 
@@ -2610,7 +2621,7 @@ equivalent to this:
         $_[0]->{ foo };
     }
 
-=head2 mutators / set_methods
+=head2 mutators($names) / set_methods($names)
 
 This method can be used to generate mutator (read/write) methods for a class.
 It delegates to the L<mutators()|Badger::Class::Methods/mutators()> 
@@ -2637,6 +2648,13 @@ The code generated is equivalent to this:
     }
 
 See L<Badger::Class::Methods> for further discussion.
+
+=head2 hash_methods($names)
+
+This method can be used to generate methods for a class that manipulate
+internal hash arrays. It accepts the same arguments as L<mutators()> and
+delegates to the L<hash()|Badger::Class::Methods/hash()> method in
+L<Badger::Class::Methods>.
 
 =head2 slots($names)
 
