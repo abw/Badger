@@ -15,22 +15,28 @@ package Badger::Debug;
 use Carp;
 use Badger::Rainbow 
     ANSI => 'bold red yellow green cyan';
+use Scalar::Util 'blessed';
 use Badger::Class
     base      => 'Badger::Exporter',
     version   => 0.01,
-    constants => 'PKG REFS ARRAY DELIMITER',
+    constants => 'PKG REFS SCALAR ARRAY HASH CODE REGEX DELIMITER',
     words     => 'DEBUG',
     import    => 'class',
+#    utils     => 'blessed reftype',
+    constant  => {
+        UNDEF => '<undef>',
+    },
     exports   => {
         tags  => {
             debug => 'debugging debug debug_up debug_caller debug_args',
-            dump  => 'dump dump_data dump_data_inline 
-                      dump_hash dump_list dump_text'
+            dump  => 'dump dump_data dump_data_inline
+                      dump_ref dump_hash dump_list dump_text'
         },
         hooks => {
             color    => \&enable_colour,
             colour   => \&enable_colour,
-            default  => [\&_export_debug_default,  1],  # expects 1 arguments
+            dumps    => [\&_export_debug_dumps,    1],  # expects 1 arguments
+            default  => [\&_export_debug_default,  1],
             modules  => [\&_export_debug_modules,  1],
             'DEBUG'  => [\&_export_debug_constant, 1],
             '$DEBUG' => [\&_export_debug_variable, 1],
@@ -49,6 +55,15 @@ our $DEBUG     = 0 unless defined $DEBUG;
 #-----------------------------------------------------------------------
 # export hooks
 #-----------------------------------------------------------------------
+
+sub _export_debug_dumps {
+    my ($self, $target, $symbol, $value, $symbols) = @_;
+    $self->export_symbol($target, dumper => sub {
+        $_[0]->dump_hash($_[0],$_[1],$value);
+    });
+    return $self;
+}
+
 
 sub _export_debug_default {
     my ($self, $target, $symbol, $value, $symbols) = @_;
@@ -199,31 +214,43 @@ sub debug_modules {
 
 sub dump {
     my $self = shift;
-    $self->dump_data($self);
+    my $code = $self->can('dumper');
+    return $code 
+         ? $code->($self, @_)
+         : $self->dump_ref($self, @_);
 }
 
 
 sub dump_data {
-    my ($self, $data, $indent) = @_;
-    $indent ||= 0;
-
-    if (defined $data) {
-        return $data unless ref $data;
+    if (! defined $_[1]) {
+        return UNDEF;
+    }
+    elsif (! ref $_[1]) {
+        return $_[1];
+    }
+    elsif (blessed($_[1]) && (my $code = $_[1]->can('dump'))) {
+        shift;  # remove $self object, leave target object first
+        return $code->(@_);
     }
     else {
-        return '<undef>';
+        goto &dump_ref;
     }
+}
 
-    if (UNIVERSAL::isa($data, 'HASH')) {
+
+sub dump_ref {
+    my ($self, $data, $indent) = @_;
+    
+    if (UNIVERSAL::isa($data, HASH)) {
         return $self->dump_hash($data, $indent);
     }
-    elsif (UNIVERSAL::isa($data, 'ARRAY')) {
+    elsif (UNIVERSAL::isa($data, ARRAY)) {
         return $self->dump_list($data, $indent);
     }
-    elsif (UNIVERSAL::isa($data, 'Regexp')) {
+    elsif (UNIVERSAL::isa($data, REGEX)) {
         return $self->dump_text("$data");
     }
-    elsif (UNIVERSAL::isa($data, 'SCALAR')) {
+    elsif (UNIVERSAL::isa($data, SCALAR)) {
         return $self->dump_text($$data);
     }
     else {
@@ -241,16 +268,29 @@ sub dump_data_inline {
 
 
 sub dump_hash {
-    my ($self, $hash, $indent) = @_;
+    my ($self, $hash, $indent, $keys) = @_;
     $indent ||= 0;
     return "..." if $indent > $MAX_DEPTH;
     my $pad = $PAD x $indent;
-    
+
     return '{ }' unless $hash && %$hash;
+    
+    if ($keys) {
+        $keys = [ split(DELIMITER, $keys) ]
+            unless ref $keys;
+        $keys = { map { $_ => 1 } @$keys }
+            if ref $keys eq ARRAY;
+        return $self->error("Invalid keys passed to dump_hash(): $keys")
+            unless ref $keys eq HASH;
+            
+        $self->debug("constructed hash keys: ", join(', ', %$keys)) if $DEBUG;
+    }
+    
     return "\{\n" 
         . join( ",\n", 
                 map { "$pad$PAD$_ => " . $self->dump_data($hash->{$_}, $indent + 1) }
-                sort keys %$hash ) 
+                sort grep { $keys ? $keys->{ $_ } : 1 } keys %$hash 
+           ) 
         . "\n$pad}";
 }
 
