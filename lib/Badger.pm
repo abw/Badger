@@ -5,7 +5,7 @@ use Carp;
 use Badger::Hub;
 use Badger::Class
     debug     => 0,
-    version   => 0.03,
+    version   => '0.03_01',
     base      => 'Badger::Base',
     utils     => 'UTILS',
     import    => 'class',
@@ -15,7 +15,7 @@ use Badger::Class
         fail  => \&_export_handler,
     };
 
-our $VERSION = '0.03';
+our $VERSION = '0.03_01';
 our $HUB     = 'Badger::Hub';
 our $AUTOLOAD;
 
