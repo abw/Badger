@@ -120,9 +120,7 @@ sub module_file {
 
 sub xprintf {
     my $format = shift;
-#    _debug(" input format: $format\n") if $DEBUG;
     $format =~ s/<(\d+)(?::([#\-\+ ]?[\w\.]+))?>/'%' . $1 . '$' . ($2 || 's')/eg;
-#    _debug("output format: $format\n") if $DEBUG;
     sprintf($format, @_);
 }
 
