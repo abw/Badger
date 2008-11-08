@@ -33,6 +33,9 @@ lib/Badger/Hub.pm
 lib/Badger/Mixin.pm
 lib/Badger/Prototype.pm
 lib/Badger/Rainbow.pm
+lib/Badger/Schema.pm
+lib/Badger/Schema/Field.pm
+lib/Badger/Schema/Fields.pm
 lib/Badger/Test.pm
 lib/Badger/Test/Manager.pm
 lib/Badger/Utils.pm
@@ -65,12 +68,12 @@ t/codec/lib/My/Codec/Foo.pm
 t/codec/storable.t
 t/codec/unicode.t
 t/codec/uri.t
-t/core/aliases.t
 t/core/base.t
 t/core/class.t
 t/core/config.t
 t/core/constants.t
 t/core/debug.t
+t/core/dump.t
 t/core/exception.t
 t/core/exporter.t
 t/core/factory.t
@@ -141,4 +144,5 @@ t/misc/badger.t
 t/misc/moose.t
 t/pod/coverage.t
 t/pod/kwalitee.t
+t/schema/fields.t
 TODO
