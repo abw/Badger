@@ -8,6 +8,10 @@ Badger::Changes - Summary of changes in the Badger toolkit
 
 Moved a whole bunch of stuff out of Badger::Class into Badger::Class::*
 
+Added Badger::Class::Config
+
+Added hash() to Badger::Methods and hash_methods to Badger::Class
+
 =head2 Version 0.03
 
 Added delegate loaders to L<Badger>.  This provides some semantic sugar
