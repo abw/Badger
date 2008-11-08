@@ -17,12 +17,12 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Base',
     import    => 'class BCLASS',
-    constants => 'DELIMITER ARRAY',
+    constants => 'DELIMITER ARRAY HASH',
     utils     => 'is_object',
     exports   => {
         hooks => {
             map { $_ => [\&generate, 1] }
-            qw( accessors mutators get set slots )
+            qw( accessors mutators get set slots hash )
         },
     },
     messages  => {
@@ -81,6 +81,31 @@ sub mutators {
                 @_ == 2 
                     ? ($_[0]->{ $name } = $_[1])
                     :  $_[0]->{ $name };
+            }
+        );
+    }
+}
+
+
+sub hash {
+    my ($class, $target, $methods) = shift->args(@_);
+
+    foreach (@$methods) {
+        my $name = $_;              # new lexical var for closure
+        $target->import_symbol(
+            $name => sub {
+                # return hash ref when called without args
+                return $_[0]->{ $name } if @_ == 1;
+                
+                # return hash item when called with one non-ref arg
+                return $_[0]->{ $name }->{ $_[1] } if @_ == 2 && ! ref $_[1];
+                
+                # add items to hash when called with hash ref or multiple args
+                my $self  = shift;
+                my $items = @_ == 1 && ref $_[0] eq HASH ? shift : { @_ };
+                my $hash  = $self->{ $name };
+                @$hash{ keys %$items } = values %$items;
+                return $hash;
             }
         );
     }
@@ -248,6 +273,57 @@ yourself.
 So in summary, using this method will keep your code clean, your code 
 efficient, and will free up the rest of the afternoon so you can go out 
 skateboarding.  Tell your boss I said it was OK.
+
+=head2 hash($class, $methods)
+
+This method generates methods for accessing or updating items in a hash
+reference stored in an object.  In the following example we create a 
+C<users()> method for accessing the internal C<users> hash reference.
+
+    package Your::Module;
+    
+    use base 'Badger::Base';
+    use Badger::Class::Methods
+        hash => 'users';
+    
+    sub init {
+        my ($self, $config) = @_;
+        $self->{ users } = $config->{ users } || { };
+        return $self;
+    }
+
+The C<init()> method copies any C<users> passed as a configuration
+parameter or creates an empty hash reference.
+
+    my $object = Your::Module->new(
+        users => {
+            tom => 'tom@badgerpower.com',
+        }
+    );
+
+When called without any arguments, the generated C<users()> method returns a
+reference to the C<users> hash array.
+
+    print $object->users->{ tom };  # tom@badgerpower.com
+
+When called with a single non-reference argument, it returns the entry
+in the hash corresponding to that key.
+
+    print $object->users('tom');    # tom@badgerpower.com
+
+When called with a single reference to a hash array, or a list of named 
+parameters, the method will add the new items to the internal hash array.
+A reference to the hash array is returned.
+
+    $object->users({                        # single hash ref
+        dick  => 'richard@badgerpower.com', 
+        harry => 'harold@badgerpower.com',
+    });
+    
+    $object->users(                         # list of amed parameters
+        dick  => 'richard@badgerpower.com', 
+        harry => 'harold@badgerpower.com',
+    );
 
 =head2 slots($class,$methods)
 
