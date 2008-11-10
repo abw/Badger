@@ -13,7 +13,7 @@
 package Badger::Rainbow;
 
 use Carp;
-use Badger::Debug 'debug';
+#use Badger::Debug ':debug';
 use Badger::Class
     version   => 0.01,
     base      => 'Badger::Exporter',
@@ -54,7 +54,7 @@ sub _export_ANSI_colours {
         unless ref $cols eq ARRAY;
 
     foreach my $col (@$cols) {
-        $class->debug("Exporting ANSI clolour $col to $target\n") if $DEBUG;
+#        $class->debug("Exporting ANSI clolour $col to $target\n") if $DEBUG;
         my $val = $ansi->{ $col }
             || croak "Invalid ANSI colour specified to import: $col";
         *{ $target.PKG.$col } = sub(@) {
