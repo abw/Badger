@@ -15,12 +15,13 @@ use strict;
 use warnings;
 
 use lib qw( ./lib ../lib ../../lib );
-use Badger::Exception;
 use Badger::Test 
-    tests => 27,
+    tests => 37,
     debug => 'Badger::Exception',
     args  => \@ARGV;
 
+use Badger::Utils 'refaddr';
+use Badger::Exception;
 use constant 
     Exception => 'Badger::Exception';
 
@@ -122,6 +123,44 @@ is( $ex4->match_type('bar', 'ex4', 'ex4.bar', 'ex4.bar.foo.bar'),
     'ex4', 'hander matched ex4' );
 ok( ! defined $ex4->match_type('bar', 'baz', 'ex4.bar', 'ex4.bar.foo.bar'),
     'no handler matched' );
+
+
+#-----------------------------------------------------------------------
+# test throw()
+#-----------------------------------------------------------------------
+
+$Badger::Exception::FORMAT = '<type> error: <info>';
+
+sub bar {
+    shift->throw;
+}
+
+sub foo {
+    bar(@_);
+}    
+
+my $throw = Exception->new( 
+    type  => 'food', 
+    info  => 'bread is not fresh',
+    trace => 1
+);
+
+eval { foo($throw) };
+my $catch = $@;
+
+is( refaddr $throw, refaddr $catch, 'caught that which was thrown' );
+
+like( $catch, qr/called from/, 'stack trace in text' );
+my $stack = $catch->stack;
+ok( $stack, 'got stack' );
+is( scalar(@$stack), 3, 'stack has three frames' );
+like( $stack->[0]->[1], qr/exception\.t/, 'called from exception.t' );
+is( $stack->[0]->[2], 139, 'called from line 139' );
+is( $stack->[0]->[3], 'main::bar', 'called from bar' );
+is( $stack->[1]->[2], 148, 'called from line 148' );
+is( $stack->[1]->[3], 'main::foo', 'called from foo' );
+is( $stack->[2]->[3], '(eval)', 'called from eval' );
+
 
 
 __END__

@@ -213,7 +213,7 @@ sub throw {
             $e = $emod->new($config);
         }
     }
-    die $e;
+    $e->throw;
 }
 
 sub try {
