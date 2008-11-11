@@ -54,6 +54,7 @@ Badger::Docs
 Badger::Exception
 -----------------
 
+* DEBUG option enables stack trace
 * needs good cleanup
 
 
