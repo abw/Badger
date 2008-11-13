@@ -36,6 +36,8 @@ Badger::Config
 
 * Just a basic implementation at moment.  Merge in TT3 config, AppConfig
   and other stuff.
+  
+* Add 'constant' as alias for 'method'.  e.g. 'FOO|class:FOO|constant:FOO'
 
 
 Badger::Debug
@@ -43,6 +45,8 @@ Badger::Debug
 
 * See if we can make this a low-level mixin that we can import into 
   Badger::Utils et al.
+  
+* make debug enabler export :debug and :dump into module
 
 
 Badger::Docs

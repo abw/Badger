@@ -12,6 +12,8 @@ Added Badger::Class::Config
 
 Added hash() to Badger::Methods and hash_methods to Badger::Class
 
+Added $TRACE to Badger::Exception
+
 =head2 Version 0.03
 
 Added delegate loaders to L<Badger>.  This provides some semantic sugar
