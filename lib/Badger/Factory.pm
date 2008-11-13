@@ -192,7 +192,7 @@ sub found_ref_ARRAY {
     # reference is to assume that it is a [$module, $class] pair
     
     class($item->[0])->load unless $LOADED{ $item->[0] }++;
-    return $item->[1]->new($config);
+    return $self->construct($item->[1], $config);
 }
 
 sub found {

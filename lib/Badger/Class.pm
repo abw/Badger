@@ -764,7 +764,7 @@ sub _autoload {
     my $v;
     no strict   REFS;
     no warnings ONCE;
-    
+
     unless ( defined ${ $class.PKG.LOADED  } 
           || defined ${ $class.PKG.VERSION }
           || @{ $class.PKG.ISA }) {
