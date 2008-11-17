@@ -1,8 +1,8 @@
 #========================================================================
 #
-# t/codec/uri.t
+# t/codec/url.t
 #
-# Test the Badger::Codec::URI module.
+# Test the Badger::Codec::URL module.
 #
 # Written by Andy Wardley <abw@wardley.org>
 #
@@ -17,15 +17,15 @@ use lib qw( ./lib ../lib ../../lib );
 
 use Badger::Test 
     tests => 2,
-    debug => 'Badger::Codec::URI',
+    debug => 'Badger::Codec::URL',
     args  => \@ARGV;
     
 use Badger::Codecs
-    codec => 'uri';
+    codec => 'url';
 
-my $uncoded = 'Hello World&^%';
+my $uncoded = 'http://badgerpower.com/example?message="Hello World"';
 my $encoded = encode($uncoded);
-is( $encoded, 'Hello%20World%26%5E%25', 'URI encoded data' );
+is( $encoded, 'http://badgerpower.com/example?message=%22Hello%20World%22', 'URL encoded data' );
 my $decoded = decode($encoded);
 is( $decoded, $uncoded, 'decoded output matches input' );
 
