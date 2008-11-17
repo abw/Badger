@@ -19,13 +19,16 @@ use Badger::Factory::Class
     debug     => 0,
     item      => 'codec',
     path      => 'Badger::Codec BadgerX::Codec',
-    import    => 'class',
+    import    => 'class CLASS',
     constants => 'HASH ARRAY DELIMITER PKG',
     constant  => {
         CODEC_METHOD  => 'codec',
         ENCODE_METHOD => 'encode',
         DECODE_METHOD => 'decode',
         ENCODING      => 'Badger::Codec::Encoding',
+    },
+    exports   => {
+        any   => 'Codec',
     };
 
 our $CODECS     = {
@@ -41,6 +44,9 @@ our $CODECS     = {
     } qw( utf8 UTF8 UTF16BE UTF16LE UTF32BE UTF32LE )
 };
 
+sub Codec { 
+    CLASS->codec(@_);
+}
 
 sub codec {
     my $self = shift->prototype;
@@ -65,7 +71,7 @@ sub found {
 }
 
 sub found_ref {
-    my ($self, $item, $config) = @_;
+    my ($self, $name, $item, $config) = @_;
     if (blessed $item) {
         # codecs are cached for reuse, but we always create a new one if
         # configuation parameters are provided.
@@ -377,6 +383,17 @@ hash array.
     $decoded = decode_text($encoded);
     $encoded = encode_data($original);
     $decoded = decode_data($encoded);
+
+=head1 IMPORTABLE SUBROUTINES
+
+=head2 Codec()
+
+This subroutine can be used as a shortcut to the L<codec> method.
+
+    use Badger::Codecs 'Codec';
+    
+    my $yaml = Codec('YAML');
+    print $yaml->encode($some_data);
 
 =head1 METHODS
 
