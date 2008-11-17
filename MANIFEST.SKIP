@@ -8,6 +8,7 @@
 \.gz$
 ^blib/
 pm_to_blib
+^new
 ^tmp
 ^docs
 ^junk
@@ -16,3 +17,4 @@ pm_to_blib
 ^lib/Badger/Storage
 ^t/docs
 ^t/storage
+^t/schema
