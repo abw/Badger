@@ -39,8 +39,8 @@ lib/Badger/Test/Manager.pm
 lib/Badger/Utils.pm
 Makefile.PL
 MANIFEST			This list of files
-pod/Badger/Changes.pm
-pod/Badger/FAQ.pm
+pod/Badger/Changes.pod
+pod/Badger/FAQ.pod
 README
 t/class/config.t
 t/class/lib/My/Config1.pm
