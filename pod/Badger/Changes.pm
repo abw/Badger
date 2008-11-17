@@ -6,13 +6,24 @@ Badger::Changes - Summary of changes in the Badger toolkit
 
 =head2 Version 0.04
 
-Moved a whole bunch of stuff out of Badger::Class into Badger::Class::*
+Changed L<Badger::Factory> to pass C<$name> as an argument to various methods.
 
-Added Badger::Class::Config
+Moved a whole bunch of stuff out of L<Badger::Class> into C<Badger::Class::*>
+modules.
 
-Added hash() to Badger::Methods and hash_methods to Badger::Class
+Added L<Badger::Class::Config> for simple configuration.
 
-Added $TRACE to Badger::Exception
+Added L<hash()|Badger::Methods/hash()> method to L<Badger::Methods> and 
+L<hash_methods|Badger::Class|hash_methods> hook to L<Badger::Class>.
+
+Added L<trace()|Badger::Debug/trace> hook and related paraphernalia to 
+L<Badger::Exception>
+
+Added L<Codec()|Badger::Codecs/Codec()> exportable subroutine to 
+L<Badger::Codecs>.
+
+Added L<Badger::Codec::URL>.  It's similar to L<Badger::Codec::URI>,
+but slightly different.  See the TT uri/url filters for the reason.
 
 =head2 Version 0.03
 
