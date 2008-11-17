@@ -21,6 +21,8 @@ Badger::Class
 
 * Make CLASS static
 
+* Change message() to snippet()
+
 
 Badger::Codec
 --------------
