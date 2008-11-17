@@ -18,7 +18,7 @@ use lib qw( ./lib ../lib ../../lib t/core/lib );
 use Badger::Debug;
 use Badger::Base;
 use Badger::Test 
-    tests => 29,
+    tests => 1,
     debug => 'Badger::Debug',
     args  => \@ARGV;
     
@@ -73,4 +73,6 @@ my $tre = My::Badger::Tre->new(
     products => ['widget123', 'doodah99'],
 );
 
-print $tre->dump;
+my $text = $tre->dump;
+#print $text;
+like( $text, qr/one => {\s+x => 10,\s+y => 20\s+}/, 'partial dump of one' );
