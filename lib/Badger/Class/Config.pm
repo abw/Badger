@@ -296,11 +296,176 @@ This class mixin module allows you to define configuration parameters
 for an object class.  It exports a L<configure()> method which can be used
 to initialise your object instances.
 
-It is still experimental and subject to change.
+Please note that the scope of this module is intentionally limited at present. 
+It should be considered experimental and subject to change.
 
+=head2 Configuration Options
+
+Configuration options for a module can be defined as import options to 
+C<Badger::Class::Config>.
+
+    package Your::Module;
+    use base 'Badger::Base';
+    use Badger::Class::Config 'foo', 'bar';
+
+For convenience, multiple items can be specified in a single whitespace 
+delimited string.
+
+    use Badger::Class::Config 'foo bar';
+
+More complex configurations can be specified using list and hash references,
+but we'll keep things simple for now.
+
+Using the module as shown here has two immediate effects.  The first is that
+the C<$CONFIG> package variable will be defined in C<Your::Module> containing
+a reference to the configuration schema for your module.  This schema contains
+information about the configuration items which in this example are C<foo>
+and C<bar>.  The second effect is to define a L<configure()> method which 
+uses this schema to configure your object using the configuration options 
+passed to the constructor method.  You can call this method from your 
+L<init()|Badger::Base/init()> method (if you're using L<Badger::Base>)
+or from your own construction or initialisation methods.
+
+    sub init {
+        my ($self, $config) = @_;
+        $self->configure($config);
+        return $self;
+    }
+
+The L<configure()> method is intentionally simple, although flexible.  It
+doesn't attempt to assert that any configuration items are of the correct 
+type or validate the values in any way.  If the relevant values are defined
+in the C<$config> hash then they will be copied into C<$self>.  Otherwise
+they are ignored.
+
+If a configuration item is mandatory then add a C<!> at the end of the name.
+If no value is defined for this item then the L<configure()> method will 
+throw an exception.
+
+    use Badger::Class::Config 'foo! bar!';      # mandatory items
+
+A default value can be provided using C<=>;
+
+    use Badger::Class::Config 'foo=10 bar=20';  # default values
+
+Aliases for the configuration item can be provided using C<|>
+
+    use Badger::Class::Config 'foo|Foo|FOO';    # aliases for 'foo'
+
+As well as looking for items in the C<$config> hash array, you can search
+for package variables (in the current package), class variables (in the 
+current package or those of all base class), environment variables, and
+call object methods.
+
+    use Badger::Class::Config
+        'foo|pkg:FOO',                  # fallback to $FOO package var
+        'bar|class:BAR',                # fallback to $BAR class var
+        'baz|env:BAZ',                  # fallback to $BAZ environment var
+        'bam|method:BAM';               # fallback to BAM() method
+
+Bear in mind that Perl implements constants using subroutines.  Thus, you
+can access a constant defined in a package/class by calling it as a
+method.  So if you have a constant defined in the module that you want
+to use then specify it using the C<method:> prefix. 
+
+TODO: more on that
+
+=head2 Detailed Specification
+
+The syntax for defining configuration options described above is a short-cut
+to the more detailed specification used to generate a configuration scheme for
+the L<configure()> method to use.  You can use the more detailed specification
+if you prefer:
+
+    use Badger::Class::Config 
+        {
+            foo => {
+                required => 1,
+                default  => 10,
+                fallback => ['class:FOO', 'env:FOO'],
+            },
+            bar => {
+                required => 1,
+                default  => 20,
+                fallback => ['class:BAR', 'env:BAR'],
+            },
+            
+        };
+
+You can mix and match simple and detailed specifications by specifying them as
+items in a list reference. Each configuration option should be defined as a
+separate item (i.e. you can't merge multiple items into a single whitespace
+delimited string). Simple definitions are specified using strings, complex
+definitions using hash reference.  Note that the name of the option must
+be specified explicitly in the hash array when used this way.
+
+    use Badger::Class::Config 
+        [
+            'foo|class:FOO!',
+            {
+                name     => 'bar',
+                required => 1,
+                default  => 20,
+                fallback => ['class:BAR', 'env:BAR'],
+            },
+            
+        ];
+
+=head2 Badger::Class Hook
+
+The L<Badger::Class> module implements a L<config|Badger::Class/config> hook
+which interfaces to this module.
+
+    use Badger::Class
+        base   => 'Badger::Base',
+        config => 'foo! bar=10 baz|class:BAZ=20';
+        
 =head1 METHODS
 
-See L<Badger::Class> for further details.
+=head2 schema()
+
+This method is used internally to define a configuration schema.  It exports
+it as the C<$CONFIG> package variable into the calling module.
+
+=head2 configure($config,$target)
+
+This method is exported the calling module to perform the configuration
+process. It used the configuration schema stored in the C<$CONFIG> package
+variable by the L<schema()> method.  It is typically called from a
+construction or initialisation method.
+
+The first argument should be a reference to a hash array of configuration
+options.  The second should be a reference to a hash array or hash-based
+object into which the configuration values can be copied.  If this is not
+specified then the method defaults to updating the C<$self> object reference
+passed as the first implicit argument.
+
+    sub init {
+        my ($self, $config) = @_;
+        $self->configure($config);
+        return $self;
+    }
+
+=head2 configure_pkg()
+
+This method is used internally to look up package variables for configuration
+options.
+
+=head2 configure_class()
+
+This method is used internally to look up class variables for configuration
+options.  Class variables are package variables in the current package or
+those of any of its base classes.
+
+=head2 configure_env()
+
+This method is used internally to look up environment variables for 
+configuration options.
+
+=head2 configure_method()
+
+This method is used internally to call object methods to return default
+configuration values.
 
 =head1 AUTHOR
 
