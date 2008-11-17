@@ -198,14 +198,84 @@ simple objects that store various bits of information about an error
 condition.
 
 The C<type> denotes what kind of error occurred (e.g. 'C<file>', 'C<parser>',
-'C<database>', etc.). 
+'C<database>', etc.). The C<info> field provides further information about the
+error (e.g. 'C<foo/bar.html not found>', 'C<parser error at line 42>',
+'C<server is on fire>', etc). Other optional fields include C<file> and
+C<line> for specifying the location of the error.
 
-The C<info> field provides further information about the error (e.g.
-'C<foo/bar.html not found>', 'C<parser error at line 42>', 'C<server is on
-fire>', etc.)
+In most cases you wouldn't generate and/or throw an exception object directly
+from your code.  A better approach is to define a C<throw()> method in a 
+base class which does this for you.  
 
-Other optional fields include C<file> and C<line> for specifying the location
-of the error.  
+The L<Badger::Base> module is an example of just such a module. You can use
+this as a base class for your modules to inherit the
+L<throw()|Badger::Base/throw()> method.
+
+Here's an example of a module that implements a method which expects an 
+argument.  If if doesn't get the argument it's looking for then it throws
+an exception via the inherited L<throw()|Badger::Base/throw()> method.
+The exception type is C<example> and the additional information is 
+C<No argument specified>.
+
+    package Your::Module;
+    use base 'Badger::Base';
+    
+    sub example_method {
+        my $self = shift;
+        my $arg  = shift
+            || self->throw( example => 'No argument specified' );
+        
+        # ...do something with ...
+    }
+
+The L<error()|Badger::Base/error()> provides a higher level of abstraction.
+You provide the error message (which becomes the exception C<info>) and it
+will generate an exception type based on the package name of your module.
+
+    package Your::Module;
+    use base 'Badger::Base';
+    
+    sub example_method {
+        my $self = shift;
+        my $arg  = shift
+            || self->error('No argument specified' );
+        
+        # ...do something with ...
+    }
+
+In the example above, an exception will be thrown with a C<type> defined
+as C<your.module>.  The module name is converted to lower case and the 
+package delimiters are replaced with dots.  There are configuration options
+that allow you to define other exceptions types.  Consult the L<Badger::Base>
+documentation for further information.
+
+You can choose any values you like for C<type> and C<info>. The C<type> is
+used to identify what kind of error occurred and should be a short word like
+"C<example>", or a dot-separated sequence of words like
+"C<example.file.missing">. In the latter case, dotted exception types are
+assumed to represent a hierarchy where C<example.file.missing> error is a more
+specialised kind of C<example.file> error, which in turn is a more specialised
+kind of C<example> error. The L<match_type()> method takes this into account
+when matching exception types.
+
+    eval {
+        # some code that throws an exception 
+    };
+    if ($@) {
+        if ($@->match_type('example')) {
+            # caught 'example' or 'example.*' error
+            # ...now do something
+        }
+        else {
+            # re-throw any other exception types
+            $@->throw;
+        }
+    }
+
+The C<info> field should provide a more detailed error message in a format
+suitable for human consumption.
+
+=head2 STACK TRACING
 
 The C<Badger::Exception> module also has a tracing mode which will
 automatically save the caller stack at the point at which the error is thrown.
@@ -239,9 +309,23 @@ C<$TRACE> package variable.
     use Badger::Exception;
     $Badger::Exception::TRACE = 1;
 
-The C<trace> import hook is provided as a short-cut for this.
+The L<trace> import hook is provided as a short-cut for this.
 
     use Badger::Exception trace => 1;
+
+=head1 IMPORT HOOKS
+
+=head2 trace
+
+This import hook can be used to set the C<$TRACE> package variable to 
+enable stack tracing for the L<Badger::Exception>  module.
+
+    use Badger::Exception trace => 1
+
+When stack tracing is enabled, the exception will store information 
+about the calling stack at the point at which it is thrown.  This information
+will be displayed by the L<text()> method.  It is also available in raw form
+via the L<stack()> method.
 
 =head1 METHODS
 
@@ -352,15 +436,51 @@ general C<database> type still matches.
 =head2 throw()
 
 This method throws the exception by calling C<die()> with the exception object
-as an argument. If the C<$DEBUG> flag is set to a true value then the method
+as an argument. If the C<$TRACE> flag is set to a true value then the method
 will first save the pertinent details from a stack backtrace into the
 exception object before throwing it.
 
-TODO: stack backtrace example
-
 =head2 stack()
 
-Return
+If stack tracing is enabled then this method will return a reference to a list
+of information from the caller stack at the point at which the exception was
+thrown. Each item in the list is a reference to a list containing the
+information returned by the inbuilt C<caller()> method. See 
+C<perldoc -f caller> for further information. 
+
+    use Badger::Exception trace => 1;
+    
+    eval {
+        # some code that throws an exception object
+        $exception->throw();
+    };
+    
+    my $catch = $@;                 # exception object
+    my $stack = $catch->stack;
+    
+    foreach my $caller (@$stack) {
+        my ($pkg, $file, $line, @other_stuff) = @$caller;
+        # do something
+    }
+
+The first set of information relates to the immediate caller of the 
+L<throw()> method.  The next item is the caller of that method, and so
+on.
+
+=head2 trace()
+
+If stack tracing is enabled then this method returns a text string summarising
+the caller stack at the point at which the exception was thrown.
+
+    use Badger::Exception trace => 1;
+    
+    eval {
+        # some code that throws an exception object
+        $exception->throw();
+    };
+    if ($@) {
+        print $@->trace;
+    }
 
 =head1 AUTHOR
 
