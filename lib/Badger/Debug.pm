@@ -241,6 +241,7 @@ sub dump_data {
 sub dump_ref {
     my ($self, $data, $indent) = @_;
     
+    # TODO: change these to reftype
     if (UNIVERSAL::isa($data, HASH)) {
         return $self->dump_hash($data, $indent);
     }
@@ -710,6 +711,23 @@ Modules that haven't yet been loaded will have both compile time (L<DEBUG>)
 and run time (L<$DEBUG>) debugging enabled.  Modules that have already been
 loaded will only have run time debugging enabled.
 
+=head2 dumps
+
+This option can be used to construct a specialised L<dump()> method for
+your module.  The method is used to display nested data in serialised
+text form for debugging purposes.  The default L<dump()> method for an 
+object will display all items stored within the object.  The C<dumps>
+import option can be used to limit the dump to only display the fields
+specified.
+
+    package Your::Module;
+    use Badger::Debug dumps => 'foo bar baz';
+    # ...more code...
+    
+    package main;
+    my $object = Your::Module->new;
+    print $object->dump;            # dumps foo, bar and baz
+
 =head2 colour / color
 
 Either of these (depending on your spelling preference) can be used to 
@@ -728,8 +746,8 @@ L<debug_caller()> and L<debug_args()> methods.
 
 =head2 :dump
 
-Imports all of the L<dump()>, L<dump_hash()>, L<dump_list()>, L<dump_text()>,
-L<dump_data()> and L<dump_data_inline()> methods.
+Imports all of the L<dump()>, L<dump_ref()>, L<dump_hash()>, L<dump_list()>,
+L<dump_text()>, L<dump_data()> and L<dump_data_inline()> methods.
 
 =head1 DEBUGGING METHODS
 
@@ -828,11 +846,26 @@ recursion is deliberately limited to no more than L<$MAX_DEPTH> levels deep
 of the data you're dealing with, neatly formatted for debugging purposes,
 rather than being overwhelmed with the big picture.
 
+If any of the methods encounter an object then they will call its 
+L<dump()> method if it has one.  Otherwise they fall back on L<dump_ref()>
+to expose the internals of the underlying data type.  You can create your
+own custom L<dump()> method for you objects or use the L<dumps> import
+option to have a custom L<dump()> method defined for you.
+
 =head2 dump()
 
 Debugging method which returns a text representation of the object internals.
 
     print STDERR $object->dump();
+
+You can define your own C<dump()> for an object and this will be called 
+whenever your object is dumped.  The L<dumps> import option can be used
+to generate a custom C<dump()> method.
+
+=head2 dump_ref($ref)
+
+Does The Right Thing to call the appropriate dump method for a reference
+of some kind.
 
 =head2 dump_hash(\%hash)
 
@@ -860,8 +893,11 @@ will be converted to C<\n> representations.
 
 =head2 dump_data($item)
 
-Debugging method which calls the appropriate C<dump_hash()>, C<dump_list()> or 
-C<dump_text()> method for the item passed as the first argument.
+Debugging method which calls the appropriate dump method for the item passed
+as the first argument.  If it is an object with a L<dump()> method then that
+will be called, otherwise it will fall back on L<dump_ref()>, as it will
+for any other non-object references.  Non-references are passed to the 
+L<dump_text()> method.
 
     print STDERR $object->dump_data($item);
 
