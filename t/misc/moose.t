@@ -21,7 +21,7 @@ use Badger::Test
     args  => \@ARGV;
 
 BEGIN {
-    eval "use Moose";
+    eval "use Moose ()";
     skip_all("You don't have Moose installed") if $@;
     plan(6);
 }
