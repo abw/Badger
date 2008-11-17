@@ -35,7 +35,9 @@ our $AUTOLOAD;
 our %LOADED;
 our %MAPPED;
 
-sub init {
+*init = \&init_factory;
+
+sub init_factory {
     my ($self, $config) = @_;
     my $class = $self->class;
     my ($item, $items, $path);
@@ -91,6 +93,12 @@ sub item {
     my $self = shift->prototype;
     my ($type, @args) = $self->type_args(@_);
     my $items = $self->{ $self->{ items } };
+
+    # TODO: Template::Filters allows first argument to be a code ref or 
+    # Template::Plugin::Filter object.  Do we want to detect this and 
+    # set ($item = $type), effectively bypassing the looking, or leave it
+    # how it is and let T::P::F subclass the method to provide its own
+    # custom handling of this case.
     
     # massage $type to a canonical form
     my $name = lc $type;
@@ -106,21 +114,22 @@ sub item {
         # autoloading some modules using the module path
         $item = $self->load($type)
             || return $self->error_msg( not_found => $self->{ item }, $type );
-        $item = $self->construct($item, @args);
+        $item = $self->construct($name, $item, @args);
     }
     elsif ($iref = ref $item) {
+        # TODO: sanitise $iref
         my $method 
              = $self->can(FOUND_REF . '_' . $iref)
             || $self->can(FOUND_REF)
             || return $self->error_msg( bad_ref => $self->{ item }, $type, $iref );
             
-        $item = $method->($self, $item, @args) 
+        $item = $method->($self, $name, $item, @args) 
             || return;
     }
     else {
         # otherwise we load the module and create a new object
         class($item)->load unless $LOADED{ $item }++;
-        $item = $self->construct($item, @args);
+        $item = $self->construct($name, $item, @args);
     }
 
     return $self->found( $name => $item );
@@ -138,8 +147,9 @@ sub type_args {
 }
 
 sub construct {
-    shift;
-    shift->new(@_);
+    shift;            # $self
+    shift;            # $name
+    shift->new(@_);   # $class, @args
 }
     
 sub module_names {
@@ -186,13 +196,13 @@ sub load {
 }
 
 sub found_ref_ARRAY {
-    my ($self, $item, $config) = @_;
+    my ($self, $name, $item, @args) = @_;
     
     # default behaviour for handling a factory entry that is an ARRAY
     # reference is to assume that it is a [$module, $class] pair
     
     class($item->[0])->load unless $LOADED{ $item->[0] }++;
-    return $self->construct($item->[1], $config);
+    return $self->construct($name, $item->[1], @args);
 }
 
 sub found {
@@ -206,7 +216,7 @@ sub can {
     $self = $self->prototype unless ref $self;
     
     if ($name eq $self->{ item }) {
-        return $self->can('item');
+        return $self->can('item');          # TODO: SUPER
     }
     elsif ($name eq $self->{ items }) {
         return $self->can('items');
@@ -344,7 +354,7 @@ TODO: examples
 
 TODO: Method to fetch or update the lookup table for mapping names to modules
 
-=head2 item($name, %params)
+=head2 item($name,@args)
 
 TODO: Method to load a module and insantiate an object.
 
@@ -357,7 +367,7 @@ to object constructor
 
 TODO: Method to load a module for an object type
 
-=head2 construct($class,@args)
+=head2 construct($name,$class,@args)
 
 TODO: Method to instantiate a $class object using the arguments provided.
 In the base class this method  simply calls:
@@ -368,7 +378,7 @@ In the base class this method  simply calls:
 
 TODO: Method to expand an object type into a candidate list of module names.
 
-=head2 found_ref_ARRAY($item,\@array)
+=head2 found_ref_ARRAY($name,$entry,@args)
 
 TODO: Method hook to handle the case of a factory entry defined as an 
 array reference.  It is assumed to be C<[$module, $class]>.  The C<$module>
@@ -376,7 +386,7 @@ is loaded and the C<$class> instantiated.
 
 Subclasses can re-define this to change this behaviour.
 
-=head2 found($item, $config)
+=head2 found($name,$item)
 
 TODO: Method hook to perform any post-processing (e.g. caching) after an
 item has been found and instantiated.
