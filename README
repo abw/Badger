@@ -13,7 +13,8 @@ SYNOPSIS
 
 WARNING
     This is the third version of the Badger Toolkit. It should be treated as
-    *alpha* quality code.
+    *alpha* quality code.  Version 0.03_01 is a developer pre-release for
+    version 0.04.  See the CHANGES file for information on what has changed.
 
     !!! READ THE MORE DETAILED WARNING IN Badger.pm !!!    
 

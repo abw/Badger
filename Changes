@@ -2,6 +2,25 @@ NAME
     Badger::Changes - Summary of changes in the Badger toolkit
 
 CHANGES
+  Version 0.04 (of which 0.03_01 is a developer pre-release)
+
+    Changed Badger::Factory to pass $name as an argument to various methods.
+
+    Moved a whole bunch of stuff out of Badger::Class into
+    "Badger::Class::*" modules.
+
+    Added Badger::Class::Config for simple configuration.
+
+    Added hash() method to Badger::Methods and hash_methods hook to
+    Badger::Class.
+
+    Added trace() hook and related paraphernalia to Badger::Exception
+
+    Added Codec() exportable subroutine to Badger::Codecs.
+
+    Added Badger::Codec::URL. It's similar to Badger::Codec::URI, but
+    slightly different. See the TT uri/url filters for the reason.
+
   Version 0.03
     Added delegate loaders to Badger. This provides some semantic sugar for
     loading a bunch of different "Badger::*" modules in one go.
