@@ -17,10 +17,11 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Prototype Badger::Exporter',
     import    => 'class',
-    utils     => 'plural',
+    utils     => 'plural blessed',
     words     => 'ITEM ITEMS ISA',
     constants => 'PKG ARRAY HASH REFS ONCE',
     constant  => {
+        OBJECT       => 'object',
         FOUND_REF    => 'found_ref',
         PATH_SUFFIX  => '_PATH',
     },
@@ -117,7 +118,14 @@ sub item {
         $item = $self->construct($name, $item, @args);
     }
     elsif ($iref = ref $item) {
-        # TODO: sanitise $iref
+        $iref = OBJECT if blessed $item;
+
+        $self->debug(
+            "Looking for handler methods: ", 
+            FOUND_REF,'_'.$iref, "() or ", 
+            FOUND_REF, "()"
+        ) if DEBUG;
+        
         my $method 
              = $self->can(FOUND_REF . '_' . $iref)
             || $self->can(FOUND_REF)
