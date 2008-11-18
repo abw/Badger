@@ -5,9 +5,8 @@ use Carp;
 use Badger::Hub;
 use Badger::Class
     debug     => 0,
-    version   => '0.03_01',
+    version   => '0.03_02',
     base      => 'Badger::Base',
-    utils     => 'UTILS',
     import    => 'class',
     words     => 'HUB',
     constants => 'PKG',
@@ -15,7 +14,7 @@ use Badger::Class
         fail  => \&_export_handler,
     };
 
-our $VERSION = '0.03_01';
+our $VERSION = '0.03_02';
 our $HUB     = 'Badger::Hub';
 our $AUTOLOAD;
 
@@ -35,7 +34,7 @@ sub init {
     my ($self, $config) = @_;
     my $hub = $config->{ hub } || $self->class->any_var(HUB);
     unless (ref $hub) {
-        UTILS->load_module($hub);
+        class($hub)->load;
         $hub = $hub->new($config);
     }
     $self->{ hub } = $hub;

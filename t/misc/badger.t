@@ -17,7 +17,7 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test
-    tests => 3,
+    tests => 4,
     debug => 'Badger',
     args  => \@ARGV;
 
@@ -30,3 +30,6 @@ use Badger
 ok(1, 'loaded Badger module');
 ok( looks_like_number(23), 'looks_like_number imported from Badger::Utils' );
 is( ref [ ], ARRAY, 'ARRAY imported from Badger::Constants' );
+
+my $badger = Badger->new;
+ok( $badger, 'created Badger object' );
