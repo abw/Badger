@@ -7,6 +7,8 @@ Badger::Changes - Summary of changes in the Badger toolkit
 =head2 Version 0.04
 
 Changed L<Badger::Factory> to pass C<$name> as an argument to various methods.
+Also modified L<item()|Badger::Factory/item()> to accept a non-textlike 
+type argument which bypasses the module lookup.
 
 Moved a whole bunch of stuff out of L<Badger::Class> into C<Badger::Class::*>
 modules.

@@ -17,7 +17,7 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Prototype Badger::Exporter',
     import    => 'class',
-    utils     => 'plural blessed',
+    utils     => 'plural blessed textlike',
     words     => 'ITEM ITEMS ISA',
     constants => 'PKG ARRAY HASH REFS ONCE',
     constant  => {
@@ -94,18 +94,23 @@ sub item {
     my $self = shift->prototype;
     my ($type, @args) = $self->type_args(@_);
     my $items = $self->{ $self->{ items } };
+    my ($name, $item, $iref);
 
-    # TODO: Template::Filters allows first argument to be a code ref or 
-    # Template::Plugin::Filter object.  Do we want to detect this and 
-    # set ($item = $type), effectively bypassing the looking, or leave it
-    # how it is and let T::P::F subclass the method to provide its own
-    # custom handling of this case.
-    
-    # massage $type to a canonical form
-    my $name = lc $type;
-       $name =~ s/\W//g;
-    my $item = $items->{ $name };
-    my $iref;
+    # Modules like Template::TT2::Filterw allow the first argument to be 
+    # a code ref or object which implements the required behaviour.  If this
+    # is the case then we bypass the whole module lookup business and assume
+    # that we've been handed an object/ref that we otherwise would have 
+    # constructed.
+
+    if (textlike $type) {
+        # massage $type to a canonical form
+        $name = lc $type;
+        $name =~ s/\W//g;
+        $item = $items->{ $name };
+    }
+    else {
+        $name = $item = $type;
+    }
     
     # TODO: add $self to $config - but this breaks if %$config check
     # in Badger::Codecs found_ref_ARRAY
