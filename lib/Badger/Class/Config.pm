@@ -414,12 +414,24 @@ be specified explicitly in the hash array when used this way.
 =head2 Badger::Class Hook
 
 The L<Badger::Class> module implements a L<config|Badger::Class/config> hook
-which interfaces to this module.
+which interfaces to this module.  You can specify a single string to define
+multiple configuration items in one go:
 
     use Badger::Class
         base   => 'Badger::Base',
         config => 'foo! bar=10 baz|class:BAZ=20';
-        
+
+Or a reference to a hash array or list containing individually defined
+configuration items.
+
+    use Badger::Class
+        base   => 'Badger::Base',
+        config => [
+            'foo!',
+            'bar=10',
+            'baz|class:BAZ=20'
+        ];
+
 =head1 METHODS
 
 =head2 schema()
