@@ -16,8 +16,10 @@ Added L<Badger::Class::Config> for simple configuration.
 Added L<hash()|Badger::Methods/hash()> method to L<Badger::Methods> and 
 L<hash_methods|Badger::Class|hash_methods> hook to L<Badger::Class>.
 
-Added L<trace()|Badger::Debug/trace> hook and related paraphernalia to 
-L<Badger::Exception>
+Added L<trace()|Badger::Exception/trace> hook and related paraphernalia to
+L<Badger::Exception>. Added the C<-t> / C<--trace> command line options to
+L<Badger::Test> to enable it when running tests.  Also added C<-h> / C<--help>
+options.
 
 Added L<Codec()|Badger::Codecs/Codec()> exportable subroutine to 
 L<Badger::Codecs>.

@@ -19,9 +19,11 @@ use Badger::Class
     };
 
 use Badger::Debug;
+use Badger::Exception;
 use Badger::Test::Manager;
-our $MANAGER  = 'Badger::Test::Manager';
-our $DEBUGGER = 'Badger::Debug';
+our $MANAGER   = 'Badger::Test::Manager';
+our $DEBUGGER  = 'Badger::Debug';
+our $EXCEPTION = 'Badger::Exception';
 our ($DEBUG, $DEBUG_MODULES);
 
 *color = \&colour;
@@ -88,6 +90,13 @@ sub args {
         elsif ($arg =~ /^(-s|--summary)$/) {
             $self->summary(1);
         }
+        elsif ($arg =~ /^(-t|--trace)$/) {
+            $self->trace(1);
+        }
+        elsif ($arg =~ /^(-h|--help)$/) {
+            warn $self->help;
+            exit;
+        }
         else {
             unshift(@$args, $arg);
             last;
@@ -111,6 +120,24 @@ sub debugging {
     my $modules = $self->class->var(DEBUG_MODULES) || return;
     $DEBUGGER->debug_modules($modules);
 }
+
+sub trace {
+    my $self = shift;
+    my $flag = shift || 1;
+    $EXCEPTION->trace($flag);
+}
+
+sub help {
+    return <<END_OF_HELP;
+Options:
+    -d      --debug             Enable debugging
+    -t      --trace             Enable stack tracing
+    -c      --colour/--color    Enable colour output
+    -s      --summary           Display summary of test results
+    -h      --help              This help summary
+END_OF_HELP
+}
+
 
 class->methods(
     plan      => sub ($;$)  { manager->plan(@_)      },
@@ -269,6 +296,33 @@ L<Badger::Test::Manager>.
     # defining a custom manager class
     Badger::Test->manager('My::Test::Manager');
 
+=head2 args(@args)
+
+This method can be used to set various testing options from command line 
+arguments.  It is typically called via the L<args> import option.
+
+    use Badger::Test
+        debug => 'My::Module',
+        args  => \@ARGV,
+        tests => 42;
+
+The method parses the arguments looking for the following options:
+
+    -d      --debug             Enable debugging
+    -t      --trace             Enable stack tracing
+    -c      --colour/--color    Enable colour output
+    -s      --summary           Display summary of test results
+    -h      --help              This help summary
+    
+Arguments can be passed as a list or reference to a list.  
+
+    Badger::Test->args(@ARGV);      # either
+    Badger::Test->args(\@ARGV);     # or
+
+Any of the arguments listed above appearing at the start of the list will be
+removed from the list and acted upon. Processing will end as soon as an
+unrecognised argument is encountered.
+
 =head2 summary()
 
 Prints a summary of the test results.  Delegates to L<Badger::Test::Manager>
@@ -284,17 +338,6 @@ Method to enable or disable colour output.
 =head2 color()
 
 An alias for L<colour()>.
-
-=head2 args(@args)
-
-This method parses the arguments looking for C<-d> to enable debugging, C<-c>
-to enable colour output or C<-s> to print a test summary. This method is
-called by the L<args> import hook. Arguments can also be passed as a reference
-to a list, in which case any C<-c>, C<-d> or C<-s> arguments at the start will
-be removed.
-
-    Badger::Test->args(@ARGV);      # either
-    Badger::Test->args(\@ARGV);     # or
 
 =head2 debug_modules($modules)
 
@@ -322,6 +365,16 @@ C<$DEBUG_MODULES> list.  It also sets the internal C<$DEBUG> flag.
 
     Badger::Test->debugging(1);         # enable debugging
     Badger::Test->debugging(0);         # disable debugging
+
+=head2 trace($flag)
+
+This method enables or disables stack tracing in the L<Badger::Exception>
+module.
+
+=head2 help()
+
+This method returns the help text display when help is requested with the 
+C<-h> or C<--help> command line options.  See L<args()> for further details.
 
 =head1 IMPORT HOOKS
 

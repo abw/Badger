@@ -20,6 +20,7 @@ use Badger::Class
     mutators    => 'type',
     accessors   => 'stack',
     constants   => 'TRUE',
+    import      => 'class',
     as_text     => 'text',      # overloaded text stringification
     is_true     => 1,           # always evaluates to a true value
     exports     => {
@@ -89,7 +90,7 @@ sub text {
     $text .= " in $self->{ file }"      if $self->{ file };
     $text .= " at line $self->{ line }" if $self->{ line };
     
-    if ($self->{ trace } && (my $trace = $self->trace)) {
+    if ($self->{ trace } && (my $trace = $self->stack_trace)) {
         $text .= "\n" . $trace;
     }
 
@@ -97,7 +98,7 @@ sub text {
 }
 
 
-sub trace {
+sub stack_trace {
     my $self = shift;
     my @lines;
 
@@ -110,6 +111,20 @@ sub trace {
     return join("\n", @lines);
 }
 
+
+sub trace {
+    my $self = shift;
+    if (ref $self) {
+        return @_ 
+            ? ($self->{ trace } = shift )
+            :  $self->{ trace };
+    }
+    else {
+        return @_
+            ? $self->class->var( TRACE => shift )
+            : $self->class->var('TRACE');
+    }
+}
 
 sub throw {
     my $self = shift;
@@ -301,7 +316,7 @@ will then append a stack track to the end of the generated message.
     }
 
 You can also call the L<stack()> method to return the stored call stack
-information, or the L<trace()> method to see a textual summary.
+information, or the L<stack_trace()> method to see a textual summary.
 
 You can enable the tracing behaviour for all exception objects by setting the
 C<$TRACE> package variable.
@@ -390,6 +405,20 @@ C<text()> explicitly.
 
     print $exception;   # database error - could not connect
 
+=head2 trace()
+
+Method to get or set the flag which determines if the exception captures
+a stack backtrace at the point at which it is thrown.  It can be called
+as an object method to affect an individual exception object, or as a class
+method to get or set the C<$TRACE> package variable which provides the 
+default value for any exceptions created from then on.
+
+    $exception->trace(1);               # object method
+    print $exception->trace;            # 1
+    
+    Badger::Exception->trace(1);        # class method - sets $TRACE
+    print Badger::Exception->trace;     # 1
+
 =head2 match_type()
 
 This method selects and returns a type string from the arguments passed 
@@ -467,7 +496,7 @@ The first set of information relates to the immediate caller of the
 L<throw()> method.  The next item is the caller of that method, and so
 on.
 
-=head2 trace()
+=head2 stack_trace()
 
 If stack tracing is enabled then this method returns a text string summarising
 the caller stack at the point at which the exception was thrown.
@@ -479,7 +508,7 @@ the caller stack at the point at which the exception was thrown.
         $exception->throw();
     };
     if ($@) {
-        print $@->trace;
+        print $@->stack_trace;
     }
 
 =head1 AUTHOR

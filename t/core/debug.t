@@ -18,9 +18,9 @@ use lib qw( ./lib ../lib ../../lib t/core/lib );
 use Badger::Debug;
 use Badger::Base;
 use Badger::Test 
-    tests => 29,
     debug => 'Badger::Debug',
-    args  => \@ARGV;
+    args  => \@ARGV,
+    tests => 29;
     
 
 #-----------------------------------------------------------------------
