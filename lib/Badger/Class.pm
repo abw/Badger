@@ -1232,6 +1232,10 @@ You can also use the explicit C<import> flag if you prefer:
     # multiple arguments
     use Badger::Class import => ['class', 'CLASS'];
 
+=head2 BCLASS
+
+This constant subroutine is an alias for C<Badger::Class>.
+
 =head2 CLASS($pkg)
 
 This subroutine returns the class name (i.e. package) of the class or 
@@ -2765,6 +2769,11 @@ C<Badger::Codecs>
 The name of the constants method, as used by the L<constants()> metho:
 C<Badger::Constants>
 
+=head2 DEBUGGER
+
+The name of the debug module, as used by the L<debug> export hook:
+C<Badger::Debug>
+
 =head2 EXPORTER
 
 The name of the exporter module, as used by the L<exports()> method:
@@ -2774,6 +2783,11 @@ C<Badger::Exporter>
 
 The name of the filesystem module, as used by the L<filesystem()> method:
 C<Badger::Filesystem>
+
+=head2 METHODS
+
+The name of the methods class mixin module, as used by the L<methods()> method:
+C<Badger::Class::Methods>
 
 =head2 MIXIN
 
