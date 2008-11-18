@@ -16,7 +16,7 @@ use warnings;
 
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
-    tests => 17,
+    tests => 21,
     debug => 'Badger::Prototype',
     args  => \@ARGV;
 
@@ -92,6 +92,8 @@ is( $pkg->alias(), 'Larry', 'proto2 pkg alias is Larry' );
 is( $pkg->pseudonym(), 'Larry', 'proto2 pkg pseudonym is Larry' );
 
 
+ok( $pkg->has_prototype, 'package has prototype' );
+
 #------------------------------------------------------------------------
 # test calling prototype() with args creates new prototype
 #------------------------------------------------------------------------
@@ -109,6 +111,18 @@ isnt( $p2, $p3, 'Larry is not Damian' );
 my $p4 = $p3->prototype();
 is( $p4, $p3, 'object prototype method returns $self' );
 
+#------------------------------------------------------------------------
+# calling prototype(undef) clears prototype
+#------------------------------------------------------------------------
+
+my $p5 = $pkg->prototype(undef);
+is( $p5, $p3, 'got current prototype' );
+
+ok( ! $pkg->has_prototype, 'prototype has been cleared' );
+
+# should now get a new prototype
+$p5 = $pkg->prototype;
+isnt( $p5, $p3, 'new prototype created' );
 
 
 __END__

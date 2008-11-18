@@ -25,9 +25,33 @@ sub prototype {
     return $class if ref $class;
     no strict   REFS;
     no warnings ONCE;
-    undef ${$class.PKG.PROTOTYPE} if @_;
+    
+    if (@_ == 1 && ! defined $_[0]) {
+        # if only a single undef argument is provided, then clear any 
+        # prototype from $PROTOTYPE and return a reference to it.
+        my $proto = ${$class.PKG.PROTOTYPE};
+        undef ${$class.PKG.PROTOTYPE};
+        return $proto;
+    }
+    elsif (@_) {
+        # if any other arguments are provided then it forces us to create
+        # a new prototype with the fresh configuration options.
+        undef ${$class.PKG.PROTOTYPE};
+    }
+    
+    # return the cached value (assuming we didn't just clear it) or create 
+    # a new one (if we did, or if there wasn't a previous value)
     return ${$class.PKG.PROTOTYPE} ||= $class->new(@_);
 }
+
+sub has_prototype {
+    my $self  = shift;
+    my $class = ref $self || $self;
+    no strict   REFS;
+    no warnings ONCE;
+    defined ${$class.PKG.PROTOTYPE};
+}
+    
 
 1;
 
@@ -163,6 +187,16 @@ forces a new prototype object to be created, replacing any existing
 one cached in the C<$PROTOTYPE> package variable.  The arguments are
 forwarded to the C<new()> constructor method called to create the
 object.
+
+If a single undefined value is passed as an argument then any existing
+prototype is released by setting the C<$PROTOTYPE> package variable to 
+C<undef>.  The existing prototype is then returned, or undef if there was
+no prototype defined.
+
+=head2 has_prototype()
+
+Returns true or false to indicate if a prototype is defined for a class.
+It can be called as a class or object method.
 
 =head1 AUTHOR
 

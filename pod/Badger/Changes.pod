@@ -25,6 +25,11 @@ L<Badger::Codecs>.
 Added L<Badger::Codec::URL>.  It's similar to L<Badger::Codec::URI>,
 but slightly different.  See the TT uri/url filters for the reason.
 
+Changed the L<prototype()|Badger::Prototype/prototype()> method in
+L<Badger::Prototype> to accept a single C<undef> value to clear any current
+prototype. Also added the L<has_prototype()|Badger::Prototype/has_prototype()>
+method.
+
 =head2 Version 0.03
 
 Added delegate loaders to L<Badger>.  This provides some semantic sugar
