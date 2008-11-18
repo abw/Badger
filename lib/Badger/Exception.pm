@@ -32,7 +32,10 @@ use Badger::Class
                 1 
             ],
         },
-    };;
+    },
+    messages => {
+        caller => "<4> called from <1>\n  in <2> at line <3>",
+    };
 
 our $FORMAT  = '<type> error - <info>'  unless defined $FORMAT;
 our $TYPE    = 'undef'                  unless defined $TYPE;
@@ -104,7 +107,7 @@ sub stack_trace {
 
     if (my $stack = $self->{ stack }) {
         foreach my $caller (@$stack) {
-            push(@lines, "called from $caller->[3] in $caller->[1] at line $caller->[2]");
+            push(@lines, $self->message( caller => @$caller ));
         }
     }
     

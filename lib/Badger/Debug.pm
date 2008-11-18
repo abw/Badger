@@ -14,7 +14,7 @@ package Badger::Debug;
 
 use Carp;
 use Badger::Rainbow 
-    ANSI => 'bold red yellow green cyan';
+    ANSI => 'bold red yellow green cyan white';
 use Scalar::Util 'blessed';
 use Badger::Class
     base      => 'Badger::Exporter',
@@ -346,6 +346,12 @@ sub enable_colour {
     # exceptions are in red
     $Badger::Exception::FORMAT 
         = bold red $Badger::Exception::FORMAT;
+
+    $Badger::Exception::MESSAGES->{ caller } 
+        = yellow('<4>')   . cyan(' called from ')
+        . yellow("<1>\n") . cyan('  in ')
+        . white('<2>')   . cyan(' at line ')
+        . white('<3>');
 }
 
 
