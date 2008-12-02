@@ -2,9 +2,19 @@ NAME
     Badger::Changes - Summary of changes in the Badger toolkit
 
 CHANGES
-  Version 0.04 (of which 0.03_01 is a developer pre-release)
+  Version 0.04
+    Added the throw_msg() method to Badger::Base.
+
+    Added init_method hook to Badger::Class and initialiaser() to
+    Badger::Class::Methods.
+
+    Changed Badger::Exception match_type() method to accept a list or hash
+    reference, or a string of whitespace delimited exception types.
 
     Changed Badger::Factory to pass $name as an argument to various methods.
+    Also passes arguments to load() (required for Template::TT2::Plugins)
+    Also modified item() to accept a non-textlike type argument which
+    bypasses the module lookup.
 
     Moved a whole bunch of stuff out of Badger::Class into
     "Badger::Class::*" modules.
@@ -14,12 +24,18 @@ CHANGES
     Added hash() method to Badger::Methods and hash_methods hook to
     Badger::Class.
 
-    Added trace() hook and related paraphernalia to Badger::Exception
+    Added trace() hook and related paraphernalia to Badger::Exception. Added
+    the "-t" / "--trace" command line options to Badger::Test to enable it
+    when running tests. Also added "-h" / "--help" options.
 
     Added Codec() exportable subroutine to Badger::Codecs.
 
     Added Badger::Codec::URL. It's similar to Badger::Codec::URI, but
     slightly different. See the TT uri/url filters for the reason.
+
+    Changed the prototype() method in Badger::Prototype to accept a single
+    "undef" value to clear any current prototype. Also added the
+    has_prototype() method.
 
   Version 0.03
     Added delegate loaders to Badger. This provides some semantic sugar for
