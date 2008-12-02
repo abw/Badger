@@ -308,20 +308,22 @@ sub message {
 }
 
 sub warn_msg {
-    my $self = shift;
     # explicitly quantify local message() method in case a subclass decides
     # to re-implement the message() method to do something else
-    $self->warn( $self->Badger::Base::message(@_) );
+    $_[0]->warn( message(@_) );
 }
 
 sub error_msg {
-    my $self = shift;
-    $self->error( $self->Badger::Base::message(@_) );
+    $_[0]->error( message(@_) );
 }
 
 sub decline_msg {
+    $_[0]->decline( message(@_) );
+}
+
+sub throw_msg {
     my $self = shift;
-    $self->decline( $self->Badger::Base::message(@_) );
+    $self->throw( shift, message($self, @_) );
 }
 
 
@@ -1122,6 +1124,28 @@ operator to call the L<text()|Badger::Exception/text()> method. For the error
 thrown in the previous example, that would be:
 
     propulsion error - engine error - warp drive offline
+
+=head2 throw_msg($type, $message, @args)
+
+This is a wrapper around the L<throw()> and L<message()> methods for throwing
+custom exceptions using message formats to generate the error information
+string. The first argument defines the exception type. The second is the name
+of the message format. The remaining arguments are uses to populate the
+placeholders in the message format.
+
+    our $MESSAGES = {
+        offline => '%s is offline',
+    };
+
+    sub engage {
+        my $self = shift;
+        $self->throw_msg( warp => offline => 'warp drive' )
+            unless $self->warp_drive_ready;
+        # make it so
+    }
+    
+    # throws the following exception:
+    warp error - warp drive is offline
 
 =head2 try($method, @args)
 
