@@ -80,20 +80,23 @@ is( $obj->users('dick'), 'richard@example.com', 'richard is still in users' );
 package Badger::Test::Methods2;
 
 use Badger::Class
-    accessors => 'wiz waz',
-    mutators  => 'ding dong',
+    base        => 'Badger::Base',
+    accessors   => 'wiz waz',
+    mutators    => 'ding dong',
     get_methods => 'x',
-    set_methods => 'y';
+    set_methods => 'y',
+    init_method => 'configure',
+    config      => 'x y wiz waz ding';
 
 package main;
 
-$obj = bless { 
+$obj = Badger::Test::Methods2->new(
     wiz  => 50, 
     waz  => 60, 
     ding => 70,
     x    => 101,
     y    => 202,
-}, 'Badger::Test::Methods2';
+);
 
 is( $obj->wiz, '50', 'wiz accessor' );
 is( $obj->waz, '60', 'waz accessor' );

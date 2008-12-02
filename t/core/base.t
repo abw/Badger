@@ -18,7 +18,7 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Base;
 use Badger::Test 
-    tests => 96,
+    tests => 99,
 #    debug => 'Badger::Base',
     debug => 'Badger::Exporter',
     args  => \@ARGV;
@@ -270,6 +270,14 @@ use vars qw( $THROWS );
 
 *THROWS = \$My::Thrower::THROWS;
 
+our $MESSAGES = {
+    runny => 'Your %s is too runny',
+};
+
+sub cheese {
+    shift->throw_msg( cheese => runny => 'Camembert' );
+}
+
 package main;
 
 $obj = My::Thrower->new();
@@ -300,6 +308,11 @@ $except = $@;
 ok( $except, 'thrown frisbee' );
 is( $except->type(), 'frisbee', 'a small plastic disc' );
 is( $except->info(), 'threw frisbee', 'it spins, it hovers!' );
+
+ok( ! $obj->try('cheese'), 'cheese fail' );
+$except = $obj->reason;
+is( $except->type, 'cheese', 'cheese thrown' );
+is( $except->info, 'Your Camembert is too runny', $except->info );
 
 
 #-----------------------------------------------------------------------

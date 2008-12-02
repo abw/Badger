@@ -16,7 +16,7 @@ use warnings;
 
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
-    tests => 37,
+    tests => 40,
     debug => 'Badger::Exception',
     args  => \@ARGV;
 
@@ -124,6 +124,15 @@ is( $ex4->match_type('bar', 'ex4', 'ex4.bar', 'ex4.bar.foo.bar'),
 ok( ! defined $ex4->match_type('bar', 'baz', 'ex4.bar', 'ex4.bar.foo.bar'),
     'no handler matched' );
 
+is( $ex4->match_type(['bar', 'ex4', 'ex4.foo', 'ex4.bar.foo.bar']),
+    'ex4.foo', 'hander matched ex4.foo via list ref' );
+
+is( $ex4->match_type('bar ex4 ex4.foo ex4.bar.foo.bar'),
+    'ex4.foo', 'hander matched ex4.foo via string' );
+
+is( $ex4->match_type({ bar => 10, ex4 => 20 }),
+    20, 'hander matched ex4.foo via hash ref' );
+
 
 #-----------------------------------------------------------------------
 # test throw()
@@ -155,9 +164,9 @@ my $stack = $catch->stack;
 ok( $stack, 'got stack' );
 is( scalar(@$stack), 3, 'stack has three frames' );
 like( $stack->[0]->[1], qr/exception\.t/, 'called from exception.t' );
-is( $stack->[0]->[2], 139, 'called from line 139' );
+is( $stack->[0]->[2], 148, 'called from line 139' );
 is( $stack->[0]->[3], 'main::bar', 'called from bar' );
-is( $stack->[1]->[2], 148, 'called from line 148' );
+is( $stack->[1]->[2], 157, 'called from line 148' );
 is( $stack->[1]->[3], 'main::foo', 'called from foo' );
 is( $stack->[2]->[3], '(eval)', 'called from eval' );
 
