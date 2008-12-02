@@ -21,6 +21,7 @@ use Badger::Class
     utils     => 'is_object',
     exports   => {
         hooks => {
+            init => \&initialiser,
             map { $_ => [\&generate, 1] }
             qw( accessors mutators get set slots hash )
         },
@@ -29,6 +30,7 @@ use Badger::Class
         no_target  => 'No target class specified to generate methods for',
         no_type    => 'No method type specified to generate',
         no_methods => 'No %s specified to generate',
+        bad_method => 'Invalid %s method: %s',
         bad_type   => 'Invalid method generator specified: %s',
     };
 
@@ -109,6 +111,22 @@ sub hash {
             }
         );
     }
+}
+
+
+sub initialiser {
+    my ($class, $target, $methods) = shift->args(@_);
+
+    $target->import_symbol(
+        init => sub {
+            my ($self, $config) = @_;
+            $self->{ config } = $config;
+            foreach my $name (@$methods) {
+                $self->$name($config);
+            }
+            return $self;
+        }
+    );
 }
 
 
@@ -324,6 +342,33 @@ A reference to the hash array is returned.
         dick  => 'richard@badgerpower.com', 
         harry => 'harold@badgerpower.com',
     );
+
+=head2 initialiser($class,$methods)
+
+This method can be used to create a custom C<init()> method for your object
+class. A list, reference to a list, or string of whitespace delimited method
+names should be passed an argument(s). A method will be generated which 
+calls each in turn, passing a reference to a hash array of configuration
+parameters.
+
+    use Badger::Class::Methods->initialiaser(
+        'My::Module', 
+        'init_foo init_bar'
+    )
+
+The above example will generate an C<init()> method in C<My::Module>
+equivalent to:
+
+    sub init {
+        my ($self, $config) = @_;
+        $self->{ config } = $config;
+        $self->init_foo($config);
+        $self->init_bar($config);
+        return $self;
+    }
+
+It's up to you to implement the C<init_foo()> and C<init_bar()> methods,
+or to inherit them from a base class or mixin.
 
 =head2 slots($class,$methods)
 

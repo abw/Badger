@@ -70,6 +70,7 @@ our $DELEGATES = {
     hash_methods => [ METHODS    => 'hash'           ],
     mutators     => [ METHODS    => 'mutators'       ],
     slots        => [ METHODS    => 'slots'          ],
+    init_method  => [ METHODS    => 'initialiser'    ],
     utils        => [ UTILS      => 'export'         ],
     vars         => [ VARS       => 'vars'           ],
 };
@@ -85,13 +86,13 @@ our $DELEGATES = {
 our $EXPORT_ANY   = ['BCLASS'];
 our $EXPORT_FAIL  = \&_export_fail;
 our $EXPORT_HOOKS = {
-    debug    => \&_debug_hook,
+    debug    => [\&_debug_hook, 1],
     map { $_ => \&_export_hook } 
     qw( 
         base uber mixin mixins version constant constants words vars 
         config exports throws messages utils codec codecs filesystem
         hooks methods slots accessors mutators get_methods set_methods 
-        hash_methods overload as_text is_true
+        hash_methods init_method overload as_text is_true
     )
 };
 
@@ -130,16 +131,9 @@ sub _export_fail {
 
     
 sub _debug_hook {
-    my ($class, $target, $key, $symbols) = @_;
-    my $debug;
-    
-    croak sprintf(NO_VALUE, $key)
-        unless @$symbols;
-
-    $debug = shift @$symbols;
+    my ($class, $target, $key, $debug) = @_;
     $debug = { default => $debug }
         unless ref $debug eq HASH;
-
     _autoload($class->DEBUGGER)->export($target, %$debug);
 }
 
@@ -1933,6 +1927,45 @@ This can be used to define methods for accessing hash arrays inside an object
 See the L<hash_methods()> method and the L<hash()|Badger::Class::Methods/hash()> 
 method in L<Badger::Class::Methods> for further information.
 
+=head2 init_method
+
+This can be used to define an C<init()> method for initialising an object.
+The constructed C<init()> method stores the configuration data internally
+and calls each of the methods named.
+
+    use Badger::Class
+        base        => 'Badger::Base',
+        init_method => 'init_foo init_bar';
+        
+    sub init_foo {
+        my ($self, $config) = @_;
+        ...
+    }
+    
+    sub init_bar {
+        my ($self, $config) = @_;
+        ...
+    }
+
+It is typically used in conjunction with the L<config> hook which defines
+a C<configure()> method.
+
+    use Badger::Class
+        base        => 'Badger::Base',
+        config      => 'x y',
+        init_method => 'configure';
+
+It can also be used to call initialisation methods inherited from base classes
+or imported from mixins.  
+
+    use Badger::Class
+        base        => 'My::Base1 My::Base2',
+        init_method => 'init_base1 init_base2';
+
+See the L<init_method()> method and the
+L<initialiser()|Badger::Class::Methods/initialiser()> method in
+L<Badger::Class::Methods> for further information.
+
 =head2 overload
 
 This can be used as a shortcut to the C<overload> module to overload
@@ -2659,6 +2692,12 @@ This method can be used to generate methods for a class that manipulate
 internal hash arrays. It accepts the same arguments as L<mutators()> and
 delegates to the L<hash()|Badger::Class::Methods/hash()> method in
 L<Badger::Class::Methods>.
+
+=head2 init_method($names)
+
+This method can be used to generate a custom C<init()> method for a class. It
+delegates to the L<initialiser()|Badger::Class::Methods/initialiser()> method
+in L<Badger::Class::Methods>.
 
 =head2 slots($names)
 
