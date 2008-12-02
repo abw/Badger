@@ -19,7 +19,7 @@ use Badger::Class
     debug       => 0,
     mutators    => 'type',
     accessors   => 'stack',
-    constants   => 'TRUE',
+    constants   => 'TRUE ARRAY HASH DELIMITER',
     import      => 'class',
     as_text     => 'text',      # overloaded text stringification
     is_true     => 1,           # always evaluates to a true value
@@ -160,13 +160,22 @@ sub throw {
 #------------------------------------------------------------------------
 
 sub match_type {
-    my ($self, @types) = @_;
-    my $type = $self->{ type };
-    my %thash;
-    @thash{ @types } = (1) x @types;
-
+    my $self  = shift;
+    my $types = @_ == 1 ? shift :  [@_];
+    my $type  = $self->{ type };
+    
+    $types = [ split(DELIMITER, $types) ]
+        unless ref $types;
+        
+    $types = { map { $_ => $_ } @$types }
+        if ref $types eq ARRAY;
+    
+    return $self->error( invalid => 'type match' => $types )
+        unless ref $types eq HASH;
+        
     while ($type) {
-        return $type if $thash{ $type };
+        return $types->{ $type }
+            if $types->{ $type };
 
         # strip .element from the end of the exception type to find a 
         # more generic handler
@@ -464,6 +473,32 @@ general C<database> type still matches.
         || die "no match for exception\n";
         
     print $match;    # database
+
+You can also specify multiple exception types using a reference to a list.
+
+    if ($exception->match_type(['warp.drive', 'shields'])) {
+        ...
+    }
+
+Or using a single string of whitespace delimited exception types.
+
+    if ($exception->match_type('warp.drive shields')) {
+        ...
+    }
+
+You can also pass a reference to a hash array in which the keys are exception
+types.  The corresponding value for a matching type will be returned.
+
+    my $type_map = {
+        'warp.drive'    => 'propulsion',
+        'impulse.drive' => 'propulsion',
+        'shields'       => 'defence',
+        'phasers'       => 'defence'
+    };
+    
+    if ($exception->match_type($type_map)) {
+        ...
+    }
 
 =head2 throw()
 
