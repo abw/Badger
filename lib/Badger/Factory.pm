@@ -70,6 +70,8 @@ sub init_factory {
     $self->{ items  } = $items;
     $self->{ item   } = $item;
 
+    $self->debug("Initialised $item/$items factory") if DEBUG;
+    
     return $self;
 }
 
@@ -118,7 +120,7 @@ sub item {
     if (! defined $item) {
         # we haven't got an entry in the items table so let's try 
         # autoloading some modules using the module path
-        $item = $self->load($type)
+        $item = $self->load($type, @args)
             || return $self->error_msg( not_found => $self->{ item }, $type );
         $item = $self->construct($name, $item, @args);
     }
@@ -252,6 +254,8 @@ sub AUTOLOAD {
 
     # upgrade class methods to calls on prototype
     $self = $self->prototype unless ref $self;
+
+    $self->debug("factory item: $self->{ item }\n") if DEBUG;
     
     if ($name eq $self->{ item }) {
         $self->class->method( $name => $self->can('item') );
