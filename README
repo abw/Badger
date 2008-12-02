@@ -6,7 +6,7 @@ SYNOPSIS
             
         # 1) have more fun
         # 2) get the job done quicker
-        # 3) make your code shinier
+        # 3) make your code skimpier
         # 4) finish work early
         # 5) go skateboarding
         # 6) enjoy life
@@ -15,8 +15,8 @@ WARNING
     This is the fourth version of the Badger Toolkit. It is now being used
     as the foundation for a number of other Perl modules and is believed to
     be reliable and reasonably bug-free.  However it should still be treated 
-    as an I<alpha> software as some elements of the API or internal 
-    architecture may be subject to change.  See the F<Changes> file for 
+    as an alpha software as some elements of the API or internal 
+    architecture may be subject to change.  See the Changes file for 
     information on what has changed between versions 0.01 and 0.04.
 
 DESCRIPTION
@@ -37,9 +37,9 @@ DESCRIPTION
     Badger is designed to be lightweight, fast, and as simple as it can be 
     without being too simple.  It offers convenience, convention and 
     consistency in an attempt to improve the Kwalitee of your code and make
-    it more SkimpyE<trade> (which is my interpretation of what Michael Schwern
-    refers to as skimmable code - that is, code that is easy to read and also
-    easy to skim over).
+    it more Skimpy[tm] (which is my artistic interpretation of what Michael 
+    Schwern refers to as skimmable code - that is, code that is easy to read 
+    and also easy to skim over).
     
   Overview
     Let's take a quick frolic through the feature list forest to get an idea

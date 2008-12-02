@@ -119,21 +119,20 @@ process of building object-oriented Perl applications. It provides a set of
 I<foundation classes> upon which you can quickly build robust and reliable
 systems that are simple, sexy and scalable. 
 
-Badger was hewn from the living rock of the Template Toolkit.  It 
-represents all the I<generic> bits of TT that aren't directly related
-to template processing.  They're also the same kind of generic modules
-that have appeared in pretty much every non-trivial Perl application 
-I've written over the past 10 years.  So Badger is essentially a 
-restrospective generalisation of what I've learnt over that time about
-the right way (or more accurately, some of the less wrong ways) to build
-Perl applications.
-    
-Badger is designed to be lightweight, fast, and as simple as it can be 
-without being too simple.  It offers convenience, convention and 
-consistency in an attempt to improve the Kwalitee of your code and make
-it more SkimpyE<trade> (which is my interpretation of what Michael Schwern
-refers to as skimmable code - that is, code that is easy to read and also
-easy to skim over).
+Badger was hewn from the living rock of the Template Toolkit. It represents
+all the I<generic> bits of TT that aren't directly related to template
+processing. They're also the same kind of generic modules that have appeared
+in pretty much every non-trivial Perl application I've written over the past
+10 years. So Badger is essentially a restrospective generalisation of what
+I've learnt over that time about the right way (or more accurately, some of
+the less wrong ways) to build Perl applications.
+
+Badger is designed to be lightweight, fast, and as simple as it can be without
+being too simple. It offers convenience, convention and consistency in an
+attempt to improve the Kwalitee of your code and make it more SkimpyE<trade>
+(which is my artistic interpretation of what Michael Schwern refers to as
+skimmable code - that is, code that is easy to read and also easy to skim
+over).
 
 =head2 Overview
 
