@@ -6,7 +6,17 @@ Badger::Changes - Summary of changes in the Badger toolkit
 
 =head2 Version 0.04
 
+Added the L<throw_msg()|Badger::Base/throw_msg()> method to L<Badger::Base>.
+
+Added L<init_method|Badger::Class/init_method> hook to L<Badger::Class> and 
+L<initialiaser()|Badger::Class/initialiaser()> to L<Badger::Class::Methods>.
+
+Changed L<Badger::Exception> L<match_type()|Badger::Exception/match_type()>
+method to accept a list or hash reference, or a string of whitespace delimited 
+exception types.
+
 Changed L<Badger::Factory> to pass C<$name> as an argument to various methods.
+Also passes arguments to load() (required for Template::TT2::Plugins)
 Also modified L<item()|Badger::Factory/item()> to accept a non-textlike 
 type argument which bypasses the module lookup.
 

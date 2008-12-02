@@ -5,7 +5,7 @@ use Carp;
 use Badger::Hub;
 use Badger::Class
     debug     => 0,
-    version   => '0.03_02',
+    version   => '0.04',
     base      => 'Badger::Base',
     import    => 'class',
     words     => 'HUB',
@@ -14,11 +14,13 @@ use Badger::Class
         fail  => \&_export_handler,
     };
 
-our $VERSION = '0.03_02';
+our $VERSION = '0.04';              # Just for ExtUtils::MakeMaker.  Ick
 our $HUB     = 'Badger::Hub';
 our $AUTOLOAD;
 
 sub _export_handler {
+    # TODO: we should be able to refactor this down, now that Badger::Exporter
+    # can handle this argument shifting
     my ($class, $target, $key, $symbols) = @_;
     croak "You didn't specify a value for the '$key' load option."
         unless @$symbols;
@@ -41,6 +43,7 @@ sub init {
     return $self;
 }
 
+
 sub hub {
     my $self = shift;
 
@@ -56,9 +59,11 @@ sub hub {
     }
 }
 
+
 sub codec {
     shift->hub->codec(@_);
 }
+
 
 sub config {
     my $self = shift;
@@ -88,31 +93,15 @@ Badger - Perl Application Programming Toolkit
 
 =head1 WARNING
 
-This is the third version of the Badger Toolkit. It should treated as
-I<alpha> quality code, edging towards I<beta>.
+This is the fourth version of the Badger Toolkit. It should treated as
+I<alpha> quality code, edging towards I<beta>.  
 
-The code as it stands is quite possibly packed with fragments of B<FAIL> 
-and should be handled as if it could explode when dropped onto a hard
-surface from a height.  Everything is still subject to change, but not
-without prior warning.  B<Mr T pities the fool that attempts to builds a
-production system based on Badger version 0.03 without first evaluating it 
-carefully and reading the documentation>.
-
-That said, the code is I<believed> to be reliable and the release of versions
-0.01 and 0.02 didn't throw up any major problems. Badger is based on code and
+The code is I<believed> to be reliable and the release of versions
+0.01 to 0.03 haven't throw up any major problems. Badger is based on code and
 concepts that have been used in production systems for a number of years. Most
 of the API is well-defined and unlikely to change significantly in future
 versions. However, we're not ruling anything out given that the Badger has
 only just been incarnated in his current form.
-
-Despite the fact that Badger is built on (mostly) tried and tested code, the
-entire code base has been rebuilt from the ground up, shuffled about, jiggled
-around, extended, reduced, recycled and repackaged many times over. As such,
-it is inevitable that some things will be broken. You should start out with
-the assumption that these modules still contain a handful of careless bugs,
-incorrect design decisions, bad implementation choices, and various other
-shades of B<FAIL> that need to be corrected. That way you'll be pleasantly
-surprised when you find that it actually works as advertised.
 
 The documentation isn't complete, but it's not far off. Most, if not all of
 the important core modules are fully documented and believed to be accurate.
@@ -123,21 +112,28 @@ The test suite is comprehensive but incomplete. It currently contains over a
 thousand tests, all of which pass on the system that it has been tested on
 (Linux, Mac OSX, Windows XP).
 
-Having read this warning in detail (as I'm sure you have), you will now
-understand why caution is advised before embarking on a major project
-based around Badger.  You would be well advised to discuss it on the 
-Badger mailing list first to make sure you've got the latest information.
-
-So, with that warning nailed firmly to the door and a "welcome" mat reading
-"HEED THE SIGN ON THE DOOR!" lest anyone should miss it, pray come hither 
-and let the dance of the happy badgers begin!
-
 =head1 DESCRIPTION
 
 The Badger toolkit is a collection of Perl modules designed to simplify the
 process of building object-oriented Perl applications. It provides a set of
-I<foundation> classes upon which you can quickly build robust and reliable
-systems that are simple, sexy and scalable. All modulo the warnings above.
+I<foundation classes> upon which you can quickly build robust and reliable
+systems that are simple, sexy and scalable. 
+
+Badger was hewn from the living rock of the Template Toolkit.  It 
+represents all the I<generic> bits of TT that aren't directly related
+to template processing.  They're also the same kind of generic modules
+that have appeared in pretty much every non-trivial Perl application 
+I've written over the past 10 years.  So Badger is essentially a 
+restrospective generalisation of what I've learnt over that time about
+the right way (or more accurately, some of the less wrong ways) to build
+Perl applications.
+    
+Badger is designed to be lightweight, fast, and as simple as it can be 
+without being too simple.  It offers convenience, convention and 
+consistency in an attempt to improve the Kwalitee of your code and make
+it more SkimpyE<trade> (which is my interpretation of what Michael Schwern
+refers to as skimmable code - that is, code that is easy to read and also
+easy to skim over).
 
 =head2 Overview
 
@@ -166,6 +162,12 @@ to save all that mucking about in symbols tables.  Some of these methods
 will also account for inheritance between related classes, making it much
 easier to share default configuration values between related classed,
 for example.
+
+A key feature of L<Badger::Class> is that it does this by a process of
+"hygienic class construction".  What this means in practice is that
+your object classes don't get polluted with methods that are only
+used to construct the class (e.g. a method that constructs accessor
+methods).
 
 L<Badger::Class> can itself be subclassed, allowing you to build your own
 metaprogramming modules tailored to your particular needs.
@@ -244,9 +246,10 @@ friendly.
 
 =head2 What's New?
 
-Version 0.03 features some improvements to the front-end L<Badger> module,
-L<Badger::Filesystem>, L<Badger::Class>, and various other cleanups and
-bug fixes.
+Version 0.04 includes various minor enhancements and cleanups to the code
+base.  This coincides with the release of L<Template::TT2>, a new 
+implementation of the Template Toolkit (v2) built on top of the Badger 
+modules.
 
 =head2 Background
 
@@ -296,8 +299,6 @@ is to provide a self-contained and self-consistent set of modules that all
 work the same way, talk the same way, and don't require you to first descend
 fifteen levels deep into CPAN dependency hell before you can write a line of
 code.
-
-Now, where's that crack pipe?
 
 =head1 MODULES
 
@@ -579,7 +580,7 @@ door.  Or the frame where the front door is supposed to go.
 
 =head1 AUTHOR
 
-Andy Wardley  E<lt>abw@wardley.orgE<gt>
+Andy Wardley  L<http://wardley.org/>
 
 =head1 COPYRIGHT
 

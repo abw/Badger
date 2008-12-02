@@ -1,8 +1,7 @@
 Badger::Class
 -------------
 
-* Have DEBUG generate constant DEBUG subroutine (UPDATE: now done)...
-  Also think about different debug flags, e.g. DEBUG_THIS, DEBUG_THAT
+* Also think about different debug flags, e.g. DEBUG_THIS, DEBUG_THAT
   UPDATE: Badger::Debug now does this - just need to hook class in
 
 * make debug hook work better: allow import of other items, e.g.
@@ -18,10 +17,14 @@ Badger::Class
 
 * Remove class($class, $target) second argument in export hooks
   because UBER should now handle that - needs testing
+  UPDATE - no, I think it's still required to make The Right Thing happen.
 
-* Make CLASS static
+* Make CLASS static.
 
 * Change message() to snippet()
+  NOTE - already changed Badger::Base XXX_msg() method to explicitly 
+  package-scope message() to Badger::Base so that problem is mitigated.
+  A subclass can now define a message() method and it will still Just Work[tm]
 
 
 Badger::Codec
@@ -38,6 +41,10 @@ Badger::Config
 
 * Just a basic implementation at moment.  Merge in TT3 config, AppConfig
   and other stuff.
+
+
+Badger::Class::Config
+--------------
   
 * Add 'constant' as alias for 'method'.  e.g. 'FOO|class:FOO|constant:FOO'
 
@@ -60,8 +67,7 @@ Badger::Docs
 Badger::Exception
 -----------------
 
-* DEBUG option enables stack trace
-* needs good cleanup
+* Do we still want to add a higher-level catch() method?
 
 
 Badger::Factory
@@ -139,12 +145,6 @@ Badger::Test
 
 * Could do with some proper testing.  Although all the other test scripts
   do tend to thrash it quite well...
-
-
-Badger::Utils
--------------
-
-* Consider subclassing.
 
 
 Badger::Factory

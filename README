@@ -12,18 +12,34 @@ SYNOPSIS
         # 6) enjoy life
 
 WARNING
-    This is the third version of the Badger Toolkit. It should be treated as
-    *alpha* quality code.  Version 0.03_01 is a developer pre-release for
-    version 0.04.  See the Changes file for information on what has changed.
-
-    !!! READ THE MORE DETAILED WARNING IN Badger.pm !!!    
+    This is the fourth version of the Badger Toolkit. It is now being used
+    as the foundation for a number of other Perl modules and is believed to
+    be reliable and reasonably bug-free.  However it should still be treated 
+    as an I<alpha> software as some elements of the API or internal 
+    architecture may be subject to change.  See the F<Changes> file for 
+    information on what has changed between versions 0.01 and 0.04.
 
 DESCRIPTION
     The Badger toolkit is a collection of Perl modules designed to simplify
     the process of building object-oriented Perl applications. It provides a
     set of foundation classes upon which you can quickly build robust and
-    reliable systems that are simple, sexy and scalable. All modulo the
-    warning above.
+    reliable systems that are simple, sexy and scalable. 
+    
+    Badger was hewn from the living rock of the Template Toolkit.  It 
+    represents all the generic bits of TT that aren't directly related
+    to template processing.  They're also the same kind of generic modules
+    that have appeared in pretty much every non-trivial Perl application 
+    I've written over the past 10 years.  So Badger is essentially a 
+    restrospective generalisation of what I've learnt over that time about
+    the right way (or more accurately, some of the less wrong ways) to build
+    Perl applications.
+    
+    Badger is designed to be lightweight, fast, and as simple as it can be 
+    without being too simple.  It offers convenience, convention and 
+    consistency in an attempt to improve the Kwalitee of your code and make
+    it more SkimpyE<trade> (which is my interpretation of what Michael Schwern
+    refers to as skimmable code - that is, code that is easy to read and also
+    easy to skim over).
     
   Overview
     Let's take a quick frolic through the feature list forest to get an idea
@@ -48,6 +64,12 @@ DESCRIPTION
         account for inheritance between related classes, making it much
         easier to share default configuration values between related
         classed, for example.
+        
+        A key feature of Badger::Class is that it does this by a process of
+        "hygienic class construction".  What this means in practice is that
+        your object classes don't get polluted with methods that are only
+        used to construct the class (e.g. a method that constructs accessor
+        methods).
 
         Badger::Class can itself be subclassed, allowing you to build your
         own metaprogramming modules tailored to your particular needs.
