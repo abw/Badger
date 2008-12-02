@@ -1,0 +1,95 @@
+=head1 Badger::Utils Recap
+
+We looked L<yesterday|href:1.html> at L<Badger::Utils> which defines some useful
+utility functions.  It also acts as a delegate to load utility functions 
+from L<Scalar::Util> and friends.
+
+    use Badger::Utils 'textlike params blessed 
+                       max min any all md5_hex';
+
+=head1 Creating Your Own Utility Library
+
+You can easily create your own libraries of utility functions by subclassing
+L<Badger::Utils>.
+
+    package Your::Utils;
+    use base 'Badger::Utils';
+    
+    our $EXPORT_ANY = 'random';
+    
+    sub random {    # chosen by fair dice roll
+        return 4;   # guaranteed to be random
+    }               # See http://xkcd.com/221/
+    
+    1;
+
+The first line defines the module name (C<Your::Utils>) while the second 
+declares it to be a subclass of the L<Badger::Utils> base class.  The
+C<$EXPORT_ANY> package variable is use to specify which functions can be
+exported from this module.  This is used by L<Badger::Exporter> which is
+a base class of L<Badger::Utils>.
+
+In the utility module defined above we've got just one function,
+C<random()>. Don't forget that Perl modules must always end with a true
+statement so we add the C<1;> line at the end to make it so.
+
+Here's an example showing several functions being declared for export:
+
+    our $EXPORT_ANY = 'random more_random wildy_random';
+
+This is syntactic sugar for the more verbose declaration:
+
+    our $EXPORT_ANY = [qw( random more_random wildy_random )];
+
+Of course you'll also need to define those C<more_random()> and
+C<wildly_random()> functions somewhere in the module.
+
+=head1 Using Your Library
+
+Now you can use your new utility library in your Perl programs.  Specify the
+functions you want to import as arguments in the usual way.
+
+    use Your::Utils 'random';
+
+Not only can you import the functions that you've defined in your module,
+but also all of those defined by the C<Badger::Utils> base class I<and>
+all those other modules that it can delegate to (L<Scalar::Util> and co).
+
+    use Your::Utils qw( random textlike blessed any all );
+
+The quote list construct C<qw( ... )> shown here can be replaced by a 
+single string if you prefer:
+
+    use Your::Utils 'random textlike blessed any all';
+
+Inheritance Just WorksE<trade> all the way up.  If you want to you can
+subclass your utilities module to create another module.  This will 
+inherit everything from both C<Your::Module> and L<Badger::Utils>.
+
+=head1 Multiple Inheritance
+
+You can also use multiple inheritance to construct a library that 
+aggregates two or more other libraries.  For example, let's say you've 
+defined two utility modules called C<Your::Database::Utils> and 
+C<Your::Web::Utils>.  You might use them like this:
+
+    use Your::Web::Utils 'escape_html';
+    use Your::Database::Utils 'escape_sql';
+
+Say you're writing a database-driven web site and you'll be needing to
+use both of these modules a lot of the time.  You're far too lazy to 
+type I<both> the above lines of code in each of the modules that require
+them.  Instead you can create a new composite library that inherits
+from both of them.
+
+    package Your::DataWeb::Utils;
+    use base qw( Your::Web::Utils Your::Database::Utils );
+    1;
+
+That's it, job done. If you want to add any extra utility functions in here 
+then go right ahead. You just need to remember to add in the C<$EXPORT_ANY> 
+declaration.  When you use your new composite library you can import anything 
+from either of the base classes (and any of their base classes, and so on).
+
+    use Your::DataWeb::Utils 'escape_html escape_sql';
+

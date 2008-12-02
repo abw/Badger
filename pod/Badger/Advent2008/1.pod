@@ -1,0 +1,99 @@
+=head1 Something Unremarkable
+
+Let's begin with something quite unremarkable. Although there are some fancy
+things going on in various parts of the Badger Toolkit, a key part of what
+makes Badger useful (to me at least), is that it does a bunch of fairly
+unremarkable things that solve small and simple problems by themselves
+I<and> work together nicely when the need arises. I'm wary of using the
+"synergy" buzzword, but it is quite appropriate in this case.  The sum of
+the parts outweighing the needs of the many.  Or was it the whole outweighing
+the needs of the few?  I forget now.  So let us begin.
+
+=head1 Badger::Utils is Useful
+
+L<Badger::Utils> provides some convenient functions that I tend to use quite
+often in my code.  For example, the L<textlike()|Badger::Utils/textlike()>
+function will tell you if a variable contains a plain text string or an 
+object which has an auto-stringification operator.
+
+    use Badger::Utils 'textlike';
+    
+    print $something if textlike($something);
+
+Another example is L<params()|Badger::Utils/params()> which gobbles up a list
+of named parameters into a hash reference. It also allows you to pass it a
+single hash reference and it will Do The Right Thing. You can use it like
+this:
+
+    use Badger::Utils 'params';
+    
+    sub example {
+        my $params = params(@_);
+        # your code here
+    }
+
+Then you can call your code like this:
+
+    # named parameters
+    example( x => 10, y => 20 );
+
+Or like this:
+
+    # reference to a hash array of named parameters
+    my $params = {
+        x => 10,
+        y => 20,
+    };
+    example($params);
+
+I think you'll agree that a simple call to L<params()|Badger::Utils/params()>
+is somewhat easier to read than the alternative:
+
+    sub example {
+        my $params = @_ && ref $_[0] ? shift : { @_ };
+        # your code here
+    }
+
+There is also the L<self_params()|Badger::Utils/self_params()> function 
+which can be used in methods.  It assumes the first parameter is the 
+implicit C<$self> object reference, followed by parameters as above.
+
+    use Badger::Utils 'self_params';
+    
+    sub example_method {
+        my ($self, $params) = self_params(@_);
+        # your code here
+    }
+
+=head1 Badger::Utils Delegates
+
+As well as defining a handful of other useful functions, L<Badger::Utils> can
+also act as a delegate to export any of the functions defined in
+L<Scalar::Util>, L<List::Util>, L<List::MoreUtils>, L<Hash::Util> and
+L<Digest::MD5>. So instead of starting your module off with something like
+this:
+
+    package Your::Module
+    
+    use Badger::Utils   qw( textlist params );
+    use Scalar::Util    qw( blessed );
+    use List::Util      qw( max min );
+    use List::MoreUtils qw( any all );
+    use Digest::MD5     qw( md5_hex );
+
+You can instead write something like this:
+
+    package Your::Module
+    
+    use Badger::Utils qw( textlike params blessed max min any all md5_hex );
+
+If you're particularly lazy (like me) or have pains in your hands from 
+typing too much (like me) then you can save yourself a few characters by
+quoting the list of functions in a single string like this:
+
+    package Your::Module
+    
+    use Badger::Utils 'textlike params blessed max min any all md5_hex';
+
+In L<tomorrow's|href:2.html> gripping instalment we'll look at how you can extend
+L<Badger::Utils> to define your own libraries of utility functions.
