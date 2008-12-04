@@ -38,6 +38,7 @@ our %MAPPED;
 
 *init = \&init_factory;
 
+
 sub init_factory {
     my ($self, $config) = @_;
     my $class = $self->class;
@@ -71,9 +72,12 @@ sub init_factory {
     $self->{ item   } = $item;
 
     $self->debug("Initialised $item/$items factory") if DEBUG;
+    $self->debug("Path: [", join(', ', @{ $self->{ path } }), "]") if DEBUG;
+    
     
     return $self;
 }
+
 
 sub path {
     my $self = shift->prototype;
@@ -81,6 +85,7 @@ sub path {
         ? ($self->{ path } = ref $_[0] eq ARRAY ? shift : [ @_ ])
         :  $self->{ path };
 }
+
 
 sub items {
     my $self  = shift->prototype;
@@ -91,6 +96,7 @@ sub items {
     }
     return $items;
 }
+
 
 sub item {
     my $self = shift->prototype;
@@ -121,7 +127,8 @@ sub item {
         # we haven't got an entry in the items table so let's try 
         # autoloading some modules using the module path
         $item = $self->load($type, @args)
-            || return $self->error_msg( not_found => $self->{ item }, $type );
+            || return $self->not_found( $name, @args );
+#            || return $self->error_msg( not_found => $self->{ item }, $type );
         $item = $self->construct($name, $item, @args);
     }
     elsif ($iref = ref $item) {
@@ -151,6 +158,7 @@ sub item {
 #    return $item;
 }
 
+
 # TODO: make this more generic and have a selectable/pluggable strategy
 
 sub type_args {
@@ -161,12 +169,14 @@ sub type_args {
     return ($type, $params);
 }
 
+
 sub construct {
     shift;            # $self
     shift;            # $name
     shift->new(@_);   # $class, @args
 }
-    
+
+
 sub module_names {
     my ($self, $base, $type) = @_;
 #    (ucfirst $type, $type, uc $type);   # Foo, foo, FOO
@@ -182,6 +192,7 @@ sub module_names {
          split(/\./, $type)
     );
 }
+
 
 sub load {
     my $self   = shift->prototype;
@@ -207,8 +218,10 @@ sub load {
             $self->debug("failed to load $module\n") if $DEBUG;
         }
     }
-    return $self->error_msg( not_found => $self->{ item } => $type );
+    return undef;
+#   return $self->error_msg( not_found => $self->{ item } => $type );
 }
+
 
 sub found_ref_ARRAY {
     my ($self, $name, $item, @args) = @_;
@@ -220,9 +233,17 @@ sub found_ref_ARRAY {
     return $self->construct($name, $item->[1], @args);
 }
 
+
 sub found {
     return $_[2];
 }
+
+
+sub not_found {
+    my ($self, $name, @args) = @_;
+    $self->error_msg( not_found => $self->{ item }, $name );
+}
+
 
 sub can {
     my ($self, $name) = @_;
@@ -240,6 +261,7 @@ sub can {
         return $self->SUPER::can($name);
     }
 }
+
 
 sub AUTOLOAD {
     my ($self, @args) = @_;
@@ -407,6 +429,12 @@ Subclasses can re-define this to change this behaviour.
 
 TODO: Method hook to perform any post-processing (e.g. caching) after an
 item has been found and instantiated.
+
+=head2 not_found($name,@args)
+
+Called when the requested item is not found, this method simply throws 
+an error using the C<not_found> message format.  The method can be 
+re-defined in subclasses to perform additional fallback handing.
 
 =head2 can($method)
 

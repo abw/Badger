@@ -82,8 +82,13 @@ sub path {
     $path = [ split(DELIMITER, $path) ]
         unless ref $path eq ARRAY;
 
+    $self->debug("adding $var => [", join(', ', @$path), "]") if DEBUG;
     $self->base(FACTORY);
-    $self->var( $var => $path );
+
+    # we use import_symbol() rather than var() so that it gets declared 
+    # properly, thus avoiding undefined symbol warnings
+    $self->import_symbol( $var => \$path );
+    
     return $self;
 }
 
