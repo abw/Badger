@@ -51,7 +51,7 @@ our $DELEGATES;         # fill this from $HELPERS on demand
 
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed is_object textlike params self_params plural xprintf
+    UTILS blessed is_object textlike params self_params plural xprintf dotid
 ));
 
 __PACKAGE__->export_fail(\&_export_fail);
@@ -122,6 +122,13 @@ sub xprintf {
     my $format = shift;
     $format =~ s/<(\d+)(?::([#\-\+ ]?[\w\.]+))?>/'%' . $1 . '$' . ($2 || 's')/eg;
     sprintf($format, @_);
+}
+
+
+sub dotid {
+    my $text = shift;       # munge $text to canonical lower case and dotted form
+    $text =~ s/\W+/./g;     # e.g. Foo::Bar ==> Foo.Bar
+    return lc $text;        # e.g. Foo.Bar  ==> foo.bar
 }
 
 sub _debug {
@@ -281,6 +288,13 @@ Returns the module name passed as an argument as a relative filesystem path
 suitable for feeding into C<require()>
 
     print module_file('My::Module');     # My/Module.pm
+
+=head2 dotid($text)
+
+The function returns a lower case representation of the text passed as
+an argument with all non-word character sequences replaced with dots.
+
+    print dotid('Foo::Bar');            # foo.bar
 
 =head2 xprintf($format,@args)
 
