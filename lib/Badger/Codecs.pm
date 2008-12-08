@@ -44,9 +44,11 @@ our $CODECS     = {
     } qw( utf8 UTF8 UTF16BE UTF16LE UTF32BE UTF32LE )
 };
 
+
 sub Codec { 
     CLASS->codec(@_);
 }
+
 
 sub codec {
     my $self = shift->prototype;
@@ -57,35 +59,48 @@ sub codec {
         : $self->item(@_);
 }
 
+
 sub chain {
     my $self = shift;
     $self->debug("creating chain for $_[0]\n") if $DEBUG;
     return CHAIN->new(@_);
 }
- 
-sub found {
-    my ($self, $name, $codec) = @_;
-    # cache codec object and return
-    $self->{ codecs }->{ $name } = $codec;
+
+
+sub found_object {
+    my ($self, $name, $item, $args) = @_;
+
+    # TODO: assert $item is a codec object?
+
+    # We cache any codecs that are created without configuration items
+    # but we can only use those "bare" codecs if $args is empty.  Otherwise
+    # we must create a new object
+    if (@$args) {
+        $self->debug("creating new ", ref $item, " codec for $name\n") if DEBUG;
+        return $self->construct($name, ref $item, $args);
+    }
+    else {
+        $self->debug("re-using cached codec for $name: $item\n") if $DEBUG;
+        return $item;
+    }
+}
+
+
+sub result {
+    my ($self, $name, $codec, $args) = @_;
+    # only cache codec objects created with no arguments
+    unless (@$args) {
+        $self->debug("Caching $name codec for subsequent re-used: $codec") if DEBUG;
+        $self->{ codecs }->{ $name } = $codec;
+    }
     return $codec;
 }
 
-sub found_ref {
-    my ($self, $name, $item, $config) = @_;
-    if (blessed $item) {
-        # codecs are cached for reuse, but we always create a new one if
-        # configuation parameters are provided.
-        $item = $item->new($config) if %$config;
-        return $item;
-    }
-    else {
-        $self->error_msg( bad_ref => codec => $item, ref $item );
-    }
-}
 
 sub encode {
     shift->codec(shift)->encode(@_);
 }
+
 
 sub decode {
     shift->codec(shift)->decode(@_);
@@ -103,6 +118,7 @@ class->exports(
     }
 );
 
+
 sub _export_hook {
     my ($class, $target, $key, $symbols) = @_;
     croak "You didn't specify a value for the '$key' load option."
@@ -110,6 +126,7 @@ sub _export_hook {
     my $method = "export_$key";
     $class->$method($target, shift @$symbols);
 }
+
 
 sub export_codec {
     my ($class, $target, $name, $alias) = @_;
@@ -131,6 +148,7 @@ sub export_codec {
     *{$emethod} = $codec->encoder;  # unless defined &{$emethod};
     *{$dmethod} = $codec->decoder;  # unless defined &{$dmethod};
 }
+
 
 sub export_codecs {
     my ($class, $target, $names) = @_;
@@ -543,10 +561,16 @@ name of the module implementing the codec.
 This is an internal method called by the base class L<Badger::Factory>
 module when a codec is located and loaded.
 
-=head2 found_ref($name,$codec)
+=head2 found_object($name,$codec)
 
 This is an internal method called by the base class L<Badger::Factory>
-module when a codec is located which is defined as a reference value.
+module when a cached codec object is found.
+
+=head2 result($name,$codec,\@args)
+
+This is an internal method called by the base class L<Badger::Factory>
+module to return a final result for the requested code.  This method
+caches the codec object if no configuration arguments were provided.
 
 =head1 CONFIGURATION OPTIONS
 
