@@ -156,6 +156,12 @@ Badger::Factory
 * support multi-element names, e.g. node.foo.bar
 
 
+Badger::Utils
+-------------
+
+* hashlike, listlike, numlike
+
+
 BadgerX
 -------
 
