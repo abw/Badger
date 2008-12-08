@@ -1,0 +1,159 @@
+=head1 Badger::Exporter
+
+In L<yesterday's|href:3.html> installment we looked at the L<Badger::Constants>
+module.  Today we'll look at how you can define your own constants module.
+
+The traditional route for exporting symbols (constants, variables, functions,
+etc.) from one package to another is using the L<Exporter> module.  The
+L<Badger::Exporter> module performs a similar role.  However, the key 
+difference is that L<Badger::Exporter> understands the concept of inheritance
+(which L<Exporter> doesn't).  We'll see how that is useful later on.
+
+So here's an example module defining some simple constants.
+
+    package Your::Constants;
+    
+    use strict;
+    use warnings;
+    use base 'Badger::Exporter';
+    use constant {
+        MESSAGE => 'Hello World!',
+        VOLUME  => 10,
+        TRUE    => 1,
+        FALSE   => 0,
+    };
+    
+    our $EXPORT_ALL  = 'MESSAGE';
+    our $EXPORT_ANY  = 'TRUE FALSE VOLUME';
+    our $EXPORT_TAGS = { truth => 'TRUE FALSE' };
+    
+    1;
+
+If you've ever used the L<Exporter> module then you'll find this 
+example reassuringly familiar (albeit slightly different).  Instead of
+using L<Exporter> as a base class we use L<Badger::Exporter>, and instead of 
+defining C<@EXPORT>, C<@EXPORT_OK> and C<%EXPORT_TAGS> we use 
+C<$EXPORT_ALL>, C<$EXPORT_ANY> and C<$EXPORT_TAGS>.
+
+C<$EXPORT_ALL> defines the symbols that will always be exported from your
+module. C<$EXPORT_ANY> is those that can be exported if the caller
+specifically asks for them. C<$EXPORT_TAGS> defines groups of tags that can be
+exported in one go.  In the above example, we must ensure that any symbols
+defined in C<$EXPORT_TAGS> are also present in C<$EXPORT_ANY>.
+
+You can now C<use Your::Constants> module to load constants into your code,
+using either the individual symbol names or the name of the tag set group.
+
+    # either
+    use Your::Constants 'TRUE FALSE VOLUME';    
+    
+    # or
+    use Your::Constants ':truth VOLUME';
+
+=head1 Tiered API
+
+L<Badger> uses package variables (like C<$EXPORT_ALL>, C<$EXPORT_ANY>, etc) as
+the lowest common denominator to get the job done. However, getting and
+setting package variables can be a little messy, especially if you're trying
+to do it from a different package (as we saw
+L<yesterday|href:3.html#section_Symbol_Table_Manipulation>).
+
+L<Badger::Exporter> also defines class methods that allow you declare your
+exports without having to worry about the underlying package variables.
+
+    __PACKAGE__->export_all('MESSAGE');
+    __PACKAGE__->export_any('VOLUME');
+    __PACKAGE__->export_tags( truth => 'TRUE FALSE' );
+
+Another advantage of using a class methods is that we no longer need to
+declare C<TRUE> and C<FALSE> via L<export_any()|Badger::Exporter/export_any()>.
+The L<export_tags()|Badger::Exporter/export_tags()> method is smart enough
+to do that for us.
+
+There is also the L<exports()|Badger::Exporter/exports()> method which 
+allows you to set all of the above (and more) in one go.
+
+    __PACKAGE__->exports(
+        all  => 'MESSAGE',
+        any  => 'VOLUME',
+        tags => 'TRUE FALSE'
+    );
+
+At an even higher level of abstraction, we can use L<Badger::Class> to 
+declare the exports for us.  This is an example of I<metaprogramming>.
+We'll be looking at L<Badger::Class> in later instalments, so for now 
+it's just a quick glimpse.
+
+    package Your::Constants;
+    
+    use Badger::Class
+        constant => {
+            MESSAGE => 'Hello World!',
+            VOLUME  => 10,
+            TRUE    => 1,
+            FALSE   => 0,
+        },
+        exports  => {
+            all     => 'MESSAGE',
+            any     => 'VOLUME',
+            tags    => { truth => 'TRUE FALSE' },
+        };
+
+The L<Badger::Class> module defines a number of import hooks which perform
+different actions.  The C<constant> hook tells L<Badger::Class> to define
+some constants.  The C<exports> hook is patched straight into the 
+L<export()|Badger::Exporter/exports()> method in L<Badger::Exporter> that
+we were just looking at.
+
+Notice that we don't need C<use strict> or C<use warnings> any more
+because C<use Badger::Class> effectively does it for us (using a neat 
+trick borrowed from L<Moose>).  Also note that we no longer need to declare
+L<Badger::Exporter> as a base class because C<Badger::Class> will also do
+that for us by virtue of the fact that we declared some exports.
+
+=head1 Inheritance
+
+What makes L<Badger::Exporter> different to L<Exporter> is that it understands
+inheritance between object classes.  What this means in practice is that you
+can create a subclass of C<Your::Constants> (or indeed any module using 
+L<Badger::Exporter>) and it will automatically export everything that its 
+base class exports (or base classes in the case of multiple inheritance).
+
+Here's an example where we create a subclass of C<Your::Constants> that
+defines a new value for the C<VOLUME> constant and adds C<COLOUR>.  All 
+the other constants are inherited.
+
+    package Your::New::Constants;
+    use base 'Your::Constants';
+    use constant {
+        VOLUME => 11,
+        COLOUR => 'black',
+    };
+    our $EXPORT_ANY = 'VOLUME COLOUR';
+
+Here's how we use it:
+
+    use Your::New::Constants 'VOLUME COLOUR :truth';
+    
+    print TRUE;                                 # 1
+    print FALSE;                                # 0
+    print "This amp goes up to ", VOLUME;       # one louder
+    print "How much more ", COLOUR,             # none, none more black
+          " could this be?";
+
+We get the new values for C<VOLUME> and C<COLOUR> I<and> the inherited
+values for C<TRUE> and C<FALSE>
+
+For a final trick, here's an example showing how you can use multiple
+inheritance to create a constants module which aggregates the constants
+from two or more other modules.
+
+    package Your::Project::Constants;
+    
+    use base qw( Your::Database::Constants 
+                 Your::Web::Constants
+                 Your::Colour::Constants );
+
+Now C<Your::Project::Constants> inherits all constants (and any other
+exportable items) defined by C<Your::Database::Constants>,
+C<Your::Web::Constants> and C<Your::Colour::Constants>.

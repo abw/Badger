@@ -1,0 +1,141 @@
+=head1 Badger::Base
+
+L<Badger::Base> is a new and improved version of the L<Class::Base> module. If
+you've ever used L<Class::Base> or L<Template::Base> (from which it was
+derived), then you'll already be familiar with much of what L<Badger::Base>
+does.
+
+The purpose of a base class is to have somewhere to put all the common
+functionality that you want all (or most) of your other classes in a project
+to inherit. The problem is that a base class (and OO inheritance in general)
+is something of a blunt instrument. Every time you add something to your base
+class you're effectively adding it to all modules that inherit from it.
+
+This can cause problems if those modules weren't expecting to have a new
+method suddenly appear from under their feet. Incidentally, this is one of the
+reasons why I never made any major changes to L<Class::Base> after it was
+released. Adding a single new method would have affected every module ever
+written that uses it as a base class, so it wasn't something to be done
+lightly.
+
+The L<Badger> approach is to keep the base class clean, lean and mean (very
+much like L<Class::Base>) and to provide other mechanisms to help with class
+construction. 
+
+=head1 A Point Class
+
+Here's a simple point class using L<Badger::Base>.  In example the 
+C<Your::Point> module defines a class of objects which store an C<x>
+and C<y>  co-ordinate.
+
+    package Your::Point;
+    use base 'Badger::Base';
+    
+    sub init {
+        my ($self, $config) = @_;
+        $self->{ x } = $config->{ x };
+        $self->{ y } = $config->{ y };
+        return $self;
+    }
+    
+    sub x { $_[0]->{ x } }
+    sub y { $_[0]->{ y } }
+    
+    1;
+
+L<Badger::Base> defines a L<new()|Badger::Base/new()> method which constructs
+an object and then calls the L<init()|Badger::Base/init()> method passing a reference
+to a hash array of configuration parameters.
+
+In most cases, you should only need to define your own
+L<init()|Badger::Base/init()> method and can inherit the default
+L<new()|Badger::Base/new()> method. In this example, the
+L<init()|Badger::Base/init()> method simply copies the values of the C<x> and C<y> 
+configuration parameters into the C<$self> object.
+
+Down at the bottom of the module we define two simple (but ugly) accessor
+methods to return the C<x> and C<y> values on demand.
+
+=head1 Using the Point Class
+
+You can now use C<Your::Point> module like this:
+
+    use Your::Point;
+    
+    # either: list of named parameters
+    my $point = Your::Point->new( x => 10, y => 20 );
+    
+    # or: hash ref of named parameters
+    my $point = Your::Point->new({ x => 10, y => 20 });
+    
+    print $point->x;    # 10
+    print $point->y;    # 20
+
+The L<new()|Badger::Base/new()> constructor method accepts a reference to a
+hash array of named parameters that it forwards onto the
+L<init()|Badger::Base/init()> method. You can also provide it with a "naked"
+list of named parameters which it will automatically fold into a hash
+reference.
+
+=head1 Adding Error Handling
+
+The best laid plans of badgers and men go often astray.  In anticipation 
+of this, we want to add some error handling to our module.
+
+L<Badger::Base> provides a simple L<error()|Badger::Base/error()> method for
+reporting errors. It accepts one or more strings (just like C<print()>) which
+it merges into a single error message and throws as an exception. The example
+below uses Perl 5.10's fancy new "defined or" operator C<//>.
+
+    package Your::Point;
+    use base 'Badger::Base';
+    
+    sub init {
+        my ($self, $config) = @_;
+        
+        $self->{ x } = $config->{ x }
+            // $self->error("No value specified for x");
+            
+        $self->{ y } = $config->{ y }
+            // $self->error("No value specified for y");
+            
+        return $self;
+    }
+
+If you're using an older version of Perl or if you want your code to be
+portable to older versions then you'll need to do something a little more
+long-winded (but don't worry, we'll be showing you how to automate this in
+a later instalment)
+
+    package Your::Point;
+    use base 'Badger::Base';
+    
+    sub init {
+        my ($self, $config) = @_;
+        
+        $self->{ x } = 
+          defined $config->{ x }
+                ? $config->{ x }
+                : $self->error("No value specified for x");
+                
+        # ...same for y...
+        
+        return $self;
+    }
+
+Either way, we now get an error thrown if we forget to provide either
+the C<x> or C<y> configuration parameters.  
+
+    use Your::Point;
+    
+    my $point = Your::Point->new(
+        x => 10,
+    );
+
+Woops!  Silly us.  We forgot the C<y> value:
+
+    your.point error - No value specified for y
+
+Errors are thrown as L<Badger::Exception> objects using Perl's inbuilt
+C<die()> function.  We'll be looking more at exceptions and error handling
+L<tomorrow|href:7.html>.

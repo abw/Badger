@@ -1,0 +1,184 @@
+=head1 Badger::Constants
+
+L<Badger::Constants> defines a number of constant values that often crop up in
+Perl programs. These constants are used throughout the L<Badger> code base.
+You can also import them into your own programs to help make your code more
+robust, easier to read and comprehend, or simply to save yourself from typing
+a few extra characters.
+
+Importing constants from L<Badger::Constants> is easy.  Just specify the
+names of the constants when you C<use Badger::Constants>.
+
+    use Badger::Constants 'TRUE', 'FALSE';
+
+Perl provides the C<qw( )> operator which will automatically quote the 
+words for you.
+
+    use Badger::Constants qw( TRUE FALSE );
+
+L<Badger::Constants> goes on step further in allowing you to specify multiple 
+items as single string.  It's easier to type and easier to read.
+
+    use Badger::Constants 'TRUE FALSE';
+
+Some of the constants are grouped into "tag sets".  This allows you to
+import all of the constants in a group in one go.  Tag sets are prefixed
+with a C<:> colon character.  For example, the C<:values> tag set defines
+C<TRUE>, C<FALSE> and various other values.
+
+    use Badger::Constants ':values';
+
+=head1 Types and Typos
+
+The C<:types> tag set defines constants for each of Perl's core data types:
+C<SCALAR>, C<ARRAY>, C<HASH>, C<CODE>, C<GLOB>, C<REGEX>.  All but the last
+are direct representations of the values they represent.  e.g. C<SCALAR> 
+defines the string C<'SCALAR'>, C<ARRAY> is C<'ARRAY'> and so on.  The only
+exception is C<REGEX> which defines the string C<Regexp>, which is the 
+type name Perl uses for references to regular expression.
+
+So if you've ever written code that looks something like this:
+
+    if (ref $data eq 'ARRAY') {
+         # do something with the ARRAY reference
+    }
+    elsif (ref $data eq 'HASH') {
+         # do something with the ARRAY reference
+    }
+    ...etc..
+
+Then you can instead write it like this:
+
+    use Badger::Constants ':types';
+    
+    if (ref $data eq ARRAY) {
+         # do something with the ARRAY reference
+    }
+    elsif (ref $data eq HASH) {
+         # do something with the ARRAY reference
+    }
+    ...etc..
+
+Why bother? Well apart from the fact that you save yourself from writing (and
+subsequently, reading) the additional quote characters around C<'ARRAY'>,
+C<'HASH'> and so on, it also offers you protection against mis-spelling a
+word. If you accidentally type C<'ARRRAY'> instead of C<'ARRAY'>, or
+C<'Regex'> instead of C<'Regexp'> then you'll be none the wiser until you
+notice that your program isn't behaving as expected. However, if you write
+C<ARRRAY> or C<REGEXP> when you really meant C<ARRAY> or C<REGEX> then you'll
+get a compile time error telling you that you're using an undefined value.
+
+Incidentally, I chose to standardise my code to use C<REGEX> in preference
+to C<REGEXP> because it's easier to type and say.  Most of the Perl programmers
+I know call them "regexes" (plural of "regex") rather than "regexps".  It's
+certainly what I call them when I'm reading code through in my head, so that's
+what I write.
+
+=head1 Say What You Mean
+
+Constants can be used to make your code more self-documenting. For example,
+the C<FIRST> and C<LAST> constants define the values C<0> and C<-1>
+respectively. They can be used to access the first and last items in an array.
+For example:
+
+    if (ref $array[LAST] eq HASH) {
+        # do something
+    }
+
+In this case we're actually giving ourselves more work by using a constant
+like C<LAST> instead of just typing C<-1>.  The benefit here is that we're
+being much more explicit about the I<intent> of the operation, rather than
+the specific I<implementation>.  Although most Perl programmers will be familiar
+with the use of negative array indexing to count backwards from the end of 
+the array, it doesn't hurt to spell it out in plain english words for any 
+non-Perl programmers who might be visiting your code for whatever reason.
+
+
+I call this I<semantic code> in homage to the I<semantic web> (that's
+"semantic" with a small 's' - not to be confused with the Semantic Web pipe
+dream). Whereas C<-1> is just a number that happens to have a certain meaning
+when used as the index to an array, the word C<LAST> has a semantic meaning
+that all English speaking people can agree on. OK, that's not strictly true as
+"last" can mean "previous" (as in "our last drummer exploded on stage"),
+"ultimate" (as in "the last train to Clarksville"), and "endure" (as in "the
+money in the kitty isn't going to last all night with a pub full of thirsty
+Perl programmers"). But in the context of an accessing an array element, the
+correct meaning should be obvious.
+
+Constants can also be used to hide complexity that has little or no value
+in being exposed.  For example, the C<DELIMITER> constant defines a regular
+expression which splits a single string into separate words.  It's used in 
+a number of places in L<Badger> including the L<Badger::Exporter> module
+which L<Badger::Constants> uses to export its constants.  We saw earlier
+how you can write something like this:
+
+    use Badger::Constants 'TRUE FALSE';
+
+Behind the scenes this is handled by a bit of code like this:
+
+    use Badger::Constants 'DELIMITER';
+    
+    my @items = split(DELIMITER, $text);
+
+The C<DELIMITER> constant is defined to contain a regular expression that
+looks like this:
+
+    qr/(?:,\s*)|\s+/        # match a comma or whitespace
+
+In addition to whitespace, we also allow commas to be used as delimiters,
+either with or without trailing whitespace.  It's not a particularly complex
+regular expression, but without looking at it and mentally parsing it there's
+no indication of what it actually does.  Using a regex like this would usually
+warrant a simple comment (like that above) to help anyone skimming through
+your code.  But why bother with a comment when you can replace the whole regex
+with a single word constant which describes I<what> it does?  This is the 
+essence of I<self-documenting code>.
+
+=head1 Symbol Table Manipulation
+
+The final constant I want to show you is C<PKG>. This one fits more into the
+"neat hack" category than the others, but I've found it invaluable. It relates
+to the rather advanced topic of manipulating Perl's symbol tables so don't
+worry about skipping this section if it means nothing to you.
+
+Let's say we've got an C<$object> of a particular class and we want to lookup
+a package variable in the correct package for that object. Perl's C<ref> gives
+us the type of the object which equates to the package name (aka symbol
+table).
+
+    my $pkg = ref $object;
+
+If we want to look up the C<$DEBUG> variable in that package, then we can 
+do it like this:
+
+    no strict 'refs';
+    my $val = ${"$pkg\::DEBUG"};
+
+Or if you prefer, like this:
+
+    no strict 'refs';
+    my $var = ${$pkg.'::DEBUG'}
+
+This is an example of a I<symbolic reference>.  We're delving a little 
+further into the guts of Perl than is usual so we need to disable the 
+C<strict 'refs'> safety catch before we start.  
+
+The second example above is slightly more efficient than the first.
+Concatenating several values is faster than interpolating variables into a
+string, so we'll go with that. We might also want to define the name of the
+variable in a constant, like so:
+
+    use constant DEBUG_VAR => 'DEBUG';
+    no strict 'refs';
+    my $var = ${$pkg.'::'.DEBUG_VAR}
+
+And now, the only thing remaining is (drum roll), to use the C<PKG>
+constant in place of C<'::'>.
+
+    my $var = ${$pkg.PKG.DEBUG_VAR}
+
+We end up with something looking more like a dotted variable than a 
+symbolic reference.  I find it easier to both read and write.
+
+L<Tomorrow|href:4.html> we'll look at how you can define your own constants
+library using L<Badger::Exporter>.

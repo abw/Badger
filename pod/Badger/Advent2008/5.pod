@@ -1,0 +1,193 @@
+=head1 Export Hooks
+
+The L<Badger::Exporter> modules makes it easy to define export hooks for your 
+modules.  An export hook is a piece of code which gets run when the module
+is used with a particular option.
+
+    use Your::Module option => 'value';
+
+=head1 Hello World
+
+Consider the following trivial module which defines a C<hello()>
+exportable subroutine.
+
+    package Acme::Hello;
+    use base 'Badger::Exporter';
+    our $EXPORT_ANY = 'hello';
+    
+    sub hello {
+        print "Hello World!\n";
+    };
+    
+    1;
+
+The module can be used like this:
+
+    use Acme::Hello 'hello';
+    hello();                                # Hello World!
+
+=head1 Salut le Monde!
+
+Now let's say you want to localise your module so that it can generate a
+welcome message in different languages.  Here's version 2.
+
+    package Acme::Hello;
+    use base 'Badger::Exporter';
+    
+    our $EXPORT_ANY = 'hello';
+    our $LANGUAGE   = 'english';
+    our $MESSAGES   = {
+        czech     => 'Ahoj, svet!',
+        bengali   => 'Shagatam Prithivi!',
+        english   => 'Hello World!',
+        french    => 'Salut le Monde!',
+        german    => 'Hallo Welt!',
+        hindi     => 'Shwagata Prithvi!',
+        italian   => 'Ciao Mondo!',
+        norwegian => 'Hallo Verden!',
+        portugese => 'Ola mundo!',
+        spanish   => '!Hola mundo!',
+        swedish   => 'Hejsan värld!',
+        turkish   => 'Merhaba Dünya!',
+    };
+    
+    sub hello {
+        print $MESSAGES->{ $LANGUAGE }, "\n";
+    };
+    
+    sub language {
+        my $class = shift;
+        
+        if (@_) {
+            die "Sorry, I don't speak $_[0]" 
+                unless $MESSAGES->{ $_[0] };
+            $LANGUAGE = shift;
+        }
+        return $LANGUAGE;
+    }
+    
+    1;
+
+We now define our greeting messages in the C<$MESSAGES> hash array and use
+the C<$LANGUAGE> package variable as the index into it.  We also define a 
+C<language()> class method which can be used to get or set the value for 
+C<$LANGUAGE>.  This adds some error checking to ensure that the C<$LANGUAGE>
+chosen is one that we have a message defined for.
+
+    use Acme::Hello 'hello';
+    
+    hello();                                # Hello World!
+    
+    Acme::Hello->language('french');
+    hello();                                # Salut le Monde!
+    
+    Acme::Hello->language('spanish'); 
+    hello();                                # !Hola mundo!
+    
+    Acme::Hello->language('japanese');      # Sorry I don't speak japanese
+
+=head1 Adding an Export Hook
+
+We can streamline the selection of a language by providing an export hook 
+for the C<Acme::Hello> module.  Export hooks are defined using the 
+appropriately named C<$EXPORT_HOOKS> package variable.  We add the following
+to C<Acme::Hello>.
+
+    our $EXPORT_HOOKS = {
+        language  => sub {
+            my ($class, $target, $symbol, $symbols) = @_;
+            my $language = shift @$symbols || die "No language specified";
+            $class->language($language);
+        },
+    };
+
+This defines a C<language> export hook which we can use like this:
+
+    use Acme::Hello 'hello', language => 'french';
+    
+    hello();                                # Salut le Monde!
+
+The C<language> option now triggers the export hook we defined above. The
+first argument passed to the handler is the class name of C<Acme::Class>
+(although bear in mind that you might want to subclass this module at some
+point in the future, in which case C<$class> will be the subclass name). The
+second argument is the package that the module is being imported into (C<main>
+in this example). The third argument, C<$symbol> contains the word
+C<language>, and the final argument C<$symbols> is a reference to a list of
+remaining symbols. In this case, the list contains just one item, C<'french'>,
+which we remove (C<shift>) from the list and store in the C<$language>
+variable. The final step is to call the C<language()> class method passing
+C<$language> as an argument.
+
+Of course, we could have just set C<$LANGUAGE> directly at this point, but
+calling the C<language()> method gives us the extra error checking that will
+alert the user to an invalid language selection.
+
+=head1 Argument Count
+
+We can streamline our export hook definition a little by having
+L<Badger::Exporter> provide us with the single argument we need instead of
+the C<$symbols> list reference.  Here the export hook is defined using a 
+list reference.  The first item is a subroutine reference as before, the 
+second item is the number of additional arguments it expects.  Our C<language>
+hook requires just one.
+
+    our $EXPORT_HOOKS = {
+        language  => [
+            sub {
+                my ($class, $target, $symbol, $language) = @_;
+                $class->language($language);
+            },
+            1   # one argument
+        ],
+    };
+
+If you don't mind sacrificing a bit of readability then you can make that 
+more compact:
+
+    our $EXPORT_HOOKS = {
+        language => [ sub { $_[0]->language($_[3]) }, 1 ],
+    };
+
+If you've got several class methods like C<language()> that you want to expose
+using export hooks then you can handle them all using a single handler.
+The trick here is to use the third argument (C<$_[2]>/C<$symbol>) as the 
+method name.  Let's assume that we've added C<verbose()> and C<polite()>
+class methods that we want to hook up to the corresponding export options.
+
+    our $EXPORT_HOOKS = {
+        language => [ \&_export_hook, 1 ],
+        verbose  => [ \&_export_hook, 1 ],
+        polite   => [ \&_export_hook, 1 ],
+    };
+    
+    sub _export_hook {
+        my ($class, $target, $symbol, $argument) = @_;
+        $class->$symbol($argument);
+    }
+    
+    # don't forget to define the verbose() and polite() class methods...
+
+Now we can use the module like so:
+
+    use Acme::Hello
+        'hello',
+        language => 'german',   # calls Acme::Hello->language('german')
+        verbose  => 1,          # calls Acme::Hello->verbose(1)
+        polite   => 1;          # calls Acme::Hello->polite(1)
+
+=head1 Catch-All Handler
+
+You can also define a catch-all handler which is called when the module is
+used with an unrecognised option. This is known as an I<export fail> handler
+and is declared using the C<$EXPORT_FAIL> package variable. The arguments are
+exactly the same as for regular export hooks.
+
+    our $EXPORT_FAIL = sub {
+        my ($class, $target, $symbol, $symbols) = @_;
+        print "$symbol is not a valid option for $class\n";
+    };
+
+The handler will be called once for each unrecognised option.  The C<$symbols>
+argument is a reference to a list of remaining symbols and you can remove
+items from this list to use as arguments.

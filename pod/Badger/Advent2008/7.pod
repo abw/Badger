@@ -1,0 +1,219 @@
+=head1 Error Handling
+
+We looked L<yesterday|href:6.html#section_Adding_Error_Handling> at the
+L<error()|Badger::Base/error()> method provided by L<Badger::Base> for
+reporting errors.
+
+Here's a simple module showing the method in use.
+
+    package HAL;
+    use base 'Badger::Base';
+    
+    sub open_pod_bay_doors {
+        my $self = shift;
+        $self->error("I'm sorry Dave, I'm afraid I can't do that");
+    }
+    
+    1;
+
+If we create a C<HAL> object and call the C<open_pod_bay_doors()> method,
+we get the error thrown as an exception using Perl's inbuilt C<die()>
+function.
+
+    use HAL;
+    my $hal = HAL->new;
+    $hal->open_pod_bay_doors;
+
+If we don't do anything else to catch the error then the Perl program
+will exit and the error will be reported.
+
+    hal error - I'm sorry Dave, I'm afraid I can't do that
+
+The error is thrown as a L<Badger::Exception> object.  This stores the 
+error message ("I'm sorry Dave, I'm afraid I can't do that") along with
+an error type derived (by default) from the name of the class in which
+the error was raised.  In this case the module is C<HAL> which results 
+in a lower case exception type of C<hal>.  Any occurrences of C<::> in your
+module name are replaced with dots (e.g. C<Your::Module> has a default
+error type of C<your.module>), although that doesn't apply in this simple
+example.
+
+The L<Badger::Exception> object has a L<text()|Badger::Exception/text()>
+method which is automatically called when the object is I<stringified> (e.g.
+when printed, appended onto another string, etc). It's that method that
+generates the summary shown above.
+
+=head1 Catching Errors
+
+You can catch an error by enclosing code in an C<eval> block (this is Perl's
+equivalent of C<try> in other languages). If an error is thrown then it will
+be defined in the magic C<$@> variable.
+
+    eval {
+        $hal->open_bay_doors;
+    };
+    if ($@) {
+        print "Caught error: $@";
+    }
+
+This will now print the following message:
+
+    Caught error: hal error - I'm sorry Dave, I'm afraid I can't do that.
+
+The C<$@> variable contains the L<Badger::Exception> object. Instead of just
+printing it out, we can inspect the type and/or message separately. 
+
+    if ($@) {
+        print "Error type: ", $@->type, "\n";
+        print "Error info: ", $@->info, "";
+    }
+
+=head1 The try() Method
+
+The L<Badger::Base> module provides the L<try()|Badger::Base/try()> method
+as a convenient short-cut to using C<eval>.  
+
+Instead of writing this:
+
+    eval {
+        $hal->open_pod_bay_doors;
+    }
+    if ($@) {
+        print "Error caught: $@";
+    }
+
+You can write this:
+
+    $hal->try('open_pod_bay_doors')
+        || print "Error caught: ", $hal->error;
+
+The L<try()|Badger::Base/try()> method calls the method named by the 
+first argument, wrapping it up in an C<eval> block to catch an errors
+throw.  If an error is caught then the method returns C<undef>.  You can
+then call the L<error()|Badger::Base/error> method without any arguments
+to return the L<Badger::Exception> object representing the error.  Or 
+you can call the L<reason()|Badger::Base/reason()> method which returns the
+same thing.
+
+    $hal->try('open_pod_bay_doors')
+        || print $hal->reason;
+
+You can specify any additional arguments you want passed to the method 
+following the method name:
+
+    $hal->try( open_pod_bay_doors => 'please' )
+        || print $hal->reason;
+
+=head1 When is an Error Not an Error?
+
+Errors should always be thrown as exceptions.  Don't be tempted to return
+C<undef> from a method to indicate failure.  It's a bad practice that leads
+to brittle code (because people invariable forget to check the return value)
+and overly verbose code that is littered with error checking (in the event
+that they don't).
+
+However, that doesn't mean that there aren't cases where returning C<undef>
+from a method is the right thing to do.  For example, suppose you have a 
+method which fetches a user record from a database.  It's quite likely that
+the method may be asked to fetch a user that doesn't exist.  For example,
+if the code sits behind a login box on a web application then there will 
+inevitably be people who mistype their username, or maliciously try to 
+break in by guessing username and password combinations.
+
+That kind of situation should usually I<not> be considered an error. The
+method should return the record if found, or I<decline> by returning C<undef>
+if not. The L<decline()|Badger::Base/decline()> method can be used to this
+effect. It stores an error message internally then returns C<undef>
+
+    sub fetch_user_by_id {
+        my $self = shift;
+        my $uid  = shift
+            || return $self->error("No user ID specified");
+            
+        my $user = ...do something...
+        
+        return $user
+            || $self->decline("No such user: $uid")
+    }
+
+The calling code is then expected to check for the undefined value.  It
+can call the L<reason()|Badger::Base/reason()> (or L<error()|Badger::Base/error()>)
+methods to fetch the decline message generated.  Something like this, perhaps:
+
+    sub my_web_app_handler {
+        my $self = shift;
+        my $uid  = $self->param('uid');
+        my $user = $self->fetch_user( id => $uid )
+            || return $self->error_page(
+                    "You're a very naughty boy: ",
+                    $self->reason
+               ); 
+        
+        # more code here
+    }
+
+Note that we only need to worry about the declined value in the calling code.
+If the L<fetch_user()> method really does encounter an error, say if the
+database isn't connected, or if the caller forgot to specify an C<id>
+parameter, then it will throw an exception and break out of the normal
+program flow.  You can then catch all uncaught exceptions at a higher
+level of your program and deal with them as appropriate.  
+
+For example, your top-level web application dispatcher might do this:
+
+    sub my_main_web_app_dispatcher {
+        my $self = shift;
+        
+        $self->try('my_web_app_handler')
+            || return $self->error_page(
+                    "An internal error occurred.",
+                    "We're really sorry",
+                    $self->reason
+                );
+    }
+
+Which is little more than syntactic sugar for this:
+
+    sub my_main_web_app_dispatcher {
+        my $self = shift;
+        
+        eval {
+            $self->my_web_app_handler;
+        };
+        if ($@) {
+            return $self->error_page(
+                "An internal error occurred.",
+                "We're really sorry",
+                $@
+            );
+        }
+    }
+
+This approach ensures that all errors get caught and reported.
+
+The general rule here is that a method that encounters an error should 
+never return.  If a method does return then we assume that it successfully 
+performed whatever task it was supposed to perform.  It might be the case
+that the method returns C<undef>, as in our earlier example to indicate that 
+it couldn't find the requested record in the database.  However, the fact
+that it returned at all indicates that it successfully I<looked> for the 
+record and can confirm that it doesn't exist.
+
+Of course there may be times when a missing database record really does 
+constitute an error.  For example, a method that sends out an invoice for
+an order cannot succeed if the order does not exist.  In that case, the 
+method is responsibly for reporting the missing record as an error.
+
+    sub generate_order_invoice {
+        my $self  = shift;
+        my $oid   = shift 
+            || return $self->error("No order ID specified");
+            
+        # get_order_record() may decline with undef, but that's not
+        # good enough for us... we *must* have an order record to proceed
+        my $order = $self->get_order_record($oid)
+            || return $self->error("Order $oid not found!");
+        
+        # ...count beans, generate invoice, ???, profit...
+    }
+
