@@ -760,11 +760,11 @@ sub _autoload {
     no warnings ONCE;
 
     unless ( defined ${ $class.PKG.LOADED  } 
-          || defined ${ $class.PKG.VERSION }
+          || defined ${ $class.PKG.VERSION }            # TODO: ??
           || @{ $class.PKG.ISA }) {
 
         _debug("autoloading $class\n") if $DEBUG;
-        $v = ${ $class.PKG.VERSION } ||= 0;
+        $v = ${ $class.PKG.VERSION } ||= 0;             # TODO: ??
         local $SIG{__DIE__};
         eval "use $class";
         die $@ if $@;
