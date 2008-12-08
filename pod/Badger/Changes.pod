@@ -4,6 +4,10 @@ Badger::Changes - Summary of changes in the Badger toolkit
 
 =head1 CHANGES
 
+=head2 Version 0.05
+
+Refactored L<Badger::Factory>.
+
 =head2 Version 0.04
 
 Added the L<throw_msg()|Badger::Base/throw_msg()> method to L<Badger::Base>.
