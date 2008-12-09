@@ -128,6 +128,10 @@ sub item {
     
     my $item  = $items->{ $type  } 
             ||= $items->{ $canon }
+            # TODO: this needs to be defined-or, like //
+            # Plugins can return an empty string to indicate that they 
+            # do nothing.
+            # HMMM.... or does it?
             ||  $self->find($type, \@args)
             ||  $self->default($type, \@args)
             ||  return $self->not_found($type, \@args);
@@ -228,22 +232,20 @@ sub found {
             || $self->can(FOUND_REF)
             || return $self->error_msg( bad_ref => $self->{ item }, $type, $iref );
             
-        $item = $method->($self, $type, $item, $args) 
-            || return;
+        $item = $method->($self, $type, $item, $args);
     }
     else {
         # otherwise it's the name of a module
-        $item = $self->found_module($type, $item, $args) 
-            || return;
+        $item = $self->found_module($type, $item, $args);
     }
 
+    # NOTE: an item can be defined but false, e.g. a Template::Plugin which
+    # return '' from its new() method to indicate it does nothing objecty
+    return unless defined $item;
+    
     $self->debug("Found result: $type => $item") if DEBUG;
 
-    # bingo!
-    
-    # TODO: what about caching result?  Do we always leave that to a 
-    # subclass?
-    
+    # TODO: what about caching result?  Do we always leave that to subclasses?
     return $self->result($type, $item, $args);
 }
 
