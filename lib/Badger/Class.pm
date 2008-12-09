@@ -749,8 +749,7 @@ sub hooks {
 #-----------------------------------------------------------------------
 # autoload($module)
 #
-# Helper subroutine to autoload a module.  Could probably be merged
-# with similar method(s) in T::Utils.
+# Helper subroutine to autoload a module.
 #-----------------------------------------------------------------------
 
 sub _autoload {

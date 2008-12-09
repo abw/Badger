@@ -150,43 +150,52 @@ sub find {
     my $self   = shift;
     my $type   = shift;
     my $bases  = $self->path;
-    my $loaded = $self->{ loaded }; 
     my $module;
     
     foreach my $base (@$bases) {
-        foreach $module ($self->module_names($base, $type)) {
-            
-            # see if we've previously loaded a module with this name (true
-            # value) or failed to load a module (defined but false value)
-            
-            if ($loaded->{ $module }) {
-                $self->debug("$module has been previously loaded") if DEBUG;
-                return $module;
-            }
-            elsif (defined $loaded->{ $module }) {
-                next;
-            }
-                        
-            no strict REFS;
-            $self->debug("attempting to load $module\n") if DEBUG;
-
-            # Some filesystems are case-insensitive (like Apple's HFS), so an 
-            # attempt to load Badger::Example::foo may succeed, when the correct 
-            # package name is actually Badger::Example::Foo.  We double-check
-            # by looking for $VERSION or @ISA.  This is a bit dodgy because we might be
-            # loading something that has no ISA.  Need to cross-check with 
-            # what's going on in Badger::Class _autoload()
-
-            if ( class($module)->maybe_load 
-            && ( ${ $module.PKG.VERSION } || @{ $module.PKG.ISA } )) {
-                $self->debug("loaded $module\n") if DEBUG;
-                $loaded->{ $module } = 1;
-                return $module 
-            }
-
-            $self->debug("failed to load $module\n") if DEBUG;
-        }
+        return $module
+            if $module = $self->load( $self->module_names($base, $type) );
     }
+
+    return undef;
+}
+
+
+sub load {
+    my $self   = shift;
+    my $loaded = $self->{ loaded }; 
+
+    foreach my $module (@_) {
+        # see if we've previously loaded a module with this name (true
+        # value) or failed to load a module (defined but false value)
+            
+        if ($loaded->{ $module }) {
+            $self->debug("$module has been previously loaded") if DEBUG;
+            return $module;
+        }
+        elsif (defined $loaded->{ $module }) {
+            next;
+        }
+                        
+        no strict REFS;
+        $self->debug("attempting to load $module\n") if DEBUG;
+
+        # Some filesystems are case-insensitive (like Apple's HFS), so an 
+        # attempt to load Badger::Example::foo may succeed, when the correct 
+        # package name is actually Badger::Example::Foo.  We double-check
+        # by looking for $VERSION or @ISA.  This is a bit dodgy because we might be
+        # loading something that has no ISA.  Need to cross-check with 
+        # what's going on in Badger::Class _autoload()
+
+        if ( ( $loaded->{ $module } = class($module)->maybe_load )
+        &&   ( ${ $module.PKG.VERSION } || @{ $module.PKG.ISA }  ) ) {
+            $self->debug("loaded $module\n") if DEBUG;
+            return $module 
+        }
+
+        $self->debug("failed to load $module\n") if DEBUG;
+    }
+
     return undef;
 }
 
@@ -263,6 +272,10 @@ sub found_array {
 # subclasses may also define other found_XXX() types:
 #   found_code(), found_hash(), found_object()
 
+sub not_found {
+    my ($self, $name, @args) = @_;
+    $self->error_msg( not_found => $self->{ item }, $name );
+}
 
 # stub method which instantiates an object from a class name.
 # subclasses may redefine this to do something more interesting
@@ -274,24 +287,14 @@ sub construct {
 }
 
 
-
 sub module_names {
-    my ($self, $base, $type) = @_;
+    my $self = shift;
+    my @bits = map { split /\.+/ } @_;
 
     return (
-        join( PKG,
-            $base,
-            map { ucfirst $_ }
-            split(/\./, $type)
-        ),
-        $type,
+        join( PKG, map { ucfirst $_ } @bits ),
+        join( PKG, @bits )
     );
-}
-
-
-sub not_found {
-    my ($self, $name, @args) = @_;
-    $self->error_msg( not_found => $self->{ item }, $name );
 }
 
 
@@ -325,7 +328,7 @@ sub AUTOLOAD {
     my ($name) = ($AUTOLOAD =~ /([^:]+)$/ );
     return if $name eq 'DESTROY';
 
-    $self->debug("AUTOLOAD $name\n") if $DEBUG;
+    $self->debug("AUTOLOAD $name\n") if DEBUG;
 
     local $RUNAWAY = $RUNAWAY;
     $self->error("AUTOLOAD went runaway on $name")
