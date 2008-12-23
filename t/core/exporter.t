@@ -16,7 +16,7 @@ use warnings;
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Exporter;
 use Badger::Test 
-    tests => 74,
+    tests => 78,
     debug => 'Badger::Exporter',
     args  => \@ARGV;
 
@@ -263,12 +263,27 @@ use My::Exporter::Explicit ':math :science';
 is( E, 2.718, 'imported E' );
 is( PI, 3.141, 'imported PI' );
 is( PHI, 1.618, 'imported PHI' );
+is( gamma, 0.57721, 'imported gamma' );
 is( $ANSWER, 42, 'got the answer (42)' );
 is( physics, "E=mc^2", 'got physics' );
 is( biology, "evolution", 'got biology' );
 is( chemistry, "2 H2O -> 2 H2 + O2", 'got chemistry' );
 pass("I can do science, me");
 
+
+#-----------------------------------------------------------------------
+# test constant generations
+#-----------------------------------------------------------------------
+
+package main;
+use My::Exporter::Generator ':math';
+
+is( e,   2.718, 'generated e' );
+is( pi,  3.142, 'generated pi' );
+is( phi, 1.618, 'generated phi' );
+# These don't work yet - see comments in My::Exporter::Generator
+#is( food, 'Nuts and Berries', 'generated food' );
+#is( cheese, 'Cheddar', 'generated cheese' );
 
 
 1;
