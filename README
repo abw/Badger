@@ -12,12 +12,12 @@ SYNOPSIS
         # 6) enjoy life
 
 WARNING
-    This is the fourth version of the Badger Toolkit. It is now being used
+    This is the fifth version of the Badger Toolkit. It is now being used
     as the foundation for a number of other Perl modules and is believed to
     be reliable and reasonably bug-free.  However it should still be treated 
     as an alpha software as some elements of the API or internal 
     architecture may be subject to change.  See the Changes file for 
-    information on what has changed between versions 0.01 and 0.04.
+    information on what has changed between versions 0.01 and 0.05.
 
 DESCRIPTION
     The Badger toolkit is a collection of Perl modules designed to simplify
