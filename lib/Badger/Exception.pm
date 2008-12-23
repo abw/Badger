@@ -132,8 +132,9 @@ sub trace {
 sub throw {
     my $self = shift;
 
-    # save relevant information from caller stack for enhanced debugging
-    if ($self->{ trace }) {
+    # save relevant information from caller stack for enhanced debugging,
+    # but only the first time the exception is thrown
+    if ($self->{ trace } && ! $self->{ stack }) {
         my @stack;
         my $i = 1;
         while (1) {
@@ -210,7 +211,7 @@ Badger::Exception - structured exception for error handling
     ($type, $info) = $exception->type_info();
     
     # print string summarising exception
-    print $exception->as_string();
+    print $exception->text();
     
     # use automagic stringification 
     print $exception;
