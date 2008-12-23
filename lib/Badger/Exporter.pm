@@ -107,7 +107,7 @@ sub export_tags {
     $self->export_any(
         grep {
             # ignore references to code or other tag sets
-            not (ref || /^:/);
+            not (ref || /^(:|=)/);
         }
         map {
             # symbols in tagset can be a list ref, hash ref or string
@@ -295,14 +295,15 @@ sub export {
             my $type = "&";
             $symbol =~ s/^(\W)//;
             $source =~ s/^(\W)// and $type = $1;
-            $source = $pkg.PKG.$source unless $source =~ /::/;
+            $source = $pkg.PKG.$source unless $source =~ /::/ or $type eq '=';
            _debug("exporting $type$symbol from $source into $target\n") if $DEBUG;
             *{ $target.PKG.$symbol } =
-                $type eq '&' ? \&{$source} :
-                $type eq '$' ? \${$source} :
-                $type eq '@' ? \@{$source} :
-                $type eq '%' ? \%{$source} :
-                $type eq '*' ?  *{$source} :
+                $type eq '&' ?    \&{$source} :
+                $type eq '$' ?    \${$source} :
+                $type eq '@' ?    \@{$source} :
+                $type eq '%' ?    \%{$source} :
+                $type eq '*' ?     *{$source} :
+                $type eq '=' ? sub(){$source} :
                 do { push(@errors, "Can't export symbol: $type$symbol\n"); next; };
         }
         $count++;
@@ -741,11 +742,11 @@ To load a set of symbols, specify the tag name with a 'C<:>' prefix.
 
 The special 'C<:all>' set imports all symbols.
 
-    use Badger::AnyModule qw(:all);
+    use Badger::AnyModule ':all';
 
 The special 'C<:default>' set imports the default set of symbols.
 
-    use Badger::AnyModule qw(:default @BONG);
+    use Badger::AnyModule ':default @BONG';
 
 You can also use the C<export_tags()> method to define a hash array
 mapping aliases to symbols.
@@ -762,7 +763,7 @@ When this tagset is imported, the symbols identified by the values
 in the hash reference (C<&the_foo_sub> and C<&the_bar_sub>) are exported 
 into the caller's package as the symbols named in the corresponding keys.
 
-    use Badger::AnyModule qw(:set4);
+    use Badger::AnyModule ':set4';
     
     foo();    # Badger::AnyModule::the_foo_sub()
     bar();    # Badger::AnyModule::the_bar_sub()
@@ -788,6 +789,26 @@ You can also explicitly specify the package name for a symbol:
             '$Y' => '$Badger::Example::Two:Y',
         }
     );
+
+The C<Badger::Exporter> module also recognises the C<=> pseudo-sigil
+which can be used to define constant values.
+
+    __PACKAGE__->export_tags(
+        set7 => {   
+            e   => '=2.718',
+            pi  => '=3.142',
+            phi => '=1.618',
+        }
+    );
+
+When this tag set is imported, C<Badger::Exporter> will define constant
+subroutines to represent the imported values.
+
+    use Badger::AnyModule ':set7';
+    
+    print e;            # 2.718
+    print pi;           # 3.142
+    print phi;          # 1.618
 
 =head2 export_hooks(%hooks)
 
