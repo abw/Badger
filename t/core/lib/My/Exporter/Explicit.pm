@@ -37,6 +37,7 @@ use Badger::Class
                 PI  => '&My::Exporter::Explicit::Math::PI',
                 PHI => \&My::Exporter::Explicit::Math::PHI,
                 '$ANSWER' => '$My::Exporter::Explicit::Math::ANSWER',
+                gamma => '=0.57721',
             },
             science   => {
                 physics   => 'My::Exporter::Explicit::Science::physics',
