@@ -612,7 +612,17 @@ The method should return them like so:
 =head2 find($type,\@args)
 
 This method is called to find and dynamically load a module if it doesn't
-already have an entry in the internal C<items> table.
+already have an entry in the internal C<items> table.  It iterates through
+each of the base paths for the factory and calls the L<load()> method to
+see if the module can be found under that prefix.
+
+=head2 load(@module_names)
+
+This method is called to dynamically load a module.  It iterates through
+each of the module name passed as arguments until it successfully loads
+one.  At that point it returns the module name that was successfully 
+loaded and ignores the remaining arguments.  If none of the modules can
+be loaded then it returns C<undef>
 
 =head2 default($type,\@args)
 
