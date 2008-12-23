@@ -153,6 +153,7 @@ sub is ($$$;$) {
         return $self->fail($msg, $self->different($expect, $result));
     }
 }
+
 sub isnt ($$$;$) {
     my $self = shift->prototype;
     my ($result, $expect, $msg) = @_;
@@ -274,7 +275,7 @@ sub test_msg {
 
 sub test_name ($) {
     my $self = shift->prototype;
-    my ($pkg, $file, $line) = caller(1);
+    my ($pkg, $file, $line) = caller(2);
     $self->message( name => $self->{ count }, $file, $line );
 }
 
