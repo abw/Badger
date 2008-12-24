@@ -16,6 +16,7 @@ my %opts = (
 if ($ExtUtils::MakeMaker::VERSION >= 5.43) {
     $opts{ AUTHOR   } = 'Andy Wardley <abw@wardley.org>';
     $opts{ ABSTRACT } = 'Application programming toolkit',
+    $opts{ LICENSE  } = 'perl',
 }
 
 WriteMakefile( %opts );
