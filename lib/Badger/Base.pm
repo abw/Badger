@@ -317,6 +317,10 @@ sub error_msg {
     $_[0]->error( message(@_) );
 }
 
+sub fatal_msg {
+    $_[0]->fatal( message(@_) );
+}
+
 sub decline_msg {
     $_[0]->decline( message(@_) );
 }
@@ -1070,6 +1074,11 @@ The L<reason()> method can be used to return the message generated.
 
     my $food = $forager->forage('nuts')
         || warn $forager->reason;       # No nuts found in the forest
+
+=head2 fatal_msg($message, @args)
+
+This is a wrapper around the L<fatal()> and L<message()> methods,
+similar to L<error_msg()> and co.
 
 =head2 throw($type, $info, %more_info)
 
