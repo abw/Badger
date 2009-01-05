@@ -1,9 +1,9 @@
 #========================================================================
 #
-# Badger::Log
+# Badger::Log::File
 #
 # DESCRIPTION
-#   A simple base class logging module.
+#   Subclass of Badger::Log for logging messages to a file.
 #
 # AUTHOR
 #   Andy Wardley   <abw@wardley.org>

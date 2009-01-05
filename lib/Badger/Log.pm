@@ -75,16 +75,11 @@ class->methods(
 
 sub init_log {
     my ($self, $config) = @_;
-    my $class = $self->class;
-
+    my $class  = $self->class;
     my $levels = $class->hash_vars( LEVELS => $config->{ levels } );
     
-    # TODO: define all this as a config
-
     # populate $self for each level in $LEVEL using the 
     # value in $config, or the default in $LEVEL
-
-    # TODO: change this to a hash merge
     while (my ($level, $default) = each %$levels) {
         $self->{ $level } = 
             defined $config->{ $level }
@@ -92,6 +87,7 @@ sub init_log {
                   : $levels->{ $level };
     }
 
+    # call the auto-generated configure() method to update $self from $config
     $self->configure($config);
 
     return $self;
