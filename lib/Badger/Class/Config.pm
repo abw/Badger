@@ -50,7 +50,6 @@ sub export {
     );
 }
 
-
 sub schema {
     my $class  = shift;
     my $config = @_ == 1 ? shift : { @_ };
@@ -121,7 +120,7 @@ sub schema {
     
     return \@schema;
 }
-    
+
 
 #-----------------------------------------------------------------------
 # this method is mixed into the target module
@@ -201,7 +200,6 @@ sub configure_pkg {
         : (NOTHING);
 }
 
-
 sub configure_class {
     my ($self, $class, $name, $config, $var) = @_;
     my $value = $class->any_var_in( split(':', $var) );
@@ -215,7 +213,6 @@ sub configure_class {
         ? (VALUE => $value)
         : (NOTHING);
 }
-
 
 sub configure_env {
     my ($self, $class, $name, $config, $var) = @_;
