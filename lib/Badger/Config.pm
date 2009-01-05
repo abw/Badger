@@ -105,11 +105,11 @@ Constructor method to create a new L<Badger::Config> object.
 
 =head1 AUTHOR
 
-Andy Wardley E<lt>abw@wardley.orgE<gt>
+Andy Wardley L<http://wardley.org/>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2001-2007 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2001-2009 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
