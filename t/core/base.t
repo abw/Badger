@@ -19,7 +19,6 @@ use lib qw( ./lib ../lib ../../lib );
 use Badger::Base;
 use Badger::Test 
     tests => 99,
-#    debug => 'Badger::Base',
     debug => 'Badger::Exporter',
     args  => \@ARGV;
 
@@ -415,7 +414,6 @@ is( $sub->error(), 'Buffy still missing! (Giles is here)', 'still no Buffy!' );
 eval { $sub->error_msg( no_angel => 'Buffy' ) };
 ok( $@, 'Angel error' );
 is( $sub->error(), 'Angel is slain! (by Buffy)', 'Angle is slain!' );
-
 
 
 #------------------------------------------------------------------------

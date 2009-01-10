@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural';
 use Badger::Debug;
 use Badger::Test 
-    tests => 33,
+    tests => 34,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -134,12 +134,13 @@ is( xprintf('<1> is <2:4.3f>', e => 2.71828),
 # List::MoreUtils and Hash::Util.
 #-----------------------------------------------------------------------
 
-use Badger::Utils 'reftype looks_like_number first max lock_hash';
+use Badger::Utils 'reftype looks_like_number numlike first max lock_hash';
 
 my $object = bless [ ], 'Badger::Test::Object';
 is( reftype $object, 'ARRAY', 'reftype imported' );
 
 ok( looks_like_number 23, 'looks_like_number imported' );
+ok( numlike 42, 'numlike imported' );
 
 my @items = (10, 22, 33, 42);
 my $first = first { $_ > 25 } @items;
