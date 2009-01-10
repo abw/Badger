@@ -73,15 +73,13 @@ Badger::Exception
 Badger::Factory
 ---------------
 
-* Split post-find operations into separate methods (and lower case).  
-   e.g. find_ref_array(), find_ref_hash()
-   
-* Hmmm... maybe don't lower case but do sanitise, e.g. 
-  find_ref_ARRAY(), find_ref_Your_Module() vs
-  find_ref_array(), find_ref_your_module()
-
 * Subclass out into base class (returns loaded module name), object
   creator, object creator + cache (e.g. for hub), or whatever.
+
+* have it bind fetch methods to item/items if undefined, e.g
+  node => item, nodes => items.
+
+* support multi-element names, e.g. node.foo.bar
 
 
 Badger::Filesystem
@@ -124,6 +122,12 @@ Badger::Filesystem
   stored as a list of path nodes.
 
 
+Badger::Log
+-----------
+
+* Add code to detect Log::Dispatch objects and forward messages.
+
+
 Badger::Storage
 ---------------
 
@@ -145,15 +149,6 @@ Badger::Test
 
 * Could do with some proper testing.  Although all the other test scripts
   do tend to thrash it quite well...
-
-
-Badger::Factory
----------------
-
-* have it bind fetch methods to item/items if undefined, e.g
-  node => item, nodes => items.
-
-* support multi-element names, e.g. node.foo.bar
 
 
 Badger::Utils
@@ -183,7 +178,3 @@ Longer Terms Goals / Larger Projects
 
 * Finish refactoring Badger-Database and release
 
-
-docs
-----
-Badger::Factory

@@ -31,6 +31,8 @@ lib/Badger/Filesystem/Path.pm
 lib/Badger/Filesystem/Virtual.pm
 lib/Badger/Filesystem/Visitor.pm
 lib/Badger/Hub.pm
+lib/Badger/Log.pm
+lib/Badger/Log/File.pm
 lib/Badger/Mixin.pm
 lib/Badger/Prototype.pm
 lib/Badger/Rainbow.pm
@@ -89,6 +91,7 @@ t/core/lib/My/Debugger3.pm
 t/core/lib/My/Exporter/Base1.pm
 t/core/lib/My/Exporter/Base2.pm
 t/core/lib/My/Exporter/Explicit.pm
+t/core/lib/My/Exporter/Generator.pm
 t/core/lib/My/Exporter/Subclass1.pm
 t/core/lib/My/Exporter/Subclass2.pm
 t/core/lib/My/Exporter4.pm
@@ -140,6 +143,8 @@ t/filesystem/testfiles/visitor/two/hello.html
 t/filesystem/testfiles/visitor/two/hello.txt
 t/filesystem/virtual.t
 t/filesystem/visitor.t
+t/log/log.t
+t/log/logfile.t
 t/misc/badger.t
 t/misc/moose.t
 t/pod/coverage.t

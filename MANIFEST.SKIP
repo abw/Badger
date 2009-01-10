@@ -18,4 +18,5 @@ pm_to_blib
 ^t/docs
 ^t/storage
 ^t/schema
+^t/log/logs
 ^pod/Badger/Advent2008
