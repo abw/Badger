@@ -10,6 +10,8 @@ Added L<debug_msg()|Badger::Base/debug_msg()> to L<Badger::Base>.
 
 Added L<Badger::Log> and L<Badger::Log::File>.
 
+Added L<Badger::Timestamp>.
+
 =head2 Version 0.05
 
 Refactored L<Badger::Factory>.
