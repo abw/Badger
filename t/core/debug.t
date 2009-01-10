@@ -20,7 +20,7 @@ use Badger::Base;
 use Badger::Test 
     debug => 'Badger::Debug',
     args  => \@ARGV,
-    tests => 29;
+    tests => 30;
     
 
 #-----------------------------------------------------------------------
@@ -208,7 +208,7 @@ is( My::Debugger3->debug_dynamic_status, 'off', 'debugger3 dynamic debugging is 
 # changed Badger::Class to delegate debug to Badger::Debug
 #-----------------------------------------------------------------------
 
-Badger::Debug->export('foo', '$DEBUG' => 1);
+ok( Badger::Debug->export('foo', '$DEBUG' => 1), 'exported from Badger::Debug' );
 
 
 
