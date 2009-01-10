@@ -26,9 +26,15 @@ use Badger::Class
     utils     => 'numlike self_params is_object',
     accessors => 'timestamp',
     as_text   => 'timestamp',
-    import    => 'class',
+    import    => 'class CLASS',
     is_true   => 1,
     constants => 'HASH',
+    constant  => {
+        TS    => __PACKAGE__,
+    },
+    exports   => {
+        any   => 'TS Timestamp',
+    },
     messages  => {
         bad_timestamp => 'Invalid timestamp: %s',
     };
@@ -70,6 +76,14 @@ class->methods(
     }
     @YMDHMS
 );
+
+# constructor subroutine
+
+sub Timestamp { 
+    return @_ 
+        ? TS->new(@_)
+        : TS
+}
 
 
 sub new {
@@ -466,6 +480,30 @@ In case you missed the earlier warning, let me re-iterate that you almost
 certainly want to use L<Date::Time> for any non-trivial date manipulation.
 
 Please note that this documentation may be incorrect or incomplete in places.
+
+=head1 EXPORTABLE SUBROUTINES
+
+=head2 TS
+
+This is a shortcut alias to C<Badger::Timestamp>.
+
+    use Badger::Timestamp 'TS';
+    
+    my $ts = TS->new();         # same as Badger::Timestamp->new();
+
+=head2 Timestamp()
+
+This subroutine returns the name of the C<Badger::Timestamp> class when called
+without arguments. Thus it can be used as an alias for C<Badger::Timestamp>
+as per L<TS>.
+
+    use Badger::Timestamp 'Timestamp';
+    
+    my $ts = Timestamp->new();  # same as Badger::Timestamp->new();
+
+When called with arguments, it creates a new C<Badger::Timestamp> object.
+
+    my $ts = Timestamp($date);  # same as Badger::Timestamp->new($date);
 
 =head1 METHODS
 

@@ -15,14 +15,13 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
-    tests  => 113, 
+    tests  => 121, 
     debug  => 'Badger::Timestamp',
     args   => \@ARGV;
     
-use Badger::Timestamp;
+use Badger::Timestamp 'Timestamp TS';
 use Badger::Utils 'refaddr';
 
-use constant Timestamp => 'Badger::Timestamp';
 
 #-----------------------------------------------------------------------
 # check we barf on invalid dates
@@ -31,6 +30,7 @@ use constant Timestamp => 'Badger::Timestamp';
 eval { Timestamp->new('foobar') };
 is( $@, 'timestamp error - Invalid timestamp: foobar', 'bad timestamp format');
 my $n = 1;
+
 
 #-----------------------------------------------------------------------
 # check timestamp created now
@@ -73,6 +73,7 @@ foreach my $timestamp (
     is( $stamp->seconds(), '23', "minutes() $n" );
     $n++;
 }    
+
 
 #-----------------------------------------------------------------------
 # check named parameters work
@@ -220,6 +221,29 @@ is( $new->compare($copy), 0, 'new object same as original' );
 
 isnt( refaddr($stamp), refaddr($copy), 'copy is new object' );
 isnt( refaddr($stamp), refaddr($new), 'new is new object' );
+
+
+#-----------------------------------------------------------------------
+# check Timestamp also works as constructor subroutine
+#-----------------------------------------------------------------------
+
+my $substamp = Timestamp('2009/01/10 19:11:12');
+ok( $substamp, 'created timestamp via Timestamp() subroutine' );
+is( $substamp->date, '2009-01-10', "Timestamp() date" );
+is( $substamp->year, '2009', "Timestamp() year" );
+is( $substamp->month, '01', "Timestamp() month" );
+
+
+#-----------------------------------------------------------------------
+# check TS is an alias to module name
+#-----------------------------------------------------------------------
+
+my $tstamp = TS->new('2009/01/10 19:14:12');
+ok( $tstamp, 'created timestamp via Timestamp() subroutine' );
+is( $tstamp->date, '2009-01-10', "TS stamp date" );
+is( $tstamp->year, '2009', "TS stamp year" );
+is( $tstamp->minutes, '14', "TS stamp month" );
+
 
 __END__
 
