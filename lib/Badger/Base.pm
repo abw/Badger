@@ -325,6 +325,11 @@ sub decline_msg {
     $_[0]->decline( message(@_) );
 }
 
+sub debug_msg {
+    my $self = shift;
+    $self->debug( message(@_) );
+}
+
 sub throw_msg {
     my $self = shift;
     $self->throw( shift, message($self, @_) );
@@ -1354,6 +1359,29 @@ number where the message was generated.
         $self->debug('leaving example()');
     }
 
+=head2 debug_msg($message, @args)
+
+This is a wrapper around the L<debug()> and L<message()> methods,
+similar to L<warn_msg()>, L<error_msg()> and friends.
+
+    our $MESSAGES = {
+        here => 'You are in %s',
+    };
+    
+    sub example {
+        my $self = shift;
+        
+        $self->debug_msg( 
+            here => 'a maze of twisty little passages, all alike' 
+        ) if DEBUG;
+        
+        # ... some code ...
+        
+        $self->debug_msg( 
+            here => 'boat, floating on a sea of purest green' 
+        ) if DEBUG;
+    }
+    
 =head2 debug_up($level,$msg1,$msg2,...)
 
 Another debugging method mixed in from L<Badger::Debug>.  This is a wrapper
