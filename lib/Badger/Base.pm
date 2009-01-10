@@ -326,8 +326,7 @@ sub decline_msg {
 }
 
 sub debug_msg {
-    my $self = shift;
-    $self->debug( message(@_) );
+    $_[0]->debug( message(@_) );
 }
 
 sub throw_msg {
