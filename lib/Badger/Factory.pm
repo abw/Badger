@@ -73,11 +73,9 @@ sub init_factory {
 
     $self->debug("Initialised $item/$items factory") if DEBUG;
     $self->debug("Path: [", join(', ', @{ $self->{ path } }), "]") if DEBUG;
-    
-    
+        
     return $self;
 }
-
 
 sub path {
     my $self = shift->prototype;
@@ -85,7 +83,6 @@ sub path {
         ? ($self->{ path } = ref $_[0] eq ARRAY ? shift : [ @_ ])
         :  $self->{ path };
 }
-
 
 sub items {
     my $self  = shift->prototype;
@@ -96,7 +93,6 @@ sub items {
     }
     return $items;
 }
-
 
 sub item {
     my $self = shift->prototype;
@@ -139,16 +135,14 @@ sub item {
     return $self->found($type, $item, \@args);
 }
 
-
-# Simple pass-through method to grok $type and @args from argument list
-# Subclasses can re-define this to insert their own type mapping or argument
-# munging, e.g. to inject values into the configuration params for an object
-
 sub type_args {
+    # Simple pass-through method to grok $type and @args from argument list
+    # Subclasses can re-define this to insert their own type mapping or 
+    # argument munging, e.g. to inject values into the configuration params 
+    # for an object
     shift;
     return @_;
 }
-
 
 sub find {
     my $self   = shift;
@@ -163,7 +157,6 @@ sub find {
 
     return undef;
 }
-
 
 sub load {
     my $self   = shift;
@@ -203,12 +196,10 @@ sub load {
     return undef;
 }
 
-
 sub default {
     # No default, by default.  Subclasses can do something here
     return undef;
 }
-
 
 sub found {
     my ($self, $type, $item, $args) = @_;
@@ -249,20 +240,16 @@ sub found {
     return $self->result($type, $item, $args);
 }
 
-
-# if we find a module name then we load it and call found_class() to 
-# instantiate an object
-
 sub found_module {
+    # This method is called when a module name is found, either by being 
+    # predefined in the factory entry table, or loaded on demand from disk.
+    # It ensures the module is loaded and and instantiates an object from the 
+    # class name
     my ($self, $type, $module, $args) = @_;
     $self->debug("Found module: $type => $module") if DEBUG;
     $self->{ loaded }->{ $module } ||= class($module)->load;
     return $self->construct($type, $module, $args);
 }
-
-
-# default behaviour for handling a factory entry that is an ARRAY
-# reference is to assume that it is a [$module, $class] pair
 
 sub found_array {
     my ($self, $type, $item, $args) = @_;
@@ -271,23 +258,16 @@ sub found_array {
     return $self->construct($type, $class, $args);
 }
 
-# subclasses may also define other found_XXX() types:
-#   found_code(), found_hash(), found_object()
-
 sub not_found {
     my ($self, $name, @args) = @_;
     $self->error_msg( not_found => $self->{ item }, $name );
 }
-
-# stub method which instantiates an object from a class name.
-# subclasses may redefine this to do something more interesting
 
 sub construct {
     my ($self, $type, $class, $args) = @_;
     $self->debug("constructing class: $type => $class") if DEBUG;
     return $class->new(@$args);
 }
-
 
 sub module_names {
     my $self = shift;
@@ -299,31 +279,28 @@ sub module_names {
     );
 }
 
-
 sub can {
     my ($self, $name) = @_;
 
     # upgrade class methods to calls on prototype
     $self = $self->prototype unless ref $self;
-    
-    if ($name eq $self->{ item }) {
-        return $self->can('item');          # TODO: SUPER
+
+    # NOTE: this method can get called before we've called init_factory()
+    # to define the item/items members, so we tread carefully.
+    if ($self->{ item } && $self->{ item } eq $name) {
+        return $self->SUPER::can('item');
     }
-    elsif ($name eq $self->{ items }) {
-        return $self->can('items');
+    elsif ($self->{ items } && $self->{ items } eq $name) {
+        return $self->SUPER::can('items');
     }
     else {
         return $self->SUPER::can($name);
     }
 }
 
-
-# Default result() method simply returns item.  Hook for subclasses
-
 sub result {
     $_[2];
 }
-
 
 sub AUTOLOAD {
     my ($self, @args) = @_;
@@ -645,13 +622,13 @@ The result returned by the appropriate C<found_XXXXX()> method will then
 be forwarded onto the L<result()> method.  The method returns the result
 from the L<result()> method.
 
-=head2 found_module()
+=head2 found_module($module)
 
 This method is called when a requested item has been mapped to a module name.
 The module is loaded if necessary, then the L<construct()> method is called
 to construct an object.
 
-=head2 found_array()
+=head2 found_array(\@array)
 
 An entry in the C<items> (aka C<widgets> in our earlier example) table
 can be a reference to a list containing a module name and a separate class
@@ -663,20 +640,24 @@ name.
         },
     );
 
-The module listed in the first element is loaded, but the class name in 
-the second element is used to instantiate an object.
+If the C<wizbang> widget is requested from the C<My::Widgets> factory
+in the example above, then the L<found()> method will call C<found_array()>,
+passing the array reference as an argument.
 
-=head2 found_hash()
+The module listed in the first element is loaded.  The class name in 
+the second element is then used to instantiate an object.
+
+=head2 found_hash(\%hash)
 
 This method isn't implemented in the base class, but can be defined by
 subclasses to handle the case where a request is mapped to a hash reference.
 
-=head2 found_scalar()
+=head2 found_scalar(\$scalar)
 
 This method isn't implemented in the base class, but can be defined by
 subclasses to handle the case where a request is mapped to a scalar reference.
 
-=head2 found_object()
+=head2 found_object($object)
 
 This method isn't defined in the base class, but can be defined by subclasses
 to handle the case where a request is mapped to an existing object.
@@ -692,7 +673,7 @@ In the base class this method  simply calls:
 
 This method is called at the end of a successful request after an object
 has been instantiated (or perhaps re-used from an internal cache).  In the
-case class it simply returns C<$result> but can be redefined in a subclass
+base class it simply returns C<$result> but can be redefined in a subclass
 to do something more interesting.
 
 =head2 module_names($type)
