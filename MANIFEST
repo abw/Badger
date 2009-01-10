@@ -38,6 +38,7 @@ lib/Badger/Prototype.pm
 lib/Badger/Rainbow.pm
 lib/Badger/Test.pm
 lib/Badger/Test/Manager.pm
+lib/Badger/Timestamp.pm
 lib/Badger/Utils.pm
 Makefile.PL
 MANIFEST			This list of files
@@ -110,6 +111,7 @@ t/core/mixin.t
 t/core/prototype.t
 t/core/rainbow.t
 t/core/test.t
+t/core/timestamp.t
 t/core/trace.t
 t/core/utils.t
 t/filesystem/directory.t
