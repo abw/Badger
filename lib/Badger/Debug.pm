@@ -22,7 +22,6 @@ use Badger::Class
     constants => 'PKG REFS SCALAR ARRAY HASH CODE REGEX DELIMITER',
     words     => 'DEBUG',
     import    => 'class',
-#    utils     => 'blessed reftype',
     constant  => {
         UNDEF => '<undef>',
     },
