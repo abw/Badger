@@ -15,9 +15,9 @@ use lib qw( ./lib ../lib ../../lib );
 use strict;
 use warnings;
 use File::Spec;
-use Badger::Filesystem 'FS VFS :types :dirs cwd getcwd $Bin';
+use Badger::Filesystem 'FS VFS :types :dirs cwd getcwd $Bin Bin';
 use Badger::Test 
-    tests => 50,
+    tests => 52,
     debug => 'Badger::Filesystem',
     args  => \@ARGV;
 
@@ -37,10 +37,14 @@ sub lp($) {
 
 
 #-----------------------------------------------------------------------
-# test $Bin from FindBin
+# test $Bin from FindBin, and Bin() as directory wrapper around it
 #-----------------------------------------------------------------------
 
 ok( $Bin, "\$Bin is set to $Bin" );
+my $bin = Bin;
+ok( $bin, "\$bin is set to $bin" );
+is( ref $bin, 'Badger::Filesystem::Directory', '$bin is a directory object' );
+
 
 
 #-----------------------------------------------------------------------

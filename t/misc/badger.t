@@ -22,6 +22,7 @@ use Badger::Test
     args  => \@ARGV;
 
 use Badger
+    lib        => '../../lib',
     Utils      => 'looks_like_number',
     Constants  => 'ARRAY HASH',
     Filesystem => 'FS',

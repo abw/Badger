@@ -12,6 +12,10 @@ Added L<Badger::Log> and L<Badger::Log::File>.
 
 Added L<Badger::Timestamp>.
 
+Added L<Bin()|Badger::Filesystem/Bin()> to L<Badger::Filesystem>.
+
+Added L<lib|Badger::Badger/lib> import hook to L<Badger>.
+
 =head2 Version 0.05
 
 Refactored L<Badger::Factory>.
