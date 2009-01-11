@@ -39,7 +39,7 @@ use Badger::Class
     exports   => {
         any         => 'FS PATH FILE DIR DIRECTORY cwd getcwd rel2abs abs2rel',
         tags        => { 
-            types   => 'Path File Dir Directory Cwd',
+            types   => 'Path File Dir Directory Cwd Bin',
             dirs    => 'ROOTDIR UPDIR CURDIR',
         },
         hooks       => {
@@ -61,7 +61,7 @@ use Badger::Filesystem::File;
 use Badger::Filesystem::Directory;
 
 #-----------------------------------------------------------------------
-# special export hook to make $Bin available from FindBin
+# special export hooks to make $Bin available from FindBin 
 #-----------------------------------------------------------------------
 
 sub _export_findbin_hook {
@@ -120,6 +120,8 @@ sub Path      { return @_ ? FS->path(@_)      : PATH      }
 sub File      { return @_ ? FS->file(@_)      : FILE      }
 sub Directory { return @_ ? FS->directory(@_) : DIRECTORY }
 sub Cwd       { FS->directory }
+sub Bin       { class(FINDBIN)->load; 
+                FS->directory($FindBin::Bin) }
 
 
 #-----------------------------------------------------------------------
@@ -843,10 +845,21 @@ path as a single string or list of path components.
 This returns a L<Badger::Filesystem::Directory> object for the current
 working directory.
 
-    use Badger::Filesystem Cwd;
+    use Badger::Filesystem 'Cwd';
     
     print Cwd;              # /foraging/for/nuts/and/berries
     print Cwd->parent;      # /foraging/for/nuts/and
+
+=head2 Bin()
+
+This returns a L<Badger::Filesystem::Directory> object for the directory
+in which the currently executing script is located.  It is a simple 
+wrapper around the value defined in L<$Bin>.
+
+    use Badger::Filesystem 'Bin';
+    
+    print Bin;              # /path/to/current/script
+    print Bin->parent;      # /path/to/current
 
 =head2 cwd
 
@@ -869,15 +882,17 @@ This is exactly the same as:
     use FindBin '$Bin';
     use lib "$Bin/../lib";
 
-The benefit is that you can use it in conjunction with other import options.
+One benefit is that you can use it in conjunction with other import options
+to save on a little typiing.  For example:
 
-    use Badger::Filesystem '$Bin Cwd File';
+    use Badger::Filesystem 'Cwd File $Bin';
 
 Compared to something like:
 
-    use FindBin '$Bin';
     use Cwd;
     use Path::Class;
+    use FindBin '$Bin';
+    use lib "$Bin/../lib";
 
 =head2 getcwd
 
