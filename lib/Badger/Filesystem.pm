@@ -861,7 +861,7 @@ wrapper around the value defined in L<$Bin>.
     print Bin;              # /path/to/current/script
     print Bin->parent;      # /path/to/current
 
-=head2 cwd
+=head2 cwd()
 
 This returns a simple text string representing the current working directory.
 It is a a wrapper around the C<getcwd> function in L<Cwd>.  It also 
@@ -894,7 +894,7 @@ Compared to something like:
     use FindBin '$Bin';
     use lib "$Bin/../lib";
 
-=head2 getcwd
+=head2 getcwd()
 
 This is a direct alias to the C<getcwd> function in L<Cwd>.
 
