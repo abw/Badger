@@ -58,6 +58,7 @@ sub lib {
         # paths. e.g. /full/path/to/perl/lib
         my $dir = Bin->dir($lib)->must_exist;
         $self->debug("adding lib: $dir") if DEBUG;
+        lib->import($dir->absolute);
     }
 }
 
