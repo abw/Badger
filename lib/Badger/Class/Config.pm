@@ -35,7 +35,9 @@ use Badger::Class
 sub export {
     my $class  = shift;
     my $target = shift;
-    my $schema = $class->schema(@_);
+    my $params = @_ == 1 ? shift : { @_ };
+    $class->debug("export to $target: ", join(', ', @_)) if DEBUG;
+    my $schema = $class->schema($params);
     
     $class->export_symbol(
         $target,
@@ -52,7 +54,7 @@ sub export {
 
 sub schema {
     my $class  = shift;
-    my $config = @_ == 1 ? shift : { @_ };
+    my $config = @_ == 1 ? (ref $_[0] eq ARRAY ? [@{$_[0]}] : shift) : [ @_ ];
     my ($name, $info, @aka, $fallback, $test, @schema);
 
     $class->debug("Generating schema from config: ", $class->dump_data($config))
@@ -61,24 +63,45 @@ sub schema {
     $config = [ split(DELIMITER, $config) ]
         unless ref $config;
     
-    $config = { 
+    $config = [ 
         map { 
-            ref($_) eq HASH 
-                ? ($_->{ name } => $_)
-                : ($_           => { })
-        } @$config 
-    } if ref $config eq ARRAY;
+            my $k = $_;
+            my $v = $config->{ $k };
+            ref $v eq HASH
+                ? { name => $k, %$v } 
+                : { name => $k, default => $v }
+        } keys %$config
+    ] if ref $config eq HASH;
+
+#    $config = { 
+#        map { 
+#            ref($_) eq HASH 
+#                ? ($_->{ name } => $_)
+#                : ($_           => { })
+#        } @$config 
+#    } if ref $config eq ARRAY;
 
     $class->debug("Canonical config: ", $class->dump_data($config))
         if DEBUG;
         
-    while (($name, $info) = each %$config) {
-        if (ref $info eq HASH) {
-            # ok
+#    while (($name, $info) = each %$config) {
+    while (@$config) {
+        $name = shift @$config;
+        $class->debug("config item: $name\n") if DEBUG;
+        if (ref $name eq HASH) {
+            $info = $name;
+            $name = $info->{ name };
         }
         else {
-            $info = { default => $info };
+            $info = { };
         }
+        $class->debug("name: $name   info: $info") if DEBUG;
+#        if (ref $info eq HASH) {
+#            # ok
+#        }
+#        else {
+#            $info = { default => $info };
+#        }
         
         $info->{ required } = 1 
             if $name =~ s/!$//;
@@ -145,7 +168,7 @@ sub configure {
             if (ref $alias) {
                 $self->debug("Dispatching handler to set $name\n") if DEBUG;
                 ($code, @args) = @$alias;
-                ($ok, $value) = $code->($self, $class, $name, $config, @args);
+                ($ok, $value) = $code->($self, $class, $name, $config, $target, @args);
                 if ($ok) {
                     $target->{ $name } = $value;
                     next ELEMENT;
@@ -187,7 +210,7 @@ sub configure {
 #-----------------------------------------------------------------------
     
 sub configure_pkg {
-    my ($self, $class, $name, $config, $var) = @_;
+    my ($self, $class, $name, $config, $target, $var) = @_;
     my $value = $class->var($var);
 
     $self->debug(
@@ -201,7 +224,7 @@ sub configure_pkg {
 }
 
 sub configure_class {
-    my ($self, $class, $name, $config, $var) = @_;
+    my ($self, $class, $name, $config, $target, $var) = @_;
     my $value = $class->any_var_in( split(':', $var) );
 
     $self->debug(
@@ -215,7 +238,7 @@ sub configure_class {
 }
 
 sub configure_env {
-    my ($self, $class, $name, $config, $var) = @_;
+    my ($self, $class, $name, $config, $target, $var) = @_;
     my $value = $ENV{ $var };
 
     $self->debug(
@@ -229,7 +252,7 @@ sub configure_env {
 }
 
 sub configure_method {
-    my ($self, $class, $name, $config, $method) = @_;
+    my ($self, $class, $name, $config, $target, $method) = @_;
 
     # see if the object has the required method - note we must call 
     # error_msg against CLASS (Badger::Class::Config) to use the 'bad_method'
@@ -249,6 +272,22 @@ sub configure_method {
         ? (VALUE => $value)
         : (NOTHING);
 }
+
+sub configure_target {
+    my ($self, $class, $name, $config, $target, $var) = @_;
+
+    my $value = $target->{ $var };
+    
+    $self->debug(
+        "Looking for $var in $class target $target to set $name: ", 
+        defined $value ? $value : '<undef>'
+    ) if DEBUG;
+
+    return defined $value
+        ? (VALUE => $value)
+        : (NOTHING);
+}
+
 
 
 1;
@@ -359,6 +398,7 @@ call object methods.
         'bar|class:BAR',                # fallback to $BAR class var
         'baz|env:BAZ',                  # fallback to $BAZ environment var
         'bam|method:BAM';               # fallback to BAM() method
+        'wam|target:slam';              # fallback to $target->{ slam }
 
 Bear in mind that Perl implements constants using subroutines.  Thus, you
 can access a constant defined in a package/class by calling it as a
@@ -475,6 +515,11 @@ configuration options.
 
 This method is used internally to call object methods to return default
 configuration values.
+
+=head2 configure_target()
+
+This method is used internally to look inside the target object or hash array
+to return default configuration values.
 
 =head1 AUTHOR
 

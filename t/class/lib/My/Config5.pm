@@ -2,9 +2,9 @@ package My::Config5;
 
 use Badger::Class
     version   => 0.01,
-    debug     => 0,
+    debug     => 1,
     base      => 'My::Config4',
-    accessors => 'cat dog',
+    accessors => 'cat dog feline',
     config    => [
         'cat|pussy=felix',
         { 
@@ -13,6 +13,7 @@ use Badger::Class
             aliases  => ['hound'],
             default  => 'rover',
         },
+        'feline|target:cat',
     ],
     constant  => {
         VOLUME => 11,
