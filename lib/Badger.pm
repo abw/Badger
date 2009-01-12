@@ -56,7 +56,7 @@ sub lib {
         # resolve directories relative to current working directory so that
         # relative paths Just Work[tm], e.g. ../perl/lib as well as absolute
         # paths. e.g. /full/path/to/perl/lib
-        my $dir = Bin->dir($lib)->must_exist;
+        my $dir = Bin->dir($_)->must_exist;
         $self->debug("adding lib: $dir") if DEBUG;
         lib->import($dir->absolute);
     }
