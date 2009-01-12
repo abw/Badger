@@ -126,6 +126,10 @@ sub _export_fail {
     croak sprintf(NO_VALUE, $key)
         unless @$symbols;
 
+    # We use the two-argument call to class() which tells it that we want
+    # a $class metaclass object rather than the default of Badger::Class.
+    # This is because subclasses may be calling this method so $class isn't
+    # always going to be Badger::Class
     class($target, $class)->$hook(shift @$symbols);
 }
 
@@ -139,39 +143,58 @@ sub _debug_hook {
 
 
 
+# Badger::Class and each of its subclasses have their own metaclass
+# table mapping class names to objects.
+my $METACLASSES = { };
+
 #-----------------------------------------------------------------------
-# Define a lexical scope to enclose class lookup table
+# Define a lexical scope to enclose class lookup tables
 #-----------------------------------------------------------------------
 
 {
-    # lookup table mapping package names to Badger::Class objects
-    my $CLASSES = { };
-
     # class/package name - define this up-front so we can use it below
     sub CLASS {
-        my $class = @_ ? shift : (caller())[0];
-        ref $class || $class;
+        # first argument is object or class name, otherwise return caller
+        @_ ? (ref $_[0] || $_[0])
+           : (caller())[0];
     }
 
     # Sorry if this messes with your head.  We want class() and classes()
     # methods that create Badger::Class objects.  However, we also want 
-    # Badger::Class to be subclassable (e.g. Template::Class), where class()
-    # and classes() return the subclass objects (e.g. Template::Class).  So
-    # we have an UBER() class method whose job it is to create the class()
-    # and classes() methods for the relevant class or subclass
+    # Badger::Class to be subclassable (e.g. Badger::Factory::Class), where 
+    # class() and classes() return the subclass objects instead of the usual
+    # Badger::Class.  So we have an UBER() class method whose job it is to 
+    # create the class() and classes() methods for the relevant metaclass
+    
     sub UBER {
+        # $pkg is the metaclass name, e.g. Badger::Class, but can also be 
+        # subclasses, e.g. Badger::Factory::Class
         my $pkg = shift || __PACKAGE__;
+        
+        # $CLASSES is a lookup table mapping package names to Badger::Class 
+        # objects.  We need a new lookup table for each subclass of 
+        # Badger::Class, so we reuse/create such a table in $METACLASSES,
+        # indexed by the metaclass name, e.g. Badger::Class, etc.
+        my $CLASSES = $METACLASSES->{ $pkg } ||= { };
+        
+        # We want to keep the class() subroutine as fast as possible as it
+        # gets called often.  It's a tiny bit faster to declare a variable
+        # outside the closure and reuse it, rather than defining a new 
+        # variable each time the closure is called.  Ho hum.
+        my $class;  
 
         # The class() subroutine is used to fetch/create a Badger::Class 
-        # object for a package name.  We create it via a generator so that
-        # subclasses can define their own custom class() method which blesses 
-        # the class objects into their own class (e.g. Template::Class rather 
-        # than Badger::Class)
+        # object for a package name.  The first argument is the class name,
+        # or the caller's package if undefined and we look it up in $CLASSES.
+        # If we get a second argument then we're being asked to lookup an 
+        # entry for a subclass of Badger::Class, e.g. Badger::Factory::Class,
+        # so we first lookup the correct $METACLASS table.
         my $class_sub = sub {
-            my $class = @_ ? shift : (caller())[0];
-            my $bless = shift || $pkg;
+            $class = @_ ? shift : (caller())[0];
             $class = ref $class || $class;
-            return $CLASSES->{ $class } || $bless->new($class);
+            return @_
+                ? $METACLASSES->{ $_[0] }->{ $class } ||= $_[0]->new($class)
+                : $CLASSES->{ $class } ||= $pkg->new($class);
         };
 
         # The classes() method returns a list of Badger::Class objects for 
@@ -180,13 +203,12 @@ sub _debug_hook {
         # As with class(), we use a generator to create a closure for the 
         # subroutine to allow the the class object name to be parameterised.
         my $classes_sub = sub {
-            my $class = shift || (caller())[0];
+            $class = shift || (caller())[0];
             $class_sub->($class)->heritage;
         };
 
         no strict REFS;
         no warnings 'redefine';
-#        *{ $pkg.PKG.'CLASS'     } = sub () { $pkg };
         *{ $pkg.PKG.'class'     } = $class_sub;
         *{ $pkg.PKG.'classes'   } = $classes_sub;
         *{ $pkg.PKG.'_autoload' } = \&_autoload;
