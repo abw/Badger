@@ -13,7 +13,7 @@
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Test
-    tests => 44,
+    tests => 49,
     debug => 'Badger::Class::Methods',
     args  => \@ARGV;
 
@@ -158,6 +158,21 @@ is( $sentence->subject,   'the cat', 'subject slot' );
 is( $sentence->predicate, 'sat on',  'predicate slot' );
 is( $sentence->object,    'the mat', 'object slot' );
 
+
+#-----------------------------------------------------------------------
+# we should be able to create accessor/mutator code refs directly
+#-----------------------------------------------------------------------
+
+my $dummy = { pi => 3.14 };
+
+my $access = Badger::Class::Methods->accessor('pi');
+ok( $access, 'created accessor method' );
+is( $access->($dummy), 3.14, 'accessor works' );
+
+my $mutate = Badger::Class::Methods->mutator('pi');
+ok( $mutate, 'created mutator method' );
+is( $mutate->($dummy, 3.14159), 3.14159, 'mutator works' );
+is( $access->($dummy), 3.14159, 'value updated' );
 
 
 
