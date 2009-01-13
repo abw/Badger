@@ -12,9 +12,10 @@
 #========================================================================
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
+BEGIN { $Badger::Class::DEBUG = 1 if grep /-d/, @ARGV }
 use Badger::Class;
 use Badger::Test
-    tests => 125,
+    tests => 127,
     debug => 'Badger::Class',
     args  => \@ARGV;
 
@@ -26,7 +27,7 @@ use Badger::Test
 package Alice;
 use Badger::Class 
     version => 2.718,
-    import  => qw( class classes );
+    import  => qw( class classes CLASS );
 
 main::is( $VERSION, 2.718, 'Alice defines $VERSION as 2.718' );
 our $NAME = 'Alice';
@@ -41,6 +42,8 @@ sub new {
     my ($class, %self) = @_;
     bless \%self, $class;
 }
+
+sub my_class { CLASS }
 
 package Bob;
 use Badger::Class
@@ -106,6 +109,10 @@ is( join(', ', values %$friends), 'Susan', 'Alice FRIENDS with Susan' );
 $friends = $bob->class->hash_vars('FRIENDS');
 is( join(', ', sort keys %$friends), 'jim, sue', 'Bob FRIENDS with jim and sue' );
 is( join(', ', sort values %$friends), 'Jim, Susan', 'Bob FRIENDS with Jim and Susan' );
+
+# check that CLASS works
+is( $alice->my_class, 'Alice', 'Alice has my_class set to Alice' );
+is( $bob->my_class, 'Alice', "Bob also has my_class set to Alice, but that's OK" );
 
 
 #-----------------------------------------------------------------------
