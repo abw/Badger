@@ -214,10 +214,11 @@ my $METACLASSES = { };
         no strict REFS;
         no warnings 'redefine';
         *{ $pkg.PKG.'class'     } = $class_sub;
+        *{ $pkg.PKG.'bclass'    } = $class_sub;         # plan B 
         *{ $pkg.PKG.'classes'   } = $classes_sub;
         *{ $pkg.PKG.'_autoload' } = \&_autoload;
 
-        $pkg->export_any('CLASS', 'class', 'classes');
+        $pkg->export_any('CLASS', 'class', 'bclass', 'classes');
     }
 
     # call the UBER method to generate class() and classes() for this module
@@ -1461,6 +1462,11 @@ doing it often in a speed critical section of code. If this is an issue, then
 you can perform the more expensive variable lookup once when the object is
 initialised and cache the value(s) internally for other methods to use, as
 shown in the earlier examples with C<$self-E<gt>{ max_volume }>.
+
+=head2 bclass($pkg)
+
+This is an alias for L<class()> for those times where you've already got a
+method or subroutine called C<class> defined in your module.
 
 =head2 classes($pkg)
 
