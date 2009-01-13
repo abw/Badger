@@ -44,10 +44,14 @@ use overload
     '""'     => 'name',
     fallback => 1;
 
-
 our $VERSION   = 0.01;
 our $DEBUG     = 0 unless defined $DEBUG;
 our $LOADED    = { }; 
+
+BEGIN {
+    # generate a compile time constant from $DEBUG
+    *DEBUG = sub() { $DEBUG };
+}
 
 
 #-----------------------------------------------------------------------
@@ -143,13 +147,13 @@ sub _debug_hook {
 
 
 
-# Badger::Class and each of its subclasses have their own metaclass
-# table mapping class names to objects.
-my $METACLASSES = { };
-
 #-----------------------------------------------------------------------
 # Define a lexical scope to enclose class lookup tables
 #-----------------------------------------------------------------------
+
+# Badger::Class and each of its subclasses have their own metaclass
+# table mapping class names to objects.
+my $METACLASSES = { };
 
 {
     # class/package name - define this up-front so we can use it below
@@ -238,7 +242,6 @@ class(CLASS)->methods(
     }
     keys %$DELEGATES
 );
-
 
 
 
@@ -333,7 +336,7 @@ sub any_var {
     $name =~ s/^\$//;
 
     foreach my $pkg ($self->heritage) {
-        _debug("looking for $name in $pkg\n") if $DEBUG;
+        _debug("looking for $name in $pkg\n") if DEBUG;
         return ${ $pkg.PKG.$name } if defined ${ $pkg.PKG.$name };
     }
 
@@ -354,7 +357,7 @@ sub any_var_in {
 
     foreach $pkg ($self->heritage) {
         foreach $name (@$names) {
-            _debug("looking for $name in $pkg\n") if $DEBUG;
+            _debug("looking for $name in $pkg\n") if DEBUG;
             return ${ $pkg.PKG.$name } if defined ${ $pkg.PKG.$name };
         }
     }
@@ -372,11 +375,13 @@ sub all_vars {
     # remove any leading '$' 
     $name =~ s/^\$//;
 
+#    _debug("all_vars() caller: ", join(', ', caller()), "\n");
+
     foreach my $pkg ($self->heritage) {
-        _debug("looking for $name in $pkg\n") if $DEBUG;
+        _debug("looking for $name in ", $pkg || "UNDEF", "\n") if DEBUG;
         push(@values, $value)
             if defined ($value = ${ $pkg.PKG.$name });
-        _debug("got: $value\n") if $DEBUG && $value;
+        _debug("got: $value\n") if DEBUG && $value;
     }
     
     return wantarray ? @values : \@values;
@@ -441,6 +446,8 @@ sub hash_value {
     # remove any leading '$' 
     $name =~ s/^\$//;
 
+#    _debug("hash_value() caller: ", join(', ', caller()), "\n");
+
     foreach my $hash ($self->all_vars($name)) {
         next unless ref $hash eq HASH;
         return $hash->{ $item }
@@ -457,6 +464,7 @@ sub hash_value {
 
 sub parents {
     my $self    = shift;
+    my $class   = ref $self || $self;
     my $pkg     = $self->{ name };
     my $parents = $self->{ parents } ||= do {
         no strict REFS;
@@ -508,7 +516,7 @@ sub base {
     foreach my $base (@$bases) {
         no strict REFS;
         next if $pkg->isa($base);
-        _debug("Adding $pkg base class $base\n") if $DEBUG;
+        _debug("Adding $pkg base class $base\n") if DEBUG;
         push @{ $pkg.PKG.ISA }, $base;
         _autoload($base);
     }
@@ -546,7 +554,7 @@ sub mixins {
 #    $mixins->{ $_ } 
     push(@$mixins, @$syms);
 
-    $self->debug("$self MIXINS are: ", $self->dump_data_inline($mixins), "\n") if $DEBUG;
+    $self->debug("$self MIXINS are: ", $self->dump_data_inline($mixins), "\n") if DEBUG;
     
     $self->exports( any => $syms );
 
@@ -556,14 +564,14 @@ sub version {
     my ($self, $version) = @_;
     my $pkg = $self->{ name };
     no strict 'refs';
-    _debug("Defining $pkg version $version\n") if $DEBUG;
+    _debug("Defining $pkg version $version\n") if DEBUG;
 
-    # define $VERSION and version()
+    # define $VERSION and VERSION()
     *{ $pkg.PKG.VERSION } = \$version
         unless defined ${ $pkg.PKG.VERSION }
                     && ${ $pkg.PKG.VERSION };
-    *{ $pkg.PKG.VERSION} = sub() { $version }
-        unless defined *{ $pkg.PKG.'version' };
+    *{ $pkg.PKG.VERSION } = sub() { $version }
+        unless defined &{ $pkg.PKG.VERSION };        # CHECK THIS - was 'version'
 
     return $self;
 }
@@ -583,7 +591,7 @@ sub constant {
     while (my ($name, $value) = each %$constants) {
         no strict REFS;
         my $v = $value;     # new lexical variable to bind in closure
-        _debug("Defining $pkg constant $name => $value\n") if $DEBUG;
+        _debug("Defining $pkg constant $name => $value\n") if DEBUG;
         *{ $pkg.PKG.$name } = sub() { $value };
     }
     return $self;
@@ -600,7 +608,7 @@ sub words {
     foreach (@$words) {
         no strict REFS;
         my $word = $_;  # new lexical variable to bind in closure
-        _debug("Defining $pkg word $word\n") if $DEBUG;
+        _debug("Defining $pkg word $word\n") if DEBUG;
         *{ $pkg.PKG.$word } = sub() { $word };
     }
     return $self;
@@ -632,11 +640,11 @@ sub messages {
     my $messages = ${ $pkg.PKG.MESSAGES };
     
     if ($messages) {
-        _debug("merging $pkg messages: ", join(', ', keys %$args), "\n") if $DEBUG;
+        _debug("merging $pkg messages: ", join(', ', keys %$args), "\n") if DEBUG;
         @$messages{ keys %$args } = values %$args;
     }
     else {
-        _debug("adding $pkg messages: ", join(', ', keys %$args), "\n") if $DEBUG;
+        _debug("adding $pkg messages: ", join(', ', keys %$args), "\n") if DEBUG;
         ${ $pkg.PKG.MESSAGES } = $messages = $args;
     }
     
@@ -654,7 +662,7 @@ sub method {
     
     # method($name => $code) or $method($name => $value) to define method
     my $code = shift;
-    _debug("defining method: $self\::$name => $code\n") if $DEBUG;
+    _debug("defining method: $self\::$name => $code\n") if DEBUG;
 
     *{ $self->{name}.PKG.$name } = ref $code eq CODE
         ? $code
@@ -670,7 +678,7 @@ sub methods {
     no strict REFS;
 
     while (my ($name, $code) = each %$args) {
-        _debug("defining method: $self\::$name => $code\n") if $DEBUG;
+        _debug("defining method: $self\::$name => $code\n") if DEBUG;
         *{ $pkg.PKG.$name } 
             = ref $code eq CODE ? $code : sub { $code };
     }
@@ -680,7 +688,7 @@ sub methods {
 sub overload {
     my $self = shift;
     my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
-    _debug("overload on $self->{name} : { ", join(', ', %$args), " }\n") if $DEBUG;
+    _debug("overload on $self->{name} : { ", join(', ', %$args), " }\n") if DEBUG;
     overload::OVERLOAD($self->{name}, %$args);
     return $self;
 }
@@ -698,7 +706,7 @@ sub is_true {
         $arg;
     $self->overload( bool => $method, fallback => 1 );
 }
-    
+
 
 #-----------------------------------------------------------------------
 # misc methods
@@ -723,7 +731,7 @@ sub load {
 sub maybe_load {
     my $self = shift;
     return eval { $self->load } || do {
-        _debug("maybe_load($self) caught error: $@\n") if $DEBUG;
+        _debug("maybe_load($self) caught error: $@\n") if DEBUG;
         die $@ if $@ && $@ !~ /^Can't locate .*? in \@INC/;
         0;
     }
@@ -760,7 +768,7 @@ sub hooks {
     croak("Invalid hooks specified: $args")
         unless ref $args eq HASH;
         
-    _debug("merging $self->{ name } hooks: ", join(', ', keys %$args), "\n") if $DEBUG;
+    _debug("merging $self->{ name } hooks: ", join(', ', keys %$args), "\n") if DEBUG;
 
     @$hooks{ keys %$args } = values %$args;
     
@@ -784,7 +792,7 @@ sub _autoload {
           || defined ${ $class.PKG.VERSION }            # TODO: ??
           || @{ $class.PKG.ISA }) {
 
-        _debug("autoloading $class\n") if $DEBUG;
+        _debug("autoloading $class\n") if DEBUG;
         $v = ${ $class.PKG.VERSION } ||= 0;             # TODO: ??
         local $SIG{__DIE__};
         eval "use $class";
@@ -797,6 +805,7 @@ sub _autoload {
 sub _debug {
     print STDERR @_;
 }
+
 
 1;
 
@@ -2828,6 +2837,17 @@ C<Badger::Codecs>
 
 The name of the constants method, as used by the L<constants()> metho:
 C<Badger::Constants>
+
+=head2 DEBUG
+
+A comepile time constant defined from the value of the C<$DEBUG> package 
+variable.  To enable debugging in C<Badger::Class> set the C<$DEBUG>
+package variable I<before> you load C<Badger::Class>.  Also be aware that
+most other C<Badger> modules use C<Badger::Class> so you should set it 
+before you load any of them.
+
+    BEGIN { Badger::Class::DEBUG = 1 };
+    use Badger::Debug;
 
 =head2 DEBUGGER
 
