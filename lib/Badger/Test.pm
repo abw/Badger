@@ -1,6 +1,7 @@
 package Badger::Test;
 
 use Carp;
+use Badger;
 use Badger::Class
     version   => 0.01,
     base      => 'Badger::Base',
@@ -9,9 +10,10 @@ use Badger::Class
     words     => 'DEBUG DEBUG_MODULES',
     exports   => {
         all   => 'plan ok is isnt like unlike pass fail     
-                  skip_some skip_rest skip_all',        # NOTE: changed skip...
+                  skip_some skip_rest skip_all',
         hooks => {
-            skip     => \&_skip_hook,                   # ...to be a hook
+            lib      => [\&_lib_hook,  1],
+            skip     => [\&_skip_hook, 1],
             debug    => \&_debug_hook,
             map { $_ => \&_export_hook }
             qw( manager summary colour color args tests )
@@ -27,6 +29,15 @@ our $EXCEPTION = 'Badger::Exception';
 our ($DEBUG, $DEBUG_MODULES);
 
 *color = \&colour;
+
+
+sub _lib_hook {
+    Badger->lib($_[3]);
+}
+
+sub _skip_hook {
+    $MANAGER->skip_all($_[3]);
+}
 
 sub _export_hook {
     my ($class, $target, $key, $symbols) = @_;
@@ -49,11 +60,6 @@ sub _debug_hook {
     my $modules = shift @$symbols;
     return unless $modules;           # zero/false for no debugging
     $class->debug_modules($modules);
-}
-
-sub _skip_hook {
-    my ($class, $target, $key, $symbols, $import) = @_;
-    $MANAGER->skip_all(shift @$symbols);
 }
 
 sub manager {

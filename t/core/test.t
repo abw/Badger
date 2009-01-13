@@ -11,18 +11,21 @@
 #
 #========================================================================
 
-use strict;
-use warnings;
-
-use lib qw( core/lib t/core/lib ./lib ../lib ../../lib );
+use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
+    lib   => './lib',           # t/core/lib
     debug => 'Badger::Class',
     args  => \@ARGV;
+
 
 # uncomment the next line to see tests failing/skipping/etc.
 # goto make_bad_things_happen;
 
-plan(6);
+plan(7);
+
+use My::Constants;
+pass('loaded My::Constants from local lib dir');
+
 pass('Badgers are cool');
 ok( 1, 'Ferrets are ok, but not as cool as badgers' );
 is( 'badger', 'badger', 'Badger is' );
