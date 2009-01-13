@@ -46,6 +46,9 @@ our $SCHEME     = {
 # Sorry, English and American/Spanish only, no couleur, colori, farbe, etc.
 *color = \&colour;
 
+# for nice cleanup in END block
+our $INSTANCES = { };
+
 
 #-----------------------------------------------------------------------
 # constructor method
@@ -59,6 +62,7 @@ sub init {
     $self->{ summary  } = $config->{ summary } || 0;
     $self->{ reason   } = $config->{ reason  } || $REASON;
     $self->{ colour   } = $config->{ colour  } || $config->{ color } || 0;
+    $INSTANCES->{ $self } = $self;
     return $self;
 }
 
@@ -342,6 +346,7 @@ sub summary {
 
 sub finish {
     my $self = shift->prototype;
+
     $self->flush;           # output any cached results
 
     my ($plan, $ran, $pass, $fail, $skip) 
@@ -372,12 +377,19 @@ sub finish {
         $self->test_msg('mess');
     }
     $self->test_msg( summary => $ran, $plan, $pass, $fail, $skip );
+
+    # remove ourselves from the index
+    delete $INSTANCES->{ $self };
+    
 }
 
-sub DESTROY {
-    shift->finish;
+END {
+    # Cleanup test managers so they can report errors using test_msg().  If
+    # we leave it until global destruction (e.g. by using a DESTROY method to 
+    # call finish() then there's a chance that the Badger::Class object that 
+    # perform the $MESSAGE lookup will have already been cleaned up.
+    $_->finish for values %$INSTANCES;
 }
-
 
 1;
 
