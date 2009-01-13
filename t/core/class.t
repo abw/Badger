@@ -15,8 +15,8 @@ use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 BEGIN { $Badger::Class::DEBUG = 1 if grep /-d/, @ARGV }
 use Badger::Class;
 use Badger::Test
-    tests => 127,
-    debug => 'Badger::Class',
+    tests => 128,
+    debug => 'Badger::Class Badger::Exporter',
     args  => \@ARGV;
 
 
@@ -644,6 +644,25 @@ $text = Badger::Test::AsBool->new( text => '0' );
 ok( $text, 'is true boolean overload' );
 
 
+#-----------------------------------------------------------------------
+# should be able to export bclass() as an alias for class()
+#-----------------------------------------------------------------------
+
+package Badger::Test::BClass;
+
+use Badger::Class
+    import => 'bclass';
+
+our $THINGY = 'frusset pouch';
+
+sub thingy {
+    shift->bclass->var('THINGY');
+}
+
+package main;
+
+is( Badger::Test::BClass->thingy, 'frusset pouch', 
+    'you have pleasantly wibbled my frusset pouch' );
 
 __END__
 #-----------------------------------------------------------------------
