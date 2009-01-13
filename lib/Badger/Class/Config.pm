@@ -35,8 +35,8 @@ use Badger::Class
 sub export {
     my $class  = shift;
     my $target = shift;
-    my $params = @_ == 1 ? shift : { @_ };
     $class->debug("export to $target: ", join(', ', @_)) if DEBUG;
+    my $params = @_ == 1 ? shift : { @_ };
     my $schema = $class->schema($params);
     
     $class->export_symbol(
@@ -185,13 +185,16 @@ sub configure {
         }
         
         if (exists $element->{ default }) {
+            $self->debug("setting to default value: $element->{ default }\n") if DEBUG;
             $target->{ $name } = $element->{ default };
             next ELEMENT;
         }
         
         if ($element->{ required }) {
+            $self->debug("$name is required, throwing error\n") if DEBUG;
             return $self->error_msg( $element->{ error } || missing => $name );
         }
+        $self->debug("$name is not required, continuing\n") if DEBUG;
     }
     
     return $self;
