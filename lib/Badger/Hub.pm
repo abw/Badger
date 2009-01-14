@@ -183,7 +183,7 @@ sub configure {
     my $name = shift;
     my $args = @_ && ref($_[0]) eq 'HASH' ? shift : { @_ };
 
-    $self->debug("configure()\n") if $DEBUG;
+    $self->debug("configure($name)\n") if DEBUG;
     
     # $NAME pkg var can be a module name or hash ref with 'module' item
     my $pkgvar = $self->class->any_var(uc $name);
@@ -207,15 +207,21 @@ sub configure {
     # if $config isn't a hash then it's the name of the module to use
     $config = { module => $config } unless ref $config eq 'HASH';
 
+    $self->debug("$name module config: ", $self->dump_data($config)) if DEBUG;
+    
     # see if a module name is specified in $args, config hash or use $pkgmod
     my $module = $args->{ module } ||= $config->{ module } ||= $pkgmod
         || return $self->error_msg( no_module => $name );
+
+    $self->debug("$name module: $module") if DEBUG;
 
     # load the module
     class($module)->load;
 
     # add any extra arguments to the config hash
     $config = { %$config, %$args } if %$args;
+
+    $self->debug("$name merged config: ", $self->dump_data($config)) if DEBUG;
 
     return $module->new($config);
 }
