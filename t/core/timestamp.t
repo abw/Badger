@@ -15,7 +15,7 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
-    tests  => 121, 
+    tests  => 124, 
     debug  => 'Badger::Timestamp',
     args   => \@ARGV;
     
@@ -127,9 +127,19 @@ is( $stamp->adjust( hours => 20 ), '2008-06-24 06:00:04', 'rolled over day' );
 is( $stamp->adjust( day => 8 ), '2008-07-02 06:00:04', 'rolled over 30 day month' );
 is( $stamp->adjust( days => 30 ), '2008-08-01 06:00:04', 'rolled over 31 day month' );
 
+# try with single argument 
+is( $stamp->adjust("3 days"), '2008-08-04 06:00:04', 'adjust 3 days' );
+#is( $stamp->adjust("-1 month"), '2008-07-04 06:00:04', 'adjust -1 month' );
+is( $stamp->adjust(month => -1), '2008-07-04 06:00:04', 'adjust -1 month' );
+is( $stamp->adjust("-4 days"), '2008-06-30 06:00:04', 'adjust -4 days' );
+
+
+
 #-----------------------------------------------------------------------
 # test leap_year() and days_in_month() 
 #-----------------------------------------------------------------------
+
+$stamp = Timestamp('2008-08-01 06:00:04');
 
 ok( ! $stamp->leap_year(1900), 'not leap year 1900' );
 ok( ! $stamp->leap_year(1999), 'not leap year 1999' );
