@@ -232,6 +232,7 @@ sub catch {
 sub throws {
     my $self  = shift;
     my $type  = reftype $self || BLANK;
+    my $class = class($self);
     my $throws;
     
     if (@_) {
@@ -239,7 +240,7 @@ sub throws {
         # else (classes and non-hash objects) use the $THROWS package var
         $throws = $type eq HASH
             ? ($self->{ THROWS } = shift)
-            :  $self->class->var(THROWS, shift);
+            :  $class->var(THROWS, shift);
     }
     elsif ($type eq HASH) {
         # we also look in $self->{ config } to see if a 'throws' was 
@@ -251,8 +252,8 @@ sub throws {
     
     # fall back on looking for any package variable in class / base classes
     return $throws 
-        || $self->class->any_var(THROWS)
-        || $self->class->id;
+        || $class->any_var(THROWS)
+        || $class->id;
 }
 
 sub exception {
@@ -265,14 +266,15 @@ sub exception {
         # like a hash when it is a hash-based object
         $emod = $type eq HASH
             ? ($self->{ EXCEPTION } = shift)
-            :  $self->class->var(EXCEPTION, shift);
+            : class($self)->var(EXCEPTION, shift);
     }
     elsif ($type eq HASH) {
         $emod = $self->{ EXCEPTION }
             ||= $self->{ config }
             &&  $self->{ config }->{ exception };
     }
-    return $emod || $self->class->any_var(EXCEPTION);
+    return $emod 
+        || class($self)->any_var(EXCEPTION);
 }
 
 sub fatal {
@@ -302,7 +304,7 @@ sub message {
     my $self   = shift;
     my $name   = shift 
         || $self->fatal("message() called without format name");
-    my $format = $self->class->hash_value( MESSAGES => $name )
+    my $format = class($self)->hash_value( MESSAGES => $name )
         || $self->fatal("message() called with invalid message type: $name");
     xprintf($format, @_);
 }
@@ -367,7 +369,7 @@ class->methods(
         
         $on_event => sub {
             my $self  = shift;
-            my $class = $self->class;
+            my $class = class($self);
             my $list;
     
             if (ref $self && reftype $self eq HASH) {
