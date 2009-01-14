@@ -733,7 +733,15 @@ sub maybe_load {
     my $self = shift;
     return eval { $self->load } || do {
         _debug("maybe_load($self) caught error: $@\n") if DEBUG;
-        die $@ if $@ && $@ !~ /^Can't locate .*? in \@INC/;
+        # Don't confuse "Can't locate Missing/Module/Used/In/Your/Module.pm"
+        # messages with "Can't locate Your/Module.pm".  The former is an 
+        # error that should be reported, the latter isn't.  We convert the
+        # class name to a regex that matches any non-word directory separators
+        # e.g. Your::Module => Your\W+Module
+        my $name = $self->{ name };
+        $name =~ s/\W+/\\W+/g;
+        _debug("checking to see if we couldn't locate $name\n") if DEBUG;
+        die $@ if $@ && $@ !~ /^Can't locate $name.*? in \@INC/;
         0;
     }
 }
