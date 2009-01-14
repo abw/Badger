@@ -37,6 +37,7 @@ use Badger::Class
     },
     messages  => {
         bad_timestamp => 'Invalid timestamp: %s',
+        bad_duration  => 'Invalid duration: %s',
     };
 
 use Time::Local;
@@ -56,8 +57,19 @@ our @SMHD            = qw( second minute hour day );
 our @YMDHMS          = (@YMD, @HMS);
 our @MONTHS          = qw( xxx Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 our @CACHE           = qw( date time longmonth longdate );
+our $SECONDS         = {
+    s => 1,
+    m => 60,
+    h => 60*60,
+    d => 60*60*24,
+    M => 60*60*24*30,
+    y => 60*60*24*365,
+};
 
-# generate methods: second(), seconds(), hour(), hours(), etc.
+
+#-----------------------------------------------------------------------
+# Method generator: second()/seconds(), hour()/hours(), etc.
+#-----------------------------------------------------------------------
 
 class->methods(
     map {
@@ -77,7 +89,10 @@ class->methods(
     @YMDHMS
 );
 
-# constructor subroutine
+
+#-----------------------------------------------------------------------
+# Constructor subroutine
+#-----------------------------------------------------------------------
 
 sub Timestamp { 
     return @_ 
@@ -85,6 +100,10 @@ sub Timestamp {
         : TS
 }
 
+
+#-----------------------------------------------------------------------
+# Methods
+#-----------------------------------------------------------------------
 
 sub new {
     my $class = shift; 
@@ -198,9 +217,21 @@ sub time {
 }
 
 sub adjust {
-    my ($self, $args) = self_params(@_);
-    my ($element, $dim);
+    my $self = shift;
+    my ($args, $element, $dim);
     my $fix_month = 0;
+
+    if (@_ == 1) {
+        # single argument can be a reference to a hash: { days => 3, etc }
+        # or a number/string representing a duration: "3 days", "1 year"
+        $args = ref $_[0] eq HASH 
+            ? shift
+            : { seconds => $self->duration(shift) };
+    }
+    else {
+        # multiple arguments are named parameters: days => 3, etc.
+        $args = { @_ };
+    }
 
     # If we're only adjusting by a month or a year, then we fix the day 
     # within the range of the number of days in the new month.  For example:
@@ -227,16 +258,18 @@ sub adjust {
     # Handle negative seconds/minutes/hours
     while ($self->{ second } < 0) {
         $self->{ second } += 60;
-        $self->{ minute } --;
+        $self->{ minute }--;
     }
     while ($self->{ minute } < 0) {
         $self->{ minute } += 60;
-        $self->{ hour }   --;
+        $self->{ hour   }--;
     }
     while ($self->{ hour } < 0) {
-        $self->{ hour } += 24;
-        $self->{ day  } --;
+        $self->{ hour   } += 24;
+        $self->{ day    }--;
     }
+
+    # now positive seconds/minutes/hours
     if ($self->{ second } > 59) {
         $self->{ minute } += int($self->{ second } / 60);
         $self->{ second } %= 60;
@@ -250,18 +283,15 @@ sub adjust {
         $self->{ hour   } %= 24;
     }
 
-    # Handle negative days
+    # Handle negative days/months/years
     while ($self->{ day } <= 0) {
-        $self->{ month } --;
+        $self->{ month }--;
         unless ($self->{ month } > 0) {
             $self->{ month } += 12;
-            $self->{ year }  --;
+            $self->{ year  }--;
         }
-        $dim = $self->days_in_month;
-        $self->{ day } += $dim;
+        $self->{ day } += $self->days_in_month;
     }
-
-    # Handle negative months
     while ($self->{ month } <= 0) {
         $self->{ month } += 12;
         $self->{ year } --;
@@ -271,6 +301,7 @@ sub adjust {
         $self->{ year  } ++;
     }
 
+    # handle day wrap-around
     while ($self->{ day } > ($dim = $self->days_in_month)) {
         # If we're adjusting by a single month or year and the day is 
         # greater than the number days in the new month, then we adjust
@@ -281,7 +312,6 @@ sub adjust {
             $self->{ day } = $dim;
         } 
         else {
-            # If not mysql format, we might be adjusting months
             $self->{ day } -= $dim;
             if ($self->{ month } == 12) {
                 $self->{ month } = 1;
@@ -297,6 +327,30 @@ sub adjust {
     $self->join_timestamp;
     
     return $self;
+}
+
+sub duration {
+    my ($self, $duration) = @_;
+
+    # $duration can be a number, assumed to be seconds
+    return $duration 
+        if numlike($duration);
+
+    # Otherwise the $duration should be of the form "3 minutes".  We only 
+    # look at the first character of the word (e.g. "3 m"), which creates a
+    # potential conflict between "m(inute) and m(onth)".  So we use a capital
+    # 'M' for month.  This is based on code by Mark Fisher in CGI.pm.  
+
+    $duration =~ s/month/Month/i;
+
+    # TODO: make this parser a bit smarter so we can support multiple
+    # items (e.g. "2 hours 30 minutes") as per adjust()
+    if ($duration =~ /^ ( -? (?: \d+ | \d*\.\d+ ) ) \s* ([smhdMy]?) /x) {
+        return ($SECONDS->{ $2 } || 1) * $1;
+    } 
+    else {
+        return $self->error_msg( bad_duration => $duration );
+    }
 }
 
 sub uncache {
@@ -329,7 +383,7 @@ sub after {
     my $self = shift;
     return $self->compare(@_) == 1;
 }
-    
+
 sub days_in_month {
     my $self  = shift;
     my $month = shift || $self->{ month };
@@ -432,12 +486,14 @@ Badger::Timestamp - object representation of a timestamp
 
 =head1 DESCRIPTION
 
-This module implements a small and simple object for representing a moment 
-in time.
+This module implements a small and simple object for representing a moment in
+time. Its scope is intentionally limited to the kind of applications that
+require very basic date and time functionality with minimal overhead. A
+typical example would be a CGI script or library generating a timestamp for a
+cookie, or printing out a "last modified" at the bottom of a web page.
 
-The scope of this module is intentionally limited.  For any serious date
-manipulation you should consider using L<DateTime>, L<Time::Piece> or one
-of the other fine date/time modules available from CPAN.
+For any non-trivial date manipulation you should almost certainly be using
+the most excellent L<DateTime> modules instead.
 
 The goals of this implementation are:
 
@@ -475,9 +531,6 @@ previously mentioned expiry dates has lapsed.
 The module is derived from the Template Toolkit date plugin. It was moved out
 into stand-alone module in 2006 for use in various commercial projects. It was
 made fully generic and moved into the L<Badger> fold in January 2009.
-
-In case you missed the earlier warning, let me re-iterate that you almost 
-certainly want to use L<Date::Time> for any non-trivial date manipulation.
 
 Please note that this documentation may be incorrect or incomplete in places.
 
