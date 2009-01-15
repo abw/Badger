@@ -33,7 +33,7 @@ use Badger::Class
         TS    => __PACKAGE__,
     },
     exports   => {
-        any   => 'TS Timestamp',
+        any   => 'TS Timestamp Now',
     },
     messages  => {
         bad_timestamp => 'Invalid timestamp: %s',
@@ -91,13 +91,17 @@ class->methods(
 
 
 #-----------------------------------------------------------------------
-# Constructor subroutine
+# Constructor subroutines
 #-----------------------------------------------------------------------
 
 sub Timestamp { 
     return @_ 
         ? TS->new(@_)
         : TS
+}
+
+sub Now { 
+    TS->now;
 }
 
 
@@ -558,6 +562,10 @@ When called with arguments, it creates a new C<Badger::Timestamp> object.
 
     my $ts = Timestamp($date);  # same as Badger::Timestamp->new($date);
 
+=head2 Now()
+
+Returns a C<Badger::Timestamp> for the current time.
+
 =head1 METHODS
 
 =head2 new($timestamp)
@@ -748,7 +756,56 @@ the arguments that it accepts.
 
 =head2 adjust(%adjustments)
 
-Adjusts the 
+Method to adjust the timestamp by a fixed amount or amounts.
+
+    # positive adjustment
+    $date->adjust( months => 6, years => 1 );
+    
+    # negative adjustment
+    $date->adjust( months => -18, hours => -200 );
+
+Named parameters can be passed as arguments or via a hash reference.
+
+    $date->adjust(  months => -18, hours => -200  );        # naked
+    $date->adjust({ months => -18, hours => -200 });        # clothed
+
+You can specify units using singular (second, hour, month, etc) or plural
+(seconds, hours, minutes, etc) keys. The method will correctly handle values
+outside the usual ranges. For example, you can specify a change of 18 months,
+-200 hours, -99 seconds, and so on.
+
+A single non-reference argument is assumed to be a duration which is 
+converted to a number of seconds via the L<duration()> method.
+
+=head2 duration($duration)
+
+Returns the number of seconds in a duration. A single numerical argument is
+assumed to be a number of seconds and is returned unchanged.
+
+    $date->adjust(300);     # 300 seconds
+
+A single non-numerical argument should have a suffix indicating the units.
+In "compact form" this is a single letter.  We use lower case C<m> for 
+minutes and upper case C<M> for months.
+
+    $date->adjust("300s");  # or "300 seconds"
+    $date->adjust("90m");   # or "90 minutes"
+    $date->adjust("3h");    # or "3 hours"    
+    $date->adjust("2d");    # or "2 days"
+    $date->adjust("6M");    # or "6 months"   
+    $date->adjust("5y");    # or "5 years"
+
+Alternately you can spell the units out in full as shown in the right
+column above.  However, we only look at the first character of the following
+word so you can write all sorts of nonsense which we will dutifully accept
+without complaint.
+
+    $date->adjust("5 sheep");   # 5 seconds
+    $date->adjust("9 men");     # 9 minutes
+    $date->adjust("3 yaks");    # 3 years
+
+For the sake of convenience, the method will automatically convert the 
+word C<month> into C<Month> so that the first letter is correctly capitalised.
 
 =head1 INTERNAL METHODS
 

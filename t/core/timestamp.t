@@ -15,11 +15,11 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
-    tests  => 124, 
+    tests  => 125, 
     debug  => 'Badger::Timestamp',
     args   => \@ARGV;
     
-use Badger::Timestamp 'Timestamp TS';
+use Badger::Timestamp 'Timestamp TS Now';
 use Badger::Utils 'refaddr';
 
 
@@ -48,6 +48,9 @@ is($now->minute(), $minute, 'minute now' );
 
 $now = Timestamp->now;
 ok( $now, 'got now() timestamp' );
+
+$now = Now;
+ok( $now, 'got Now() timestamp' );
 
 
 #-----------------------------------------------------------------------
