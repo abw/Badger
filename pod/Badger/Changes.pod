@@ -7,6 +7,8 @@ Badger::Changes - Summary of changes in the Badger toolkit
 =head2 Version 0.06
 
 Added L<debug_msg()|Badger::Base/debug_msg()> to L<Badger::Base>.
+Also add C<Badger::Base::Trial> definition for use with the 
+L<try()|Badger::Base/try()> method.
 
 Added L<Badger::Log> and L<Badger::Log::File>.
 
@@ -14,7 +16,7 @@ Added L<Badger::Timestamp>.
 
 Added L<Bin()|Badger::Filesystem/Bin()> to L<Badger::Filesystem>.
 
-Added L<lib|Badger::Badger/lib> import hook to L<Badger>.
+Added L<lib|Badger/lib> import hook to L<Badger>.
 
 Changed L<Badger::Class::Config> to maintain the order of configuration
 parameters where possible (i.e. when expressed as a list ref rather than

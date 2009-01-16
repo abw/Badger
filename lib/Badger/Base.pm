@@ -22,6 +22,7 @@ use Badger::Class
     words     => 'ID EXCEPTION THROWS ERROR DECLINED before after',
     constant  => { 
         base_id => 'Badger',      # stripped from class name to make id
+        TRIAL   => 'Badger::Base::Trial',
     };
 
 use Badger::Exception;              # TODO: autoload
@@ -217,10 +218,15 @@ sub throw {
 }
 
 sub try {
-    my $self   = shift;
-    my $method = shift || return $self->error_msg( missing_to => method => 'try' );
-    eval { $self->$method(@_) }
-        || $self->decline($@);
+    my $self = shift;
+    if (@_) {
+        my $method = shift;     # || return $self->error_msg( missing_to => method => 'try' );
+        eval { $self->$method(@_) }
+            || $self->decline($@);
+    }
+    else {
+        return TRIAL->_bind_($self);
+    }
 }
 
 sub catch {
@@ -457,6 +463,31 @@ sub _dispatch_handlers {
     return @args;
 }
     
+
+
+#-----------------------------------------------------------------------
+# Badger::Base::Trial - monadic object for $object->try operation
+#-----------------------------------------------------------------------
+
+package Badger::Base::Trial;
+our $AUTOLOAD;
+
+sub _bind_ {
+    my ($class, $object) = @_;
+    bless \$object, ref $class || $class;
+}
+
+sub AUTOLOAD {
+    my $self = shift;
+    my ($name) = ($AUTOLOAD =~ /([^:]+)$/ );
+    return if $name eq 'DESTROY';
+
+    # call method on target object in eval block, and downgrade
+    eval { $$self->$name(@_) }
+        || $$self->decline($@);
+    
+    # TODO: catch missing error methods
+}
 
 
 1;
@@ -1178,6 +1209,16 @@ The error thrown can be retrieved using the C<reason()> method.
     my $result = $object->try( fetch => 'answer' )|| do {
         warn "Could not fetch answer: ", $object->reason;
         42;     # a sensible default
+    };
+
+If you call the C<try()> method without any arguments then it will return a
+C<Badger::Base::Trial> object as a wafer thin wrapper around the original 
+object.  Any methods called on this delegate object will be forwarded to 
+the original object, wrapped up in an C<eval> block to catch any errors
+thrown.
+
+    my $result = $object->try->fetch('answer') ||= do { 
+        ...
     };
 
 =head2 catch($type, $method, @args)

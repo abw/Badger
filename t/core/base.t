@@ -18,7 +18,7 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Base;
 use Badger::Test 
-    tests => 99,
+    tests => 107,
     debug => 'Badger::Exporter',
     args  => \@ARGV;
 
@@ -567,6 +567,23 @@ like( $mouse->reason, qr/danger\.mouse error - not_done\(\) is TODO for Danger::
 
 ok( ! $mouse->try( not_done => 10 ), 'not_done with arg' );
 like( $mouse->reason, qr/danger\.mouse error - not_done\(\) with argument is TODO for Danger::Mouse/, 'danger mouse todo' );
+
+
+#-----------------------------------------------------------------------
+# test try monad
+#-----------------------------------------------------------------------
+
+ok( ! $mouse->try->hurl('cheese'), 'try trial failed' );
+is( $mouse->reason, 'danger.mouse error - HURLING: cheese', 'danger mouse trial error' );
+
+ok( ! $mouse->try->missing, 'try trial missing' );
+like( $mouse->reason, qr/danger\.mouse error - missing\(\) is not implemented for Danger::Mouse/, 'danger mouse trial missing' );
+
+ok( ! $mouse->try->not_done, 'trial not_done' );
+like( $mouse->reason, qr/danger\.mouse error - not_done\(\) is TODO for Danger::Mouse/, 'danger mouse trial todo' );
+
+ok( ! $mouse->try->not_done(10), 'not_done trial with arg' );
+like( $mouse->reason, qr/danger\.mouse error - not_done\(\) with argument is TODO for Danger::Mouse/, 'danger mouse trial todo' );
 
 
 #-----------------------------------------------------------------------
