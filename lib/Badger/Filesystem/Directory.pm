@@ -16,6 +16,7 @@ use Badger::Class
     version     => 0.01,
     debug       => 0,
     base        => 'Badger::Filesystem::Path',
+    dumps       => 'path volume directory name stats',
     constants   => 'ARRAY',
     constant    => {
         is_directory => 1,

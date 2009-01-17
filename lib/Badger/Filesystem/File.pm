@@ -14,8 +14,9 @@ package Badger::Filesystem::File;
 
 use Badger::Class
     version     => 0.01,
-    debug       => 0,
     base        => 'Badger::Filesystem::Path',
+    debug       => 0,
+    dumps       => 'path volume directory name stats',
     constants   => 'ARRAY BLANK',
     constant    => {
         type    => 'File',
