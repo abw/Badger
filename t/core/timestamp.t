@@ -4,7 +4,7 @@
 #
 # Test the Badger::Timestamp module.
 #
-# Copyright (C) 2006-2008 Andy Wardley.  All Rights Reserved.
+# Copyright (C) 2006-2009 Andy Wardley.  All Rights Reserved.
 #
 # This is free software; you can redistribute it and/or modify it
 # under the same terms as Perl itself.
