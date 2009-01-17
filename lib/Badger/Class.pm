@@ -91,6 +91,7 @@ our $EXPORT_ANY   = ['BCLASS'];
 our $EXPORT_FAIL  = \&_export_fail;
 our $EXPORT_HOOKS = {
     debug    => [\&_debug_hook, 1],
+    dumps    => [\&_dumps_hook, 1],
     map { $_ => \&_export_hook } 
     qw( 
         base uber mixin mixins version constant constants words vars 
@@ -143,6 +144,11 @@ sub _debug_hook {
     $debug = { default => $debug }
         unless ref $debug eq HASH;
     _autoload($class->DEBUGGER)->export($target, %$debug);
+}
+
+sub _dumps_hook {
+    my ($class, $target, $key, $dumps) = @_;
+    _autoload($class->DEBUGGER)->export($target, dumps => $dumps);
 }
 
 
@@ -213,6 +219,7 @@ my $METACLASSES = { };
 
         no strict REFS;
         no warnings 'redefine';
+        *{ $pkg.PKG.'CLASS'     } = \&CLASS;
         *{ $pkg.PKG.'class'     } = $class_sub;
         *{ $pkg.PKG.'bclass'    } = $class_sub;         # plan B 
         *{ $pkg.PKG.'classes'   } = $classes_sub;
@@ -1615,6 +1622,11 @@ method like so:
     }
 
 See the L<debug()> method and L<Badger::Debug> for further details.
+
+=head2 dumps
+
+This is a short-cut to the L<dumps|Badger::Debug/dumps> export hook in 
+L<Badger::Debug>.
 
 =head2 constant
 
