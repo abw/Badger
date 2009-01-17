@@ -60,6 +60,7 @@ sub _export_debug_dumps {
     $self->export_symbol($target, dumper => sub {
         $_[0]->dump_hash($_[0],$_[1],$value);
     });
+    unshift(@$symbols, ':dump');
     return $self;
 }
 
