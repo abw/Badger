@@ -14,6 +14,8 @@ Added L<Badger::Log> and L<Badger::Log::File>.
 
 Added L<Badger::Timestamp>.
 
+Added L<Badger::Logic>.
+
 Added L<Bin()|Badger::Filesystem/Bin()> to L<Badger::Filesystem>.
 
 Added L<lib|Badger/lib> import hook to L<Badger>.
