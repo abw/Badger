@@ -28,6 +28,7 @@ use Badger::Class
         no_text   => 'No text expression specified.',
         no_rhs    => 'Missing expression following "%s"',
         bad_text  => 'Unexpected text in expression: %s',
+        parse     => 'Could not parse logic expression: %s',
         no_rparen => 'Missing ")" at end of nested expression',
     };
 
@@ -74,7 +75,8 @@ sub parse {
     my $text = shift;
     my $tref = ref $text ? $text : \$text;
     $self->debug("parse($$tref)\n") if DEBUG;
-    my $expr = $self->parse_expr($tref) || return;
+    my $expr = $self->parse_expr($tref) 
+        || return $self->error_msg( parse => $$tref );
     if ($$tref =~ / \G \s* (.+) $/cigsx) {
         return $self->error_msg( bad_text => $1 );
     }
