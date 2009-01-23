@@ -196,7 +196,9 @@ sub read_directory {
         $full = $self->join_directory($base, $path);
         $self->debug("Opening directory: $full\n") if DEBUG;
         $dirh = IO::Dir->new($full)
-            || $self->error_msg( open_failed => directory => $full => $! );
+            || next;
+# Some directory may not exist, so ignore them
+#           || $self->error_msg( open_failed => directory => $full => $! );
         while (defined ($item = $dirh->read)) {
             push(@items, $item) unless $seen{ $item }++;
         }
