@@ -146,7 +146,7 @@ from L<Badger::Log> and its base classes.
 
 =head2 log($level,$message)
 
-This method redefines the L<log()|Badger::Log::log()> method in 
+This method redefines the L<log()|Badger::Log/log()> method in 
 L<Badger::Log> to write logging messages to the log file.
 
 =head2 INTERNAL METHODS
