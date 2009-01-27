@@ -164,7 +164,8 @@ sub configure {
     ELEMENT: foreach $element (@$schema) {
         $name = $element->{ name };
         
-        FALLBACK: foreach $alias ($name, @{ $element->{ fallback } }) {
+        FALLBACK: foreach $alias ($name, @{ $element->{ fallback } || [ ] }) {
+            next unless defined $alias;
             if (ref $alias) {
                 $self->debug("Dispatching handler to set $name\n") if DEBUG;
                 ($code, @args) = @$alias;
