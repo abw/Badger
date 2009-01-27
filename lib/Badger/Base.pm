@@ -483,8 +483,10 @@ sub AUTOLOAD {
     return if $name eq 'DESTROY';
 
     # call method on target object in eval block, and downgrade
-    eval { $$self->$name(@_) }
-        || $$self->decline($@);
+    my $result = eval { $$self->$name(@_) };
+    return defined $result
+        ? $result
+        : $$self->decline($@);
     
     # TODO: catch missing error methods
 }
