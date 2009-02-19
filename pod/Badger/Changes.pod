@@ -6,6 +6,7 @@ Badger::Changes - Summary of changes in the Badger toolkit
 
 Added copy_file() and move_file() methods to Badger::Filesystem.
 Added copy() and move() methods to Badger::Filesystem::File.
+Added chmod()
 
 =head2 Version 0.06
 

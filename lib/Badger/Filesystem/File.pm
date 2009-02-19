@@ -101,6 +101,12 @@ sub move {
     $self->filesystem->move_file($self->{ path }, @_);
 }
 
+sub chmod {
+    my $self = shift;
+    $self->filesystem->chmod_path($self->{ path }, @_);
+    return $self;
+}
+
 sub print {
     my $self = shift;
     $self->write( join(BLANK, @_) );
@@ -308,7 +314,7 @@ it, and then closes the file again.
 
     $file->write("Hello World!\n");
 
-=head2 copy($to,$mkdir,$perms)
+=head2 copy($to,$mkdir,$dir_perms,$file_perms)
 
 This method copies the file to the new location specified by the first
 argument.  
@@ -316,11 +322,12 @@ argument.
     $file->copy('/some/where/else');
 
 The second optional argument is a flag to indicate that directories should
-created. The third optional argument can be used to specify file permissions
-for newly created directories. See the
-L<copy_file()|Badger::Filesystem/copy_file()> method in L<Badger::Filesystem>.
+created. The third and fourth optional argument can be used to specify file
+permissions for newly created directories and the destination file itself,
+respectively. See the L<copy_file()|Badger::Filesystem/copy_file()> method in
+L<Badger::Filesystem>.
 
-=head2 move($to,$mkdir,$perms)
+=head2 move($to,$mkdir,$dir_perms,$file_perms)
 
 This method moves the file to the new location specified by the first
 argument.  
@@ -331,6 +338,12 @@ The second optional argument is a flag to indicate that directories should
 created. The third optional argument can be used to specify file permissions
 for newly created directories. See the
 L<move_file()|Badger::Filesystem/move_file()> method in L<Badger::Filesystem>.
+
+=head2 chmod($perms)
+
+This method changes the file permissions on a file.
+
+    $file->chmod(0775);
 
 =head2 print(@content)
 

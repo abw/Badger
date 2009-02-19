@@ -180,6 +180,7 @@ sub definitive_read {
         $full = $self->merge_paths($base, $path);
         $self->debug("looking for [$base] + [$path] => $full\n") if DEBUG;
         return $full if -e $full;
+        $self->debug("not found\n") if DEBUG;
     }
     return undef;
 }

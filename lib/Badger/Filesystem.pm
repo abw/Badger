@@ -365,6 +365,12 @@ sub stat_path {
         ?  @stats
         : \@stats;
 }
+
+sub chmod_path {
+    my $self = shift;
+    my $path = $self->definitive_write(shift);
+    chmod(shift, $path);
+}
     
 
 #-----------------------------------------------------------------------
@@ -441,10 +447,10 @@ sub append_file {
 }
 
 sub copy_file {
-    my ($self, $from, $to, @args) = @_;
+    my ($self, $from, $to, $mkdir, $dperms, $fperms) = @_;
     my $dest = $self->file($to);
 
-    $dest->directory->must_exist(@args);
+    $dest->directory->must_exist($mkdir, $dperms);
 
     require File::Copy;
     File::Copy::copy(
@@ -452,14 +458,16 @@ sub copy_file {
         $self->definitive_write($to),
     ) || return $self->error_msg( copy_failed => $from, $to, $! );
 
+    $dest->chmod($fperms) if $fperms;
+
     return $dest;
 }
 
 sub move_file {
-    my ($self, $from, $to, @args) = @_;
+    my ($self, $from, $to, $mkdir, $dperms, $fperms) = @_;
     my $dest = $self->file($to);
 
-    $dest->directory->must_exist(@args);
+    $dest->directory->must_exist($mkdir, $dperms);
 
     require File::Copy;
     File::Copy::move(
@@ -467,8 +475,11 @@ sub move_file {
         $self->definitive_write($to),
     ) || return $self->error_msg( move_failed => $from, $to, $! );
 
+    $dest->chmod($fperms) if $fperms;
+    
     return $dest;
 }
+
 
 #-----------------------------------------------------------------------
 # directory manipulation methods
@@ -1231,6 +1242,12 @@ L<Badger::Filesystem::Path> for further details.
      15     file is executable by current process
      16     file is owned by current process
 
+=head2 chmod_path($path)
+
+Changes the file permissions on a path.
+
+    $fs->chmod_path('/path/to/file', 0755);
+
 =head1 FILE MANIPULATION METHODS
 
 =head2 create_file($path)
@@ -1302,7 +1319,7 @@ to indicate success.  Errors are thrown as exceptions.
 
     $fs->append_file('/path/to/file', "Hello World\n", "Regards, Badger\n");
 
-=head2 copy_file($from, $to, $mkdir, $perms)
+=head2 copy_file($from, $to, $mkdir, $dir_perms)
 
 Copies a file from the C<$from> path to the C<$to> path, using L<File::Copy>
 
@@ -1312,12 +1329,17 @@ The third optional argument can be set to a true value to indicate that
 the destination direction should be created if it doesn't already exist,
 along with any intermediate directories.  
 
-    $fs->copy_file($from, $to, 1);          # + mkdir option
+    $fs->copy_file($from, $to, 1);              # + mkdir option
 
 The fourth optional argument can be used to specify the octal file 
 permissions for any directories created.
 
-    $fs->copy_file($from, $to, 1, 0755);    # + directory option
+    $fs->copy_file($from, $to, 1, 0755);        # + dir permission option
+
+The fifth and final optional argument can be used to specify the octal file 
+permissions for the created file.
+
+    $fs->copy_file($from, $to, 1, 0755, 0644);  # + file permission option
 
 =head2 move_file($from, $to, $mkdir, $perms)
 
