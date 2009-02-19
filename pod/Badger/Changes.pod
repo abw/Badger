@@ -4,6 +4,9 @@ Badger::Changes - Summary of changes in the Badger toolkit
 
 =head1 CHANGES
 
+Added copy_file() and move_file() methods to Badger::Filesystem.
+Added copy() and move() methods to Badger::Filesystem::File.
+
 =head2 Version 0.06
 
 Added L<debug_msg()|Badger::Base/debug_msg()> to L<Badger::Base>.
