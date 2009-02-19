@@ -18,7 +18,7 @@ use Badger::Filesystem 'FS';
 use Badger::Filesystem::File '@STAT_FIELDS';
 use Badger::Filesystem::Directory;
 use Badger::Test 
-    tests => 39,
+    tests => 50,
     debug => 'Badger::Filesystem::File',
     args  => \@ARGV;
 
@@ -81,6 +81,37 @@ is( $file3->text, "Hello World!\n", 'read text from newfile' );
 ok( $file3->touch, 'touched newfile' );
 
 
+#-----------------------------------------------------------------------
+# copy and move files
+#-----------------------------------------------------------------------
+
+my $file4 = $TDIR->file('testfiles', 'copyfile');
+ok( $file4, 'got copyfile' );
+if ($file4->exists) {
+    ok( $file4->delete, 'deleted copy file' );
+}
+else {
+    pass('no existing copy file');
+}
+ok( ! $file4->exists, 'copyfile does not exist' );
+ok( $file3->copy($file4), 'copied file' );
+ok( $file4->exists, 'copyfile now exists' );
+
+
+my $file5 = $TDIR->file('testfiles', 'movefile');
+ok( $file5, 'got movefile' );
+if ($file5->exists) {
+    ok( $file5->delete, 'deleted move file' );
+}
+else {
+    pass('no existing move file');
+}
+ok( ! $file5->exists, 'movefile does not exist' );
+ok( $file4->move($file5), 'moved file' );
+ok( $file5->exists, 'moved now exists' );
+ok( ! $file4->exists, 'copyfile no longer exists' );
+
+$file5->delete;
 
 __END__
 test_file('file.t');

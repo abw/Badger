@@ -55,6 +55,8 @@ use Badger::Class
         delete_failed => 'Failed to delete %s %s: %s',
         bad_volume    => 'Volume mismatch: %s vs %s',
         bad_stat      => 'Nothing known about %s',
+        copy_failed   => 'Failed to copy file from %s to %s: %s',
+        move_failed   => 'Failed to move file from %s to %s: %s',
     };
 
 use Badger::Filesystem::File;
@@ -438,6 +440,35 @@ sub append_file {
     return 1;
 }
 
+sub copy_file {
+    my ($self, $from, $to, @args) = @_;
+    my $dest = $self->file($to);
+
+    $dest->directory->must_exist(@args);
+
+    require File::Copy;
+    File::Copy::copy(
+        $self->definitive_read($from),
+        $self->definitive_write($to),
+    ) || return $self->error_msg( copy_failed => $from, $to, $! );
+
+    return $dest;
+}
+
+sub move_file {
+    my ($self, $from, $to, @args) = @_;
+    my $dest = $self->file($to);
+
+    $dest->directory->must_exist(@args);
+
+    require File::Copy;
+    File::Copy::move(
+        $self->definitive_read($from),
+        $self->definitive_write($to),
+    ) || return $self->error_msg( move_failed => $from, $to, $! );
+
+    return $dest;
+}
 
 #-----------------------------------------------------------------------
 # directory manipulation methods
@@ -1270,6 +1301,28 @@ appended to the file.  The file is then closed and a true value returned
 to indicate success.  Errors are thrown as exceptions.
 
     $fs->append_file('/path/to/file', "Hello World\n", "Regards, Badger\n");
+
+=head2 copy_file($from, $to, $mkdir, $perms)
+
+Copies a file from the C<$from> path to the C<$to> path, using L<File::Copy>
+
+    $fs->copy_file($from, $to);
+
+The third optional argument can be set to a true value to indicate that 
+the destination direction should be created if it doesn't already exist,
+along with any intermediate directories.  
+
+    $fs->copy_file($from, $to, 1);          # + mkdir option
+
+The fourth optional argument can be used to specify the octal file 
+permissions for any directories created.
+
+    $fs->copy_file($from, $to, 1, 0755);    # + directory option
+
+=head2 move_file($from, $to, $mkdir, $perms)
+
+Moves a file from the C<$from> path to the C<$to> path, using L<File::Copy>.
+The arguments are as per L<copy_file()>.
 
 =head1 DIRECTORY MANIPULATION METHODS
 

@@ -91,6 +91,16 @@ sub write {
     $self->filesystem->write_file($self->{ path }, @_);
 }
 
+sub copy {
+    my $self = shift;
+    $self->filesystem->copy_file($self->{ path }, @_);
+}
+
+sub move {
+    my $self = shift;
+    $self->filesystem->move_file($self->{ path }, @_);
+}
+
 sub print {
     my $self = shift;
     $self->write( join(BLANK, @_) );
@@ -297,6 +307,30 @@ When called with arguments, the method opens the file, writes the argument to
 it, and then closes the file again.
 
     $file->write("Hello World!\n");
+
+=head2 copy($to,$mkdir,$perms)
+
+This method copies the file to the new location specified by the first
+argument.  
+
+    $file->copy('/some/where/else');
+
+The second optional argument is a flag to indicate that directories should
+created. The third optional argument can be used to specify file permissions
+for newly created directories. See the
+L<copy_file()|Badger::Filesystem/copy_file()> method in L<Badger::Filesystem>.
+
+=head2 move($to,$mkdir,$perms)
+
+This method moves the file to the new location specified by the first
+argument.  
+
+    $file->move('/some/where/else');
+
+The second optional argument is a flag to indicate that directories should
+created. The third optional argument can be used to specify file permissions
+for newly created directories. See the
+L<move_file()|Badger::Filesystem/move_file()> method in L<Badger::Filesystem>.
 
 =head2 print(@content)
 
