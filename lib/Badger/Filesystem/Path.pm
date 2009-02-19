@@ -232,8 +232,9 @@ sub must_exist {
 
     unless ($self->exists) {
         if (@_ && $_[0]) {
+            my $flag = shift;
             # true flag indicates we should attempt to create it
-            $self->create;
+            $self->create(@_);      # pass any other args, like dir file permission
         }
         else {
             return $self->error_msg( no_exist => $self->type, $self->{ path } );

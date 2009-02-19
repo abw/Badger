@@ -451,7 +451,7 @@ sub create_directory {
 
     eval { 
         local $Carp::CarpLevel = 1;
-        File::Path::mkpath($path, @_) 
+        File::Path::mkpath($path, 0, @_) 
     } || return $self->error($@);
 } 
     
