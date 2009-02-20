@@ -478,7 +478,9 @@ sub _file_copy {
     my $file;
 
     unless (ref $dest) {
-        $file = $self->file($dest);
+        # NOTE: don't use $self->file($dest) because $self could be a 
+        # VFS and $dest is already a definitive path
+        $file = File($dest);
         $file->directory->must_exist(
             $params->{ mkdir    },
             $params->{ dir_mode },
