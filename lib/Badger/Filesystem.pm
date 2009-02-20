@@ -55,8 +55,7 @@ use Badger::Class
         delete_failed => 'Failed to delete %s %s: %s',
         bad_volume    => 'Volume mismatch: %s vs %s',
         bad_stat      => 'Nothing known about %s',
-        copy_failed   => 'Failed to copy file from %s to %s: %s',
-        move_failed   => 'Failed to move file from %s to %s: %s',
+        copy_failed   => 'Failed to %s file from %s to %s: %s',
     };
 
 use Badger::Filesystem::File;
@@ -446,38 +445,56 @@ sub append_file {
     return 1;
 }
 
+
 sub copy_file {
-    my ($self, $from, $to, $mkdir, $dperms, $fperms) = @_;
-    my $dest = $self->file($to);
-
-    $dest->directory->must_exist($mkdir, $dperms);
-
-    require File::Copy;
-    File::Copy::copy(
-        $self->definitive_read($from),
-        $self->definitive_write($to),
-    ) || return $self->error_msg( copy_failed => $from, $to, $! );
-
-    $dest->chmod($fperms) if $fperms;
-
-    return $dest;
+    shift->_file_copy( copy => @_ );
 }
 
 sub move_file {
-    my ($self, $from, $to, $mkdir, $dperms, $fperms) = @_;
-    my $dest = $self->file($to);
+    shift->_file_copy( move => @_ );
+}
 
-    $dest->directory->must_exist($mkdir, $dperms);
-
+sub _file_copy {
     require File::Copy;
-    File::Copy::move(
-        $self->definitive_read($from),
-        $self->definitive_write($to),
-    ) || return $self->error_msg( move_failed => $from, $to, $! );
 
-    $dest->chmod($fperms) if $fperms;
+    my ($self, $action, $from, $to, $params) 
+     = (shift, shift, shift, shift, params(@_));
+     
+    my $src    
+        = is_object(PATH, $from)    ? $from->definitive     # path object
+        : ref($from)                ? $from                 # file handle
+        : $self->definitive_read($from);                    # file path
+
+    my $dest
+        = is_object(PATH, $to)      ? $to->definitive       # as above
+        : ref($to)                  ? $to            
+        : $self->definitive_write($to);
     
-    return $dest;
+    my $code 
+        = $action eq 'copy' ? \&File::Copy::copy
+        : $action eq 'move' ? \&File::Copy::move
+        : return $self->error( invalid => action => $action );
+
+    my $file;
+
+    unless (ref $dest) {
+        $file = $self->file($dest);
+        $file->directory->must_exist(
+            $params->{ mkdir    },
+            $params->{ dir_mode },
+        );
+    }
+
+    $code->($src, $dest)
+        || return $self->error_msg( copy_failed => $action, $from, $to, $! );
+
+    my $mode = $params->{ file_mode };
+       $mode = $params->{ mode } unless defined $mode;
+
+    $file->chmod($mode) 
+        if $file && defined $mode;
+
+    return $file || $dest;
 }
 
 
@@ -486,8 +503,8 @@ sub move_file {
 #-----------------------------------------------------------------------
 
 sub create_directory { 
-    my $self = shift;
-    my $path = $self->definitive_write(shift);
+    my $self   = shift;
+    my $path   = $self->definitive_write(shift);
 
     require File::Path;
 
@@ -1319,29 +1336,33 @@ to indicate success.  Errors are thrown as exceptions.
 
     $fs->append_file('/path/to/file', "Hello World\n", "Regards, Badger\n");
 
-=head2 copy_file($from, $to, $mkdir, $dir_perms)
+=head2 copy_file($from, $to, %params)
 
 Copies a file from the C<$from> path to the C<$to> path, using L<File::Copy>
 
     $fs->copy_file($from, $to);
 
-The third optional argument can be set to a true value to indicate that 
+The C<$from> and C<$to> arguments can be file names, file objects, or file
+handles.
+
+An optional list or reference to a hash array of named parameters can follow
+the file names.  The C<mkdir> option can be set to indicate that 
 the destination direction should be created if it doesn't already exist,
 along with any intermediate directories.  
 
-    $fs->copy_file($from, $to, 1);              # + mkdir option
+    $fs->copy_file($from, $to, mkdir => 1);
 
-The fourth optional argument can be used to specify the octal file 
+The C<dir_mode> parameter can be used to specify the octal file 
 permissions for any directories created.
 
-    $fs->copy_file($from, $to, 1, 0755);        # + dir permission option
+    $fs->copy_file($from, $to, 1, mkdir => 1, dir_mode => 0770);
 
-The fifth and final optional argument can be used to specify the octal file 
-permissions for the created file.
+The C<file_mode> parameter (or C<mode> for short) can be used to specify the
+octal file permissions for the created file.
 
-    $fs->copy_file($from, $to, 1, 0755, 0644);  # + file permission option
+    $fs->copy_file($from, $to, file_mode => 0644);
 
-=head2 move_file($from, $to, $mkdir, $perms)
+=head2 move_file($from, $to, %params)
 
 Moves a file from the C<$from> path to the C<$to> path, using L<File::Copy>.
 The arguments are as per L<copy_file()>.

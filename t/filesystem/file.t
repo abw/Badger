@@ -18,7 +18,7 @@ use Badger::Filesystem 'FS';
 use Badger::Filesystem::File '@STAT_FIELDS';
 use Badger::Filesystem::Directory;
 use Badger::Test 
-    tests => 50,
+    tests => 54,
     debug => 'Badger::Filesystem::File',
     args  => \@ARGV;
 
@@ -111,7 +111,37 @@ ok( $file4->move($file5), 'moved file' );
 ok( $file5->exists, 'moved now exists' );
 ok( ! $file4->exists, 'copyfile no longer exists' );
 
+
+#-----------------------------------------------------------------------
+# copy with mkdir and mode parameters
+#-----------------------------------------------------------------------
+
+my $file6 = $TDIR->file('testfiles', 'forest', 'badger');
+
+ok( 
+    $file5->copy($file6, mkdir => 1, dir_mode => 0770, file_mode => 0660),
+    'copied file with mkdir'
+);
+ok( $file6->exists, 'file6 exists' );
+
+
+#-----------------------------------------------------------------------
+# copy from a filehandle
+#-----------------------------------------------------------------------
+
+my $file7 = $TDIR->file('testfiles', 'forest', 'ferret');
+
+ok( 
+    $file7->copy_from($file5->open),
+    'copied file from filehandle'
+);
+ok( $file7->exists, 'copied file created' );
+
+my $dir = $file6->parent;
 $file5->delete;
+$file6->delete;
+$file7->delete;
+$dir->delete;
 
 __END__
 test_file('file.t');

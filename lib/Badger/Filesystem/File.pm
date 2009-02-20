@@ -26,6 +26,8 @@ use Badger::Class
 use Badger::Filesystem::Path ':fields';
 
 *base = \&directory;
+*copy = \&copy_to;
+*move = \&move_to;
 
 sub init {
     my ($self, $config) = @_;
@@ -91,14 +93,24 @@ sub write {
     $self->filesystem->write_file($self->{ path }, @_);
 }
 
-sub copy {
+sub copy_to {
     my $self = shift;
     $self->filesystem->copy_file($self->{ path }, @_);
 }
 
-sub move {
+sub copy_from {
+    my $self = shift;
+    $self->filesystem->copy_file(shift, $self->{ path }, @_);
+}
+
+sub move_to {
     my $self = shift;
     $self->filesystem->move_file($self->{ path }, @_);
+}
+
+sub move_from {
+    my $self = shift;
+    $self->filesystem->move_file(shift, $self->{ path }, @_);
 }
 
 sub chmod {
@@ -314,30 +326,46 @@ it, and then closes the file again.
 
     $file->write("Hello World!\n");
 
-=head2 copy($to,$mkdir,$dir_perms,$file_perms)
+=head2 copy($to, %params) / copy_to($to, %params)
 
 This method copies the file to the new location specified by the first
-argument.  
+argument. It delegates to the L<copy_file()|Badger::Filesystem/copy_file()>
+method in L<Badger::Filesystem>.
 
     $file->copy('/some/where/else');
 
-The second optional argument is a flag to indicate that directories should
-created. The third and fourth optional argument can be used to specify file
-permissions for newly created directories and the destination file itself,
-respectively. See the L<copy_file()|Badger::Filesystem/copy_file()> method in
-L<Badger::Filesystem>.
+The destination can be specified as a file name, file object or file handle.
+An optional list of reference to a hash array of named parameters can follow.
 
-=head2 move($to,$mkdir,$dir_perms,$file_perms)
+    $file->copy(
+        '/some/where/else' => {
+            mkdir     => 1,         # create intermediate directories
+            dir_mode  => 0775,      # permissions for created directories
+            file_mode => 0664,      # permissions for created file
+        }
+    );
+
+=head2 copy_from($from, %params)
+
+Like L<copy_to()> but working in reverse. 
+
+    $target_file->copy_from( $source_file );
+
+=head2 move($to, %params) / move_to($to, %params)
 
 This method moves the file to the new location specified by the first
-argument.  
+argument.  It delegates to the L<copy_file()|Badger::Filesystem/move_file()>
+method in L<Badger::Filesystem>.
 
     $file->move('/some/where/else');
 
-The second optional argument is a flag to indicate that directories should
-created. The third optional argument can be used to specify file permissions
-for newly created directories. See the
-L<move_file()|Badger::Filesystem/move_file()> method in L<Badger::Filesystem>.
+Arguments are as per L<copy()>.
+
+=head2 move_from($from, %params)
+
+Like L<move_to()> but working in reverse. 
+
+    $target_file->move_from( $source_file );
 
 =head2 chmod($perms)
 
