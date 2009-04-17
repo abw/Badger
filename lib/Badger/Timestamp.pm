@@ -247,6 +247,8 @@ sub adjust {
         $fix_month = 1;
     }
 
+    $self->debug("adjust: ", $self->dump_data($args)) if DEBUG;
+    
     # allow each element to be singular or plural: day/days, etc.
     foreach $element (@YMDHMS) {
         $args->{ $element } = $args->{ "${element}s" }

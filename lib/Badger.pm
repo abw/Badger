@@ -122,7 +122,7 @@ This is equivalent to:
 The Badger toolkit is a collection of Perl modules designed to simplify the
 process of building object-oriented Perl applications. It provides a set of
 I<foundation classes> upon which you can quickly build robust and reliable
-systems that are simple, sexy and scalable.  See L<Badger::Intro> for 
+systems that are simple, sexy and scalable.  See C<Badger::Intro> for 
 further information.
 
 The C<Badger> module is a front-end to other C<Badger> modules.  You can use

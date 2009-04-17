@@ -483,6 +483,7 @@ sub AUTOLOAD {
     return if $name eq 'DESTROY';
 
     # call method on target object in eval block, and downgrade
+
     my $result = eval { $$self->$name(@_) };
 #    $$self->debug("result ($@): [", defined $result ? $result : '<undef>', ']');
     return defined $result

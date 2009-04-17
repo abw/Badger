@@ -257,7 +257,6 @@ is( $tstamp->date, '2009-01-10', "TS stamp date" );
 is( $tstamp->year, '2009', "TS stamp year" );
 is( $tstamp->minutes, '14', "TS stamp month" );
 
-
 __END__
 
 # Local Variables:
