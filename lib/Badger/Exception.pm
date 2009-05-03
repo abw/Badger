@@ -55,7 +55,7 @@ sub init {
         exists $config->{ trace } 
              ? $config->{ trace } 
              : $TRACE;
-             
+
     return $self;
 }
 
