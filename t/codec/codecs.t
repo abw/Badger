@@ -144,15 +144,15 @@ use Badger::Test;
 
 # importing a single codec using list ref of arguments
 use Badger::Codecs 
-    [codec => 'json'];
+    [codec => 'storable'];
     
 # codec() returns a Badger::Codec::URL object
 $enc = codec->encode({ message => $hello });
-ok( $enc, "encoded data via imported [codec => 'json']" );
+ok( $enc, "encoded data via imported [codec => 'storable']" );
 
 $dec = codec->decode($enc)->{ message };
-ok( $dec, "decoded data via imported [codec => 'json']" );
-is( $dec, $hello, 'transcoded hello via json encode()/decode()' );
+ok( $dec, "decoded data via imported [codec => 'storable']" );
+is( $dec, $hello, 'transcoded hello via storable encode()/decode()' );
 
 
 #-----------------------------------------------------------------------

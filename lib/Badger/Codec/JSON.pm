@@ -15,31 +15,56 @@ package Badger::Codec::JSON;
 use Badger::Class
     version => 0.01,
     base    => 'Badger::Codec',
-    import  => 'class';
+    import  => 'class',
+    codecs  => 'unicode';
 
-use JSON ();
-our $JSON = JSON->new;
+eval "require JSON::XS";
+our $HAS_JSON_XS = $@ ? 0 : 1;
 
-sub encode {
-    my $self = shift;
+eval "require JSON";
+our $HAS_JSON = $@ ? 0 : 1;
+our $MODULE = 
+    $HAS_JSON_XS ? 'JSON::XS' :
+    $HAS_JSON    ? 'JSON'     :
+    die "No JSON implementation installed\n";
+
+our $JSON    = $MODULE->new->utf8;
+
+sub encode_json {
     $JSON->encode(shift);
 }
 
-sub decode {
-    my $self = shift;
-    $JSON->decode(shift);
+sub decode_json {
+    my $json = shift;
+#    utf8::upgrade($json);
+    $json = encode_unicode($json);
+    $JSON->decode($json);
+}
+    
+sub encode {
+    shift;
+    goto &encode_json;
 }
 
-# shortcuts straight to the real encoder/decoder subs for efficient aliasing
+sub decode {
+    shift;
+    goto &decode_json;
+}
 
 sub encoder {
-    \&JSON::encode_json;
+    \&encode_json;
 }
 
 sub decoder {
-    \&JSON::decode_json;
+    \&decode_json;
 }
 
+sub OLD_decode {
+    my $self = shift;
+    my $data = shift;
+    $data = encode_unicode($data);
+    $JSON->decode($data);
+}
 
 1;
 
