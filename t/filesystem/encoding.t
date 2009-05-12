@@ -18,10 +18,10 @@ use Badger::Test
     args  => \@ARGV;
 
 use Badger
-    Filesystem => 'Cwd',
+    Filesystem => 'Bin',
     Codecs     => [ codec => 'utf8' ];
 
-my $dir = Cwd->dir('testfiles')->must_exist;
+my $dir = Bin->dir('testfiles')->must_exist;
 
 
 # This is 'moose...' (with slashes in the 'o's them, and the '...' as one char).
