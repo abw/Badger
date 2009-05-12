@@ -107,7 +107,7 @@ sub args {
             unshift(@$args, $arg);
             last;
         }
-     }  
+    }  
 }
 
 sub tests {

@@ -17,6 +17,7 @@ use Badger::Class
     base        => 'Badger::Filesystem::Path',
     debug       => 0,
     dumps       => 'path volume directory name stats',
+    import      => 'class',
     constants   => 'ARRAY BLANK',
     constant    => {
         type    => 'File',
@@ -45,6 +46,11 @@ sub init {
     else {
         $self->error_msg( missing => 'path or name' );
     }
+    
+    my $opts = $self->{ options } = { };
+    $self->encoding( $config->{ encoding } )
+        if $config->{ encoding };
+        
     return $self;
 }
 
@@ -80,17 +86,17 @@ sub touch {
 
 sub open {
     my $self = shift;
-    $self->filesystem->open_file($self->{ path }, @_);
+    $self->filesystem->open_file($self->{ path }, @_, $self->{ options });
 }
 
 sub read {
     my $self = shift;
-    $self->filesystem->read_file($self->{ path }, @_);
+    $self->filesystem->read_file($self->{ path }, @_, $self->{ options });
 }
 
 sub write {
     my $self = shift;
-    $self->filesystem->write_file($self->{ path }, @_);
+    $self->filesystem->write_file($self->{ path }, @_, $self->{ options });
 }
 
 sub copy_to {
@@ -126,7 +132,7 @@ sub print {
 
 sub append {
     my $self = shift;
-    $self->filesystem->append_file($self->{ path }, @_);
+    $self->filesystem->append_file($self->{ path }, @_, $self->{ options });
 }
 
 sub delete {
@@ -135,7 +141,8 @@ sub delete {
 }
 
 sub text {
-    my $text = shift->read(@_);
+    my $self = shift;
+    my $text = $self->read(@_, $self->{ options });
     # TODO: bless?
     return $text;
 }
@@ -144,7 +151,34 @@ sub accept {
     $_[1]->visit_file($_[0]);
 }
 
+sub encoding {
+    my $self = shift;
+    if (@_) {
+        my $layer = shift;
+        # be generous in what you accept...
+        $layer = ":$layer" unless $layer =~ /^:/;
+        $self->{ options }->{ encoding } = $layer;
+    }
+    return $self->{ options }->{ encoding };
+}
+
+class->methods(
+    map {
+        my $item = $_;              # lexical copy for closure
+        $item => sub {
+            my $self = shift;
+            # ...and strict in what you provide
+            $self->encoding(':' . $item); 
+            return $self;
+        }
+    }
+    qw( raw utf8 crlf bytes )
+);
+
+
 1;
+
+__END__
 
 =head1 NAME
 
@@ -239,6 +273,12 @@ of component names.
     my $file = File('path', 'to', 'file');
     my $file = File(['path', 'to', 'file']);
 
+You can specify a reference to a hash array of additional configuration items
+as the final argument.  At present, there is only one configuration option,
+C<encoding>, which you can use to specify the encoding of the file.
+
+    my $file = File('path' , 'to', 'file', { encoding => 'utf8' });
+
 =head1 METHODS
 
 In addition to the methods inherited from L<Badger::Filesystem::Path>, the
@@ -246,7 +286,7 @@ following methods are defined or re-defined.
 
 =head2 init(\%config)
 
-Customised initialisation method specific to files.
+Customised initialisation method specific to files.  
 
 =head2 volume() / vol()
 
@@ -411,6 +451,47 @@ This method is called to dispatch a visitor to the correct method for a
 filesystem object.  In the L<Badger::Filesystem::File> class, it calls the 
 visitor L<visit_file()|Badger::Filesystem::Visitor/visit_file()> method,
 passing the C<$self> object reference as an argument.
+
+=head2 encoding($enc)
+
+This method can be used to get or set the encoding for the file.
+
+    $file->encoding(':utf8');
+
+The encoding will affect all operations that read data from, or write data
+to the file.
+
+=head2 utf()
+
+A method of convenience to set the file's encoding to UTF-8.  
+
+    $file->utf8;
+
+It has the same affect as calling the L<encoding()> method with an argument
+of C<:utf8>.  See C<perldoc -f binmode> for further information.
+
+    # same
+    $file->encoding(':utf8');
+
+
+The method returns the file object itself, so can be used in a chain.
+
+    $file->utf8->must_exist.
+
+=head2 bytes()
+
+Like C<utf8()>, this is a method of convenience to set the file encoding 
+to C<:bytes>.
+
+=head2 crlf()
+
+Like C<utf8()>, this is a method of convenience to set the file encoding 
+to C<:crlf>.
+
+=head2 raw()
+
+Like C<utf8()>, this is a method of convenience to set the file encoding 
+to C<:raw>.
 
 =head1 AUTHOR
 

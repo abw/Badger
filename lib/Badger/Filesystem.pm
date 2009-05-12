@@ -408,6 +408,7 @@ sub open_file {
     my $self = shift;
     my $name = shift;
     my $mode = $_[0] || 'r';            # leave it in @_ for IO::File
+    my $opts = @_ && ref $_[-1] eq HASH ? pop(@_) : { };
     my $path = $mode eq 'r' 
         ? $self->definitive_read($name)
         : $self->definitive_write($name);
@@ -415,13 +416,19 @@ sub open_file {
     require IO::File;
     $self->debug("about to open file $path (", join(', ', @_), ")\n") if $DEBUG;
 
-    return IO::File->new($path, @_)
+    my $fh = IO::File->new($path, @_)
         || $self->error_msg( open_failed => file => $path => $! );
+
+    $fh->binmode( $opts->{ encoding } ) 
+        if $opts->{ encoding };
+
+    return $fh;
 }
 
 sub read_file {
     my $self = shift;
-    my $fh   = $self->open_file(shift, 'r');
+    my $opts = @_ && ref $_[-1] eq HASH ? pop(@_) : { };
+    my $fh   = $self->open_file(shift, 'r', $opts);
     return wantarray
         ? <$fh>
         : do { local $/ = undef; <$fh> };
@@ -429,7 +436,8 @@ sub read_file {
 
 sub write_file {
     my $self = shift;
-    my $fh   = $self->open_file(shift, 'w');
+    my $opts = @_ && ref $_[-1] eq HASH ? pop(@_) : { };
+    my $fh   = $self->open_file(shift, 'w', $opts);
     return $fh unless @_;           # return handle if no args
     print $fh @_;                   # or print args and close
     $fh->close;
@@ -438,7 +446,8 @@ sub write_file {
 
 sub append_file {
     my $self = shift;
-    my $fh   = $self->open_file(shift, 'a');
+    my $opts = @_ && ref $_[-1] eq HASH ? pop(@_) : { };
+    my $fh   = $self->open_file(shift, 'a', $opts);
     return $fh unless @_;           # return handle if no args
     print $fh @_;                   # or print args and close
     $fh->close;
