@@ -119,12 +119,6 @@ sub move_from {
     $self->filesystem->move_file(shift, $self->{ path }, @_);
 }
 
-sub chmod {
-    my $self = shift;
-    $self->filesystem->chmod_path($self->{ path }, @_);
-    return $self;
-}
-
 sub print {
     my $self = shift;
     $self->write( join(BLANK, @_) );
@@ -406,12 +400,6 @@ Arguments are as per L<copy()>.
 Like L<move_to()> but working in reverse. 
 
     $target_file->move_from( $source_file );
-
-=head2 chmod($perms)
-
-This method changes the file permissions on a file.
-
-    $file->chmod(0775);
 
 =head2 print(@content)
 

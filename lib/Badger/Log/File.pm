@@ -113,7 +113,8 @@ Badger::Log::File - writes log messages to a log file
 =head1 DESCRIPTION
 
 This module is a subclass of L<Badger::Log> that implements a simple 
-mechanism for logging messages to a file.
+mechanism for logging messages to a file.  It uses L<Badger::Filesystem>
+for all the underlying file operations.
 
 =head1 CONFIGURATION OPTIONS
 
@@ -182,6 +183,10 @@ Copyright (C) 2005-2009 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+L<Badger::Log>
 
 =cut
 

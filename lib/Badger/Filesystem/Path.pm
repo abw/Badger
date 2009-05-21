@@ -269,6 +269,12 @@ sub stats {
         :  $stats;
 }
 
+sub chmod {
+    my $self = shift;
+    $self->filesystem->chmod_path($self->{ path }, @_);
+    return $self;
+}
+
 sub extension {
     my $self = shift;
     # TODO: is this filesystem specific?
@@ -668,6 +674,12 @@ L<Badger::Filesystem::Directory> subclasses.
     $path->create;                          # FAIL
     $dir->create;                           # OK
     $file->create;                          # OK
+
+=head2 chmod($perms)
+
+This method changes the file permissions on a file or directory.
+
+    $file->chmod(0775);
 
 =head2 stat()
 

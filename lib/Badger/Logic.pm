@@ -215,15 +215,16 @@ Badger::Logic - parse and evaluate simple logical expressions
 =head1 DESCRIPTION
 
 This module implements a simple parser and evaluator for boolean logic
-expressions.
+expressions.  It evolved from a piece of code that I originally wrote to
+handle role-based authentication in web applications. 
 
 =head1 EXPORTABLE SUBROUTINES
 
 =head2 LOGIC
 
-This is a shortcut alias to C<Badger::LOGIC>.
+This is a shortcut alias to C<Badger::Logic>.
 
-    use Badger::LOGIC 'LOGIC';
+    use Badger::Logic 'LOGIC';
     
     my $logic = LOGIC->new($expr);      # same as Badger::Logic->new($expr);
 

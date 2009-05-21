@@ -194,20 +194,6 @@ sub format {
     return strftime($fmt, @$self{@SMHD}, $self->{ month } - 1, $self->{ year } - 1900);
 }
 
-sub _OLD_longmonth {
-    my $self = shift;
-    return $self->{ longmonth }
-       ||= $MONTHS[$self->{ month }];
-}
-
-sub _OLD_longdate {
-    my $self = shift;
-    # init the longmonth value
-    $self->longmonth;
-    return $self->{ longdate }
-       ||= sprintf( $LONGDATE_FORMAT, @$self{ qw( day longmonth year ) } );
-}
-
 sub date {
     my $self = shift;
     return $self->{ date } 
@@ -496,7 +482,9 @@ This module implements a small and simple object for representing a moment in
 time. Its scope is intentionally limited to the kind of applications that
 require very basic date and time functionality with minimal overhead. A
 typical example would be a CGI script or library generating a timestamp for a
-cookie, or printing out a "last modified" at the bottom of a web page.
+cookie, printing out a "last modified" date at the bottom of a web page, or 
+adding a time stamp to a log file message without having the remember the
+right incantation to pass to C<strftime()>.
 
 For any non-trivial date manipulation you should almost certainly be using
 the most excellent L<DateTime> modules instead.

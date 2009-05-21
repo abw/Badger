@@ -22,7 +22,7 @@ use Badger::Test
 
 BEGIN {
     eval "use Moose ()";
-    skip_all("You don't have Moose installed") if $@;
+    skip_all("You don't have Moose installed, shame on you!") if $@;
     plan(6);
 }
 

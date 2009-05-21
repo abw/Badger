@@ -10,19 +10,43 @@ Added chmod()
 
 =head2 Version 0.06
 
-Added L<debug_msg()|Badger::Base/debug_msg()> to L<Badger::Base>.
-Also add C<Badger::Base::Trial> definition for use with the 
-L<try()|Badger::Base/try()> method.
+Added L<copy_file()|Badger::Filesystem/copy_file()> and
+L<move_file()|Badger::Filesystem/move_file()> to L<Badger::Filesystem> and
+L<copy()|Badger::Filesystem/copy()> and L<move()|Badger::Filesystem/move()>
+methods to L<Badger::Filesystem::File>.
 
-Added L<Badger::Log> and L<Badger::Log::File>.
+Added L<chmod_path()|Badger::Filesystem/chmod_path()> to L<Badger::Filesystem>
+and L<chmod()|Badger::Filesystem::Path/chmod()> to L<Badger::Filesystem::Path>.
+
+Added L<Bin()|Badger::Filesystem/Bin()> to L<Badger::Filesystem>.
+
+Added the L<encoding()|Badger::Filesystem::File/encoding()> method to 
+L<Badger::Filesystem::File> for specifying the encoding of a file, along
+with the L<utf8()|Badger::Filesystem::File/utf8()>,
+L<bytes()|Badger::Filesystem::File/bytes()>,
+L<crlf()|Badger::Filesystem::File/crlf()> and 
+L<raw()|Badger::Filesystem::File/raw()> methods for enabling different 
+encoding layers.
 
 Added L<Badger::Timestamp>.
 
 Added L<Badger::Logic>.
 
-Added L<Bin()|Badger::Filesystem/Bin()> to L<Badger::Filesystem>.
+Added L<Badger::Log> and L<Badger::Log::File>.
+
+Added L<numlike()|Badger::Utils/numlike()> to L<Badger::Utils>
+as an alias for C<looks_like_number>.  It's the numerical counterpart
+to L<textlike()|Badger::Utils/textlike()> and is significantly easier
+to type.
+
+Added L<debug_msg()|Badger::Base/debug_msg()> to L<Badger::Base>. Also added
+the C<Badger::Base::Trial> class definition for use with the
+L<try()|Badger::Base/try()> method.
 
 Added L<lib|Badger/lib> import hook to L<Badger>.
+
+Added L<bclass|Badger::Class/bclass> as an alias for
+L<class|Badger::Class/class>.
 
 Changed L<Badger::Class::Config> to maintain the order of configuration
 parameters where possible (i.e. when expressed as a list ref rather than
@@ -30,7 +54,9 @@ a hash ref).  Also added C<target:var> fallback which looks in the target
 object or hash ref for the variable.  This allows options to default to 
 the values set by preceeding options.
 
-=head2 Version 0.05
+Changed L<Badger::Codec::JSON> to use L<JSON::XS> if available.
+
+=head2 Version 0.05 - 23rd December 2008
 
 Refactored L<Badger::Factory>.
 
@@ -56,7 +82,7 @@ used to create constants on the fly.
     print pi;           # 3.142
     print phi;          # 1.618
 
-=head2 Version 0.04
+=head2 Version 0.04 - 2nd December 2008
 
 Added the L<throw_msg()|Badger::Base/throw_msg()> method to L<Badger::Base>.
 
@@ -96,7 +122,7 @@ L<Badger::Prototype> to accept a single C<undef> value to clear any current
 prototype. Also added the L<has_prototype()|Badger::Prototype/has_prototype()>
 method.
 
-=head2 Version 0.03
+=head2 Version 0.03 - 7th October 2008
 
 Added delegate loaders to L<Badger>.  This provides some semantic sugar
 for loading a bunch of different C<Badger::*> modules in one go.
@@ -136,7 +162,7 @@ Mr T pities the fool that attempts to builds a production system based on
 Badger version 0.03 without first evaluating it carefully and reading the
 documentation.
 
-=head2 Version 0.02
+=head2 Version 0.02 - 6th September 2008
 
 L<Badger::Class> got the L<vars|Badger::Class/vars()> method and hook
 for declaring and defining variables.
@@ -150,7 +176,7 @@ Various documentation updates.
 Mr T admires the tenacity of anyone attempting to build a production system
 based on Badger v0.02 and hopes they have a thorough test suite.
 
-=head2 Version 0.01
+=head2 Version 0.01 - 27th August 2008
 
 This was the first release version. 
 

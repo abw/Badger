@@ -6,7 +6,7 @@ use lib;
 use Badger::Hub;
 use Badger::Class
     debug      => 0,
-    version    => '0.05_01',
+    version    => '0.05_02',
     base       => 'Badger::Base',
     import     => 'class',
     words      => 'HUB',
