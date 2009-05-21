@@ -33,6 +33,7 @@ lib/Badger/Filesystem/Visitor.pm
 lib/Badger/Hub.pm
 lib/Badger/Log.pm
 lib/Badger/Log/File.pm
+lib/Badger/Logic.pm
 lib/Badger/Mixin.pm
 lib/Badger/Prototype.pm
 lib/Badger/Rainbow.pm
@@ -66,6 +67,7 @@ t/codec/codec.t
 t/codec/codecs.t
 t/codec/encode.t
 t/codec/encoding.t
+t/codec/json.t
 t/codec/lib/My/Codec/Foo.pm
 t/codec/storable.t
 t/codec/unicode.t
@@ -108,6 +110,7 @@ t/core/lib/My/Mixin/Baz.pm
 t/core/lib/My/Mixin/Foo.pm
 t/core/lib/My/Widget.pm
 t/core/lib/My/Wodget.pm
+t/core/logic.t
 t/core/mixin.t
 t/core/prototype.t
 t/core/rainbow.t
@@ -116,6 +119,7 @@ t/core/timestamp.t
 t/core/trace.t
 t/core/utils.t
 t/filesystem/directory.t
+t/filesystem/encoding.t
 t/filesystem/file.t
 t/filesystem/filesystem.t
 t/filesystem/path.t
@@ -123,6 +127,7 @@ t/filesystem/testfiles/callsigns
 t/filesystem/testfiles/dirtest1
 t/filesystem/testfiles/dirtest2
 t/filesystem/testfiles/newfile
+t/filesystem/testfiles/utf8_data
 t/filesystem/testfiles/vdir_four/wibble
 t/filesystem/testfiles/vdir_four/wobble/hello
 t/filesystem/testfiles/vdir_one/foo

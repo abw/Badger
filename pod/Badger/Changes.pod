@@ -4,10 +4,6 @@ Badger::Changes - Summary of changes in the Badger toolkit
 
 =head1 CHANGES
 
-Added copy_file() and move_file() methods to Badger::Filesystem.
-Added copy() and move() methods to Badger::Filesystem::File.
-Added chmod()
-
 =head2 Version 0.06
 
 Added L<copy_file()|Badger::Filesystem/copy_file()> and
@@ -56,6 +52,9 @@ the values set by preceeding options.
 
 Changed L<Badger::Codec::JSON> to use L<JSON::XS> if available.
 
+Mr T is now using Badger 0.06 in production code and is happy to report that
+everything seems to be working rather well.  Anyone for a game of tennis?
+
 =head2 Version 0.05 - 23rd December 2008
 
 Refactored L<Badger::Factory>.
@@ -81,6 +80,9 @@ used to create constants on the fly.
     print e;            # 2.718
     print pi;           # 3.142
     print phi;          # 1.618
+
+Mr T is starting to feel rather confident about building a production system
+based on Badger v0.05.
 
 =head2 Version 0.04 - 2nd December 2008
 
@@ -121,6 +123,9 @@ Changed the L<prototype()|Badger::Prototype/prototype()> method in
 L<Badger::Prototype> to accept a single C<undef> value to clear any current
 prototype. Also added the L<has_prototype()|Badger::Prototype/has_prototype()>
 method.
+
+Mr T is looking on the bright side about the possibility of building a 
+production system based on Badger v0.04, but still advises caution.
 
 =head2 Version 0.03 - 7th October 2008
 
