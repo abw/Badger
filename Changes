@@ -2,7 +2,49 @@ NAME
     Badger::Changes - Summary of changes in the Badger toolkit
 
 CHANGES
-  Version 0.05
+  Version 0.06
+    Added copy_file() and move_file() to Badger::Filesystem and copy() and
+    move() methods to Badger::Filesystem::File.
+
+    Added chmod_path() to Badger::Filesystem and chmod() to
+    Badger::Filesystem::Path.
+
+    Added Bin() to Badger::Filesystem.
+
+    Added the encoding() method to Badger::Filesystem::File for specifying
+    the encoding of a file, along with the utf8(), bytes(), crlf() and raw()
+    methods for enabling different encoding layers.
+
+    Added Badger::Timestamp.
+
+    Added Badger::Logic.
+
+    Added Badger::Log and Badger::Log::File.
+
+    Added numlike() to Badger::Utils as an alias for "looks_like_number".
+    It's the numerical counterpart to textlike() and is significantly easier
+    to type.
+
+    Added debug_msg() to Badger::Base. Also added the "Badger::Base::Trial"
+    class definition for use with the try() method.
+
+    Added lib import hook to Badger.
+
+    Added bclass as an alias for class in Badger::Class.
+
+    Changed Badger::Class::Config to maintain the order of configuration
+    parameters where possible (i.e. when expressed as a list ref rather than
+    a hash ref). Also added "target:var" fallback which looks in the target
+    object or hash ref for the variable. This allows options to default to
+    the values set by preceeding options.
+
+    Changed Badger::Codec::JSON to use JSON::XS if available.
+
+    Mr T is now using Badger 0.06 in production code and is happy to report
+    that everything seems to be working rather well. Anyone for a game of
+    tennis?
+
+  Version 0.05 - 23rd December 2008
     Refactored Badger::Factory.
 
     Added support to Badger::Exporter for the "=" pseudo-sigil which can be
@@ -20,14 +62,17 @@ CHANGES
                 }
             };
         
-        package main;
+    package main;
         use Badger::Example ':math';
         
-        print e;            # 2.718
+    print e;            # 2.718
         print pi;           # 3.142
         print phi;          # 1.618
 
-  Version 0.04
+    Mr T is starting to feel rather confident about building a production
+    system based on Badger v0.05.
+
+  Version 0.04 - 2nd December 2008
     Added the throw_msg() method to Badger::Base.
 
     Added init_method hook to Badger::Class and initialiaser() to
@@ -62,7 +107,10 @@ CHANGES
     "undef" value to clear any current prototype. Also added the
     has_prototype() method.
 
-  Version 0.03
+    Mr T is looking on the bright side about the possibility of building a
+    production system based on Badger v0.04, but still advises caution.
+
+  Version 0.03 - 7th October 2008
     Added delegate loaders to Badger. This provides some semantic sugar for
     loading a bunch of different "Badger::*" modules in one go.
 
@@ -96,7 +144,7 @@ CHANGES
     on Badger version 0.03 without first evaluating it carefully and reading
     the documentation.
 
-  Version 0.02
+  Version 0.02 - 6th September 2008
     Badger::Class got the vars method and hook for declaring and defining
     variables.
 
@@ -108,7 +156,7 @@ CHANGES
     Mr T admires the tenacity of anyone attempting to build a production
     system based on Badger v0.02 and hopes they have a thorough test suite.
 
-  Version 0.01
+  Version 0.01 - 27th August 2008
     This was the first release version.
 
     Mr T pities the fool who builds a production system based on Badger
