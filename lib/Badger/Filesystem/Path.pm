@@ -40,27 +40,54 @@ use Badger::Class
         missing  => 'No %s specified',
     };
 
+use Badger::Timestamp;
 use Badger::Filesystem;
 use Badger::Filesystem::Directory;
 
+
 our $FILESYSTEM  = 'Badger::Filesystem';
+our $TIMESTAMP   = 'Badger::Timestamp';
+our $MATCH_EXT   = qr/\.([^\.]+)$/;       # TODO: is this filesystem-specific?
 our @VDN_FIELDS  = qw( volume directory name );
 our @VD_FIELDS   = qw( volume directory );
+our @TS_FIELDS   = qw( accessed created modified );
 our @STAT_FIELDS = qw( device inode mode links user group device_type 
                        size accessed modified created block_size blocks
                        readable writeable executable owner );
+our $TS_FIELD_NO = {
+    # This starts out as an inclusion map indicating the fields that we're
+    # interested in adding timestamp support for.  The code below fills in 
+    # the correct values for offsets in the stats array
+    map { $_ => -1 }
+    @TS_FIELDS
+};
 
-# TODO: is this filesystem-specific?
-our $MATCH_EXT   = qr/\.([^\.]+)$/;
-
-# generate methods to access stat fields
+# generate methods to access stat fields: mode(), accessed(), created(), etc.
 my $n = 0;
 class->methods(
     map { 
-        my $m = $n++;       # new lexical variable to bind in closure
+        my $m = $n++;           # new lexical variable to bind in closure
+        $TS_FIELD_NO->{ $_ } &&= $m;
         $_ => sub { $_[0]->stats->[$m] }
-    } @STAT_FIELDS
+    } 
+    @STAT_FIELDS
 );
+
+# generate accessed_on(), created_on() and modified_on() methods to 
+# return Badger::Timestamp objects
+class->methods(
+    map { 
+        my $s = $_;             # new lexical variables to bind in closure
+        my $t = $s . '_on';     # method name and internal cache name
+        my $n = $TS_FIELD_NO->{ $s } || die "No timestamp field number for $s";
+        $t => sub { 
+            return $_[0]->{ $t } 
+                ||= $TIMESTAMP->new( $_[0]->stats->[$n] )
+        }
+    } 
+    @TS_FIELDS
+);
+
 
 # define some aliases
 *is_dir    = \&is_directory;
@@ -779,15 +806,34 @@ Returns the total size of the file in bytes.  See L<stat()>.
 Returns the time (in seconds since the epoch) that the file was last accessed.
 See L<stat()>.
 
+=head2 accessed_on
+
+Returns a L<Badger::Timestamp> object for the L<accessed()> time.
+
+    print $file->accessed_on->date;     # e.g. 2009/05/25
+
 =head2 modified
 
 Returns the time (in seconds since the epoch) that the file was last modified.
 See L<stat()>.
 
+=head2 modified_on
+
+Returns a L<Badger::Timestamp> object for the L<modified()> time.
+
+    print $file->modified_on->time;     # e.g. 12:19:42
+
 =head2 created
 
 Returns the time (in seconds since the epoch) that the file was created. See
 L<stat()>.
+
+=head2 created_on
+
+Returns a L<Badger::Timestamp> object for the L<created()> time.
+
+    print $file->created_on;            # e.g. 2009/05/25 12:19:42
+                                        # (via auto-stringification)
 
 =head2 block_size
 
