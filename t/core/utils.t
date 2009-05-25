@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural';
 use Badger::Debug;
 use Badger::Test 
-    tests => 34,
+    tests => 40,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -153,6 +153,33 @@ my %hash = (x => 10);
 lock_hash(%hash);
 ok( ! eval { $hash{x} = 20 }, 'could not modify read-only hash' );
 like( $@, qr/Modification of a read-only value attempted/, 'got read-only error' );
+
+
+#-----------------------------------------------------------------------
+# Import from Badger::Timestamp
+#-----------------------------------------------------------------------
+
+use Badger::Utils 'Timestamp Now';
+
+my $ts = Now;
+is( ref $ts, 'Badger::Timestamp', 'Now is a Badger::Timestamp' );
+
+$ts = Timestamp('2009/05/25 11:31:00');
+is( ref $ts, 'Badger::Timestamp', 'Timestamp returned a Badger::Timestamp' );
+is( $ts->year, 2009, 'got timestamp year' );
+is( $ts->month, '05', 'got timestamp month' );
+is( $ts->day, 25, 'got timestamp day' );
+
+
+#-----------------------------------------------------------------------
+# Import from Badger::Logic
+#-----------------------------------------------------------------------
+
+use Badger::Utils 'Logic';
+
+my $logic = Logic('cheese and biscuits');
+ok( blessed $logic && $logic->isa('Badger::Logic'), 'Logic returned a Badger::Logic object' );
+
 
 
 #-----------------------------------------------------------------------
