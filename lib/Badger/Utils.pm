@@ -32,20 +32,21 @@ our $DEBUG    = 0 unless defined $DEBUG;
 our $ERROR    = '';
 our $MESSAGES = { };
 our $HELPERS  = {       # keep this compact in case we don't need to use it
-    'Digest::MD5'     => 'md5 md5_hex md5_base64',
-    'Scalar::Util'    => 'blessed dualvar isweak readonly refaddr reftype 
-                          tainted weaken isvstring looks_like_number 
-                          set_prototype',
-    'List::Util'      => 'first max maxstr min minstr reduce shuffle sum',
-    'List::MoreUtils' => 'any all none notall true false firstidx 
-                          first_index lastidx last_index insert_after 
-                          insert_after_string apply after after_incl before 
-                          before_incl indexes firstval first_value lastval 
-                          last_value each_array each_arrayref pairwise 
-                          natatime mesh zip uniq minmax',
-    'Hash::Util'      => 'lock_keys unlock_keys lock_value unlock_value
-                          lock_hash unlock_hash hash_seed',
-
+    'Digest::MD5'       => 'md5 md5_hex md5_base64',
+    'Scalar::Util'      => 'blessed dualvar isweak readonly refaddr reftype 
+                            tainted weaken isvstring looks_like_number 
+                            set_prototype',
+    'List::Util'        => 'first max maxstr min minstr reduce shuffle sum',
+    'List::MoreUtils'   => 'any all none notall true false firstidx 
+                            first_index lastidx last_index insert_after 
+                            insert_after_string apply after after_incl before 
+                            before_incl indexes firstval first_value lastval 
+                            last_value each_array each_arrayref pairwise 
+                            natatime mesh zip uniq minmax',
+    'Hash::Util'        => 'lock_keys unlock_keys lock_value unlock_value
+                            lock_hash unlock_hash hash_seed',
+    'Badger::Timestamp' => 'TS Timestamp Now',
+    'Badger::Logic'     => 'LOGIC Logic',
 };
 our $DELEGATES;         # fill this from $HELPERS on demand
 
@@ -127,7 +128,6 @@ sub xprintf {
     sprintf($format, @_);
 }
 
-
 sub dotid {
     my $text = shift;       # munge $text to canonical lower case and dotted form
     $text =~ s/\W+/./g;     # e.g. Foo::Bar ==> Foo.Bar
@@ -178,9 +178,22 @@ don't use them (other than a lookup table so we know where to find them).
 
 =head1 EXPORTABLE FUNCTIONS
 
-The following exportable function are defined in addition to those that
-C<Badger::Utils> can load from L<Scalar::Util>, L<List::Util>,
-L<List::MoreUtils>, L<Hash::Util> and L<Digest::MD5>.
+C<Badger::Utils> can automatically load and export functions defined in the
+L<Scalar::Util>, L<List::Util>, L<List::MoreUtils>, L<Hash::Util> and
+L<Digest::MD5> Perl modules.
+
+It also does the same for functions and constants defined in the Badger 
+modules L<Badger::Timestamp> (L<TS|Badger::Timestamp/TS>,
+L<Timestamp()|Badger::Timestamp/Timestamp()> and
+L<Now()|Badger::Timestamp/Now()>) and L<Badger::Logic>
+(L<LOGIC|Badger::Logic/LOGIC> and L<Logic()|Badger::Logic/Logic()>).
+
+For example:
+
+    use Badger::Utils 'Now';
+    print Now->year;            # prints the current year
+
+The following exportable functions are also defined in C<Badger::Utils>
 
 =head2 UTILS
 
