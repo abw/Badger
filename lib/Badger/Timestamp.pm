@@ -22,18 +22,19 @@ package Badger::Timestamp;
 use Badger::Class
     version   => 0.03,
     debug     => 0,
+    import    => 'class CLASS',
     base      => 'Badger::Base',
     utils     => 'numlike self_params is_object',
     accessors => 'timestamp',
     as_text   => 'timestamp',
-    import    => 'class CLASS',
     is_true   => 1,
     constants => 'HASH',
     constant  => {
-        TS    => __PACKAGE__,
+        TS        => __PACKAGE__,
+        TIMESTAMP => __PACKAGE__,
     },
     exports   => {
-        any   => 'TS Timestamp Now',
+        any   => 'TS TIMESTAMP Timestamp Now',
     },
     messages  => {
         bad_timestamp => 'Invalid timestamp: %s',
@@ -530,9 +531,9 @@ Please note that this documentation may be incorrect or incomplete in places.
 
 =head1 EXPORTABLE SUBROUTINES
 
-=head2 TS
+=head2 TS / TIMESTAMP
 
-This is a shortcut alias to C<Badger::Timestamp>.
+This are shortcut aliases to C<Badger::Timestamp>.
 
     use Badger::Timestamp 'TS';
     
