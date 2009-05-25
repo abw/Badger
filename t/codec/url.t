@@ -11,11 +11,8 @@
 #
 #========================================================================
 
-use strict;
-use warnings;
-use lib qw( ./lib ../lib ../../lib );
-
 use Badger::Test 
+    lib   => '../../lib',
     tests => 2,
     debug => 'Badger::Codec::URL',
     args  => \@ARGV;

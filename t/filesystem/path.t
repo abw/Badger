@@ -18,7 +18,7 @@ use File::Spec;
 use Badger::Filesystem ':types';
 use Badger::Filesystem::Path;
 use Badger::Test 
-    tests => 46,
+    tests => 48,
     debug => 'Badger::Filesystem::Path',
     args  => \@ARGV;
 
@@ -120,11 +120,20 @@ is( Dir('/foo/bar/')->canonical, lp '/foo/bar/', 'canonical dir /foo/bar/' );
 
 
 #-----------------------------------------------------------------------
-# ext() / extension()
+# ext() / extension() / basename() / base_name()
 #-----------------------------------------------------------------------
 
 is( Path('foo.txt')->ext, 'txt', 'ext' );
 is( Path('foo/bar.baz.html')->extension, 'html', 'extension' );
+is( Path('foo.txt')->basename, 'foo', 'basename' );
+is( Path('foo.txt')->base_name, 'foo', 'base_name' );
+
+# See additional test in t/fileystem/file.t.  Note that this doesn't work
+# with base class Path objects because they have no 'name' defined - just 
+# the full 'path'. So basename() on foo/bar.baz.html returns foo/bar.baz
+# That's OK, though, because we never use the base class Path object directly
+# is( File('foo/bar.baz.html')->basename, 'bar.baz', 'multi-dotted basename' );
+
 
 #-----------------------------------------------------------------------
 # metadata
