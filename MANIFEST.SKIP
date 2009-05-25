@@ -6,6 +6,7 @@
 ^Badger-\d\.\d+\.tar\.gz$
 ^Badger-\d\.\d+\/
 \.gz$
+\.tar$
 ^blib/
 pm_to_blib
 ^new
