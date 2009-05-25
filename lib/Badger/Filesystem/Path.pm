@@ -671,15 +671,6 @@ root directory ('/') will be returned.  A relative path with only one item
 (e.g. 'foo') is assumed to be relative to the current working directory
 which will be returned (e.g. '/path/to/current/dir').
 
-=head2 extension() / ext()
-
-Returns any file extension portion following the final C<.> in the path.
-
-=head2 basename() / base_name()
-
-Returns the filename I<without> the file extension following the final 
-C<.> in the path.
-
 =head2 exists()
 
 Returns true if the path exists in the filesystem (e.g. as a file, directory,
@@ -991,6 +982,31 @@ C<Badger::Filesystem::Path> base class.
 
 Returns the file name portion of a path. This method does nothing in the
 C<Badger::Filesystem::Path> base class.
+
+=head2 extension() / ext()
+
+Returns any file extension portion following the final C<.> in the path.
+This works in the C<Badger::Filesystem::Path> base class by looking at the
+full path.
+
+    print Path('/foo/bar.txt')->extension;      # txt
+
+=head2 basename() / base_name()
+
+Returns the filename I<without> the file extension following the final 
+C<.> in the path.  This works (for some definition of "works") in the 
+C<Badger::Filesystem::Path> base class by looking at the path L<name()>,
+if defined, or the full C<path> if not.  Note that this will produce 
+unexpected results in some cases due to the fact that the base class 
+does not define a value for L<name()>.  e.g.
+
+    print Path('/foo/bar.txt')->basename;       # /foo/bar
+
+However, in most cases you would be using this through a
+L<Badger::Filesystem::File> subclass which will product the correct 
+results.
+
+    print File('/foo/bar.txt')->basename;       # bar
 
 =head1 AUTHOR
 
