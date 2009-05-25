@@ -6,7 +6,7 @@ Badger::Intro - Introduction to the Badger Toolkit
 
     # 1) have more fun
     # 2) get the job done quicker
-    # 3) make your code shinier
+    # 3) make your code skimpier
     # 4) finish work early
     # 5) go skateboarding
     # 6) enjoy life
@@ -16,7 +16,7 @@ Badger::Intro - Introduction to the Badger Toolkit
 The Badger toolkit is a collection of Perl modules designed to simplify the
 process of building object-oriented Perl applications. It provides a set of
 I<foundation classes> upon which you can quickly build robust and reliable
-systems that are simple, sexy and scalable. 
+systems that are simple, skimpy and scalable.
 
 Badger was hewn from the living rock of the Template Toolkit. It represents
 all the I<generic> bits of TT that aren't directly related to template
@@ -31,7 +31,7 @@ being too simple. It offers convenience, convention and consistency in an
 attempt to improve the Kwalitee of your code and make it more SkimpyE<trade>
 (which is my artistic interpretation of what Michael Schwern refers to as
 skimmable code - that is, code that is easy to read and also easy to skim
-over).
+over).  
 
 Badger isn't just another object system. Although it does include
 functionality to simplify the process of building objects in Perl 5, that is
@@ -45,7 +45,17 @@ then L<Moose> should almost certainly be at the top of your list.  The parts
 of Badger that deal with object construction are in some ways similar to the 
 functionality provided by L<Moose>, not to mention various other object 
 toolkits available from CPAN.  However, Badger only goes as far as doing
-what it needs to get the rest of the job done.  
+what it needs to in terms of object construction in order to get the rest of 
+the job done.  That is, providing a set of objects that do useful things.
+
+Furthermore, the choice between L<Badger>, L<Moose>, or something else isn't
+an I<either-or> decision.  There are lots of things that L<Moose> does, that 
+L<Badger> doesn't, and vice-versa.  If you need a really powerful object 
+system then L<Moose> is probably the way forward.  But that doesn't mean
+you can't use L<Badger>'s file handling tools, codecs, and other useful
+bits and pieces alongside your L<Moose> classes.  Metaphorically speaking, 
+L<Badger> and L<Moose> are best friends and they play nicely together. 
+Anyone for tennis?
 
 =head2 Overview
 
@@ -155,13 +165,6 @@ Badger core will always be dependency-free to keep it upload-to-your-ISP
 friendly.
 
 =back
-
-=head2 What's New?
-
-Version 0.04 includes various minor enhancements and cleanups to the code
-base.  This coincides with the release of L<Template::TT2>, a new 
-implementation of the Template Toolkit (v2) built on top of the Badger 
-modules.
 
 =head2 Background
 

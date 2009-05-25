@@ -4,6 +4,20 @@ Badger::Changes - Summary of changes in the Badger toolkit
 
 =head1 CHANGES
 
+This document contains a brief overview of what has changed between 
+successive version of the Badger toolkit.
+
+Mr T is our badger mascot.  He no longer pities the fool that uses Badger
+in a production system.  Which is a roundabout way of saying that Badger
+is now stable, reliable, and unlikely to change significantly in future
+versions.  
+
+Badger is already being deployed in commercial production systems that I've
+built and I wouldn't be doing that if I wasn't 99.9% certain of its
+suitability and fitness for purpose. There are no guarantees of course, but it
+may help you to sleep at night knowing that I have a heavily vested interest
+in keeping the Badger fit and healthy.
+
 =head2 Version 0.06
 
 Added L<copy_file()|Badger::Filesystem/copy_file()> and
@@ -193,7 +207,7 @@ Andy Wardley  E<lt>abw@wardley.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2008 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2008-2009 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
