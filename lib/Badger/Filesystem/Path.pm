@@ -50,6 +50,9 @@ our @STAT_FIELDS = qw( device inode mode links user group device_type
                        size accessed modified created block_size blocks
                        readable writeable executable owner );
 
+# TODO: is this filesystem-specific?
+our $MATCH_EXT   = qr/\.([^\.]+)$/;
+
 # generate methods to access stat fields
 my $n = 0;
 class->methods(
@@ -64,6 +67,7 @@ class->methods(
 *dir       = \&directory;
 *vol       = \&volume;     # goes up to 11
 *ext       = \&extension;  
+*base_name = \&basename;
 *up        = \&parent;
 *meta      = \&metadata;
 *canonical = \&absolute;
@@ -223,8 +227,6 @@ sub path_up {
 
 sub exists {
     shift->stat;
-#    my $self = shift;
- #   return $self->filesystem->stat_path($self->{ path })
 }
 
 sub must_exist {
@@ -275,10 +277,17 @@ sub chmod {
     return $self;
 }
 
+sub basename {
+    my $self = shift;
+    my $name = $self->name;
+    $name = $self->{ path } unless defined $name;
+    $name =~ s/$MATCH_EXT//g;
+    return $name;
+}
+
 sub extension {
     my $self = shift;
-    # TODO: is this filesystem specific?
-    return $self->{ path } =~ /\.([^\.]+)$/
+    return $self->{ path } =~ $MATCH_EXT
         ? $1
         : '';
 }
@@ -362,6 +371,8 @@ Badger::Filesystem::Path - generic fileystem path object
     $path->path;                    # current path
     $path->base;                    # parent directory or path itself
     $path->parent;                  # directory object for base
+    $path->extension                # filename .XXX extension
+    $path->basename                 # filename without .XXX extension
     $path->is_absolute;             # path is absolute
     $path->is_relative;             # path is relative
     $path->exists;                  # returns true/false
@@ -636,6 +647,11 @@ which will be returned (e.g. '/path/to/current/dir').
 =head2 extension() / ext()
 
 Returns any file extension portion following the final C<.> in the path.
+
+=head2 basename() / base_name()
+
+Returns the filename I<without> the file extension following the final 
+C<.> in the path.
 
 =head2 exists()
 
