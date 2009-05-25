@@ -2859,9 +2859,14 @@ L<SUBCLASSING Badger::Class>.
 The name of the codecs module, as used by the L<codecs()> method: 
 C<Badger::Codecs>
 
+=head2 CONFIG
+
+The name of the configuration module, as used by the L<config()> method:
+C<Badger::Class::Config>
+
 =head2 CONSTANTS
 
-The name of the constants method, as used by the L<constants()> metho:
+The name of the constants method, as used by the L<constants()> method:
 C<Badger::Constants>
 
 =head2 DEBUG
@@ -2904,6 +2909,11 @@ C<Badger::Mixin>
 
 The name of the utilities module, as used by the L<utils()> method:
 C<Badger::Utils>
+
+=head2 VARS
+
+The name of the variables module, as used by the L<vars()> method:
+C<Badger::Class::Vars>
 
 =head1 REALLY INTERNAL CONSTANTS 
 
