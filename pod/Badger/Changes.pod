@@ -38,7 +38,15 @@ L<crlf()|Badger::Filesystem::File/crlf()> and
 L<raw()|Badger::Filesystem::File/raw()> methods for enabling different 
 encoding layers.
 
-Added L<Badger::Timestamp>.
+Added the L<codec()|Badger::Filesystem::File/codec()> method to 
+L<Badger::Filesystem::File> for specifying a serialisation codec to use in 
+conjunction with the new  L<data()|Badger::Filesystem::File/data()> method.
+
+Added L<Badger::Timestamp>. This is returned by the new
+L<created()|Badger::Filesystem::Path/created()>,
+L<accessed()|Badger::Filesystem::Path/accessed()> and
+L<modified()|Badger::Filesystem::Path/modified()> methods in
+L<Badger::Filesystem::Path>.
 
 Added L<Badger::Logic>.
 

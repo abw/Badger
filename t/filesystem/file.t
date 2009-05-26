@@ -75,13 +75,13 @@ is( File('foo/bar.baz.html')->basename, 'bar.baz', 'multi-dotted basename' );
 # timestamps
 #-----------------------------------------------------------------------
 
-my $ts = $file->created_on;
+my $ts = $file->created;
 is( ref($ts), TIMESTAMP, 'created_on() returned a Badger::Timestamp' );
 
-$ts = $file->accessed_on;
+$ts = $file->accessed;
 is( ref($ts), TIMESTAMP, 'accessed_on() returned a Badger::Timestamp' );
 
-$ts = $file->modified_on;
+$ts = $file->modified;
 is( ref($ts), TIMESTAMP, 'modified_on() returned a Badger::Timestamp' );
 
 

@@ -17,7 +17,7 @@ use File::Spec;
 use Badger::Class
     version      => 0.01,
     debug        => 0,
-    base         => 'Badger::Base Badger::Exporter',
+    base         => 'Badger::Filesystem::Base Badger::Exporter',
     import       => 'class',
     constants    => 'HASH ARRAY TRUE',
     get_methods  => 'path name volume directory',
@@ -31,7 +31,7 @@ use Badger::Class
         STAT_PATH    => 17,         # offset in extended stat fields
     },
     exports      => {
-        tags     => { fields => '@VDN_FIELDS @VD_FIELDS @STAT_FIELDS' },
+        tags     => { fields => '@STAT_FIELDS' },
     },
     messages     => {
         no_exist => '%s does not exist: %s',
@@ -48,44 +48,51 @@ use Badger::Filesystem::Directory;
 our $FILESYSTEM  = 'Badger::Filesystem';
 our $TIMESTAMP   = 'Badger::Timestamp';
 our $MATCH_EXT   = qr/\.([^\.]+)$/;       # TODO: is this filesystem-specific?
-our @VDN_FIELDS  = qw( volume directory name );
-our @VD_FIELDS   = qw( volume directory );
-our @TS_FIELDS   = qw( accessed created modified );
+our @VDN_FIELDS  = @Badger::Filesystem::Base::VDN_FIELDS;
 our @STAT_FIELDS = qw( device inode mode links user group device_type 
-                       size accessed modified created block_size blocks
+                       size atime mtime ctime block_size blocks
                        readable writeable executable owner );
-our $TS_FIELD_NO = {
-    # This starts out as an inclusion map indicating the fields that we're
-    # interested in adding timestamp support for.  The code below fills in 
-    # the correct values for offsets in the stats array
-    map { $_ => -1 }
-    @TS_FIELDS
+our $STAT_FIELD  = { 
+    # In here we'll store the map from stat field name to number
+    #   device => 0,
+    #   inode  => 1, 
+    #   ...etc...
 };
 
-# generate methods to access stat fields: mode(), accessed(), created(), etc.
+our $TS_FIELD = {
+    # On the left we have the timestamp methods we want to generate as 
+    # wrappers around the stat fields listed on the right.
+    created  => 'ctime',
+    accessed => 'atime',
+    modified => 'mtime',
+};
+
+# generate methods to access stat fields: mode(), atime(), ctime(), etc.
 my $n = 0;
+
 class->methods(
     map { 
-        my $m = $n++;           # new lexical variable to bind in closure
-        $TS_FIELD_NO->{ $_ } &&= $m;
-        $_ => sub { $_[0]->stats->[$m] }
+        my $m = $n++;                       # new lexical variable for closure
+        $STAT_FIELD->{ $_ } = $m;           # fill in $STAT_FIELD entry
+        $_ => sub { $_[0]->stats->[$m] }    # generate subroutine
     } 
     @STAT_FIELDS
 );
 
-# generate accessed_on(), created_on() and modified_on() methods to 
-# return Badger::Timestamp objects
+# generate accessed(), created() and modified() methods which return
+# Badger::Timestamp objects for the atime, ctime and mtime stat values
+
 class->methods(
     map { 
-        my $s = $_;             # new lexical variables to bind in closure
-        my $t = $s . '_on';     # method name and internal cache name
-        my $n = $TS_FIELD_NO->{ $s } || die "No timestamp field number for $s";
-        $t => sub { 
-            return $_[0]->{ $t } 
-                ||= $TIMESTAMP->new( $_[0]->stats->[$n] )
+        my $method = $_;                    # new lexical variable for closure
+        my $stat   = $TS_FIELD->{ $_ };
+        my $statno = $STAT_FIELD->{ $stat };
+        $method => sub { 
+            return $_[0]->{ $method } 
+                ||= $TIMESTAMP->new( $_[0]->stats->[$statno] )
         }
     } 
-    @TS_FIELDS
+    keys %$TS_FIELD
 );
 
 
@@ -177,8 +184,8 @@ sub definitive {
 sub collapse {
     my $self = shift->absolute;
     my $fs   = $self->filesystem;
-    $self->{ directory } = $fs->collapse_directory($self->{ directory });
-    $self->{ path      } = $fs->join_path(@$self{@VDN_FIELDS});
+    $self->{ directory } = $fs->collapse_directory( $self->{ directory } );
+    $self->{ path      } = $fs->join_path( @$self{ @VDN_FIELDS } );
     return $self;
 }
 
@@ -598,7 +605,7 @@ filesystem).
     my $path = Path('/foo/bar/../baz')->collapse;
     print $path;   # /foo/baz
 
-See the L<collapse_dir()|Badger::Filesystem/collapse()> method in 
+See the L<collapse_dir()|Badger::Filesystem/collapse_dir()> method in 
 L<Badger::Filesystem> for further information.
 
 =head2 above($child)
@@ -792,39 +799,46 @@ Returns the device identifier (for special files only).  See L<stat()>.
 
 Returns the total size of the file in bytes.  See L<stat()>.
 
-=head2 accessed
+=head2 atime
 
 Returns the time (in seconds since the epoch) that the file was last accessed.
 See L<stat()>.
 
-=head2 accessed_on
+=head2 accessed
 
-Returns a L<Badger::Timestamp> object for the L<accessed()> time.
+Returns a L<Badger::Timestamp> object for the L<atime()> value.  This object
+will auto-stringify to produce an ISO-8601 formatted date.  You can also 
+call various methods to access different parts of the time and/or date.
 
-    print $file->accessed_on->date;     # e.g. 2009/05/25
+    print $file->accessed;              # 2009/04/20 16:25:00
+    print $file->accessed->date;        # 2009/04/20
+    print $file->accessed->year;        # 2009
 
-=head2 modified
+=head2 mtime
 
 Returns the time (in seconds since the epoch) that the file was last modified.
 See L<stat()>.
 
-=head2 modified_on
+=head2 modified
 
-Returns a L<Badger::Timestamp> object for the L<modified()> time.
+Returns a L<Badger::Timestamp> object for the L<mtime()> value.
 
-    print $file->modified_on->time;     # e.g. 12:19:42
+    print $file->modified;              # 2009/04/20 16:25:00
+    print $file->modified->time;        # 16:25:0
+    print $file->modified->hour;        # 16
 
-=head2 created
+=head2 ctime
 
 Returns the time (in seconds since the epoch) that the file was created. See
 L<stat()>.
 
-=head2 created_on
+=head2 created
 
-Returns a L<Badger::Timestamp> object for the L<created()> time.
+Returns a L<Badger::Timestamp> object for the L<ctime()> value.
 
-    print $file->created_on;            # e.g. 2009/05/25 12:19:42
-                                        # (via auto-stringification)
+    print $file->created;               # 2009/04/20 16:25:00
+    print $file->created->date;         # 2009/04/20
+    print $file->created->time;         # 16:25:00
 
 =head2 block_size
 

@@ -17,7 +17,7 @@ use Cwd 'getcwd';
 use Badger::Class
     version   => 0.01,
     debug     => 0,
-    base      => 'Badger::Prototype',
+    base      => 'Badger::Prototype Badger::Filesystem::Base',
     import    => 'class',
     utils     => 'params is_object',
     constants => 'HASH ARRAY TRUE REFS PKG',
@@ -174,6 +174,9 @@ sub init {
     # current working can be specified explicitly, otherwise we leave it
     # undefined and let cwd() call getcwd() determine it dynamically
     $self->{ cwd } = $config->{ cwd };
+
+    # additional options, e.g. codec, encoding
+    $self->init_options($config);
     
     return $self;
 }
@@ -606,25 +609,27 @@ sub accept {
 sub _child_args {
     my $self = shift->prototype;
     my $type = shift;
-    my $args;
-    
-    if (! @_) {
-        $args = { path => undef };
+    my $args = { %{ $self->{ options } } };
+
+    if (@_ && ref $_[-1] eq HASH) {
+        my $more = pop @_;
+        @$args{ keys %$more } = values %$more;
+    }
+
+    if (@_ > 1) {
+        $args->{ path } = [@_];
     }
     elsif (@_ == 1) {
-        $args = ref $_[0] eq HASH ? shift : { path => shift };
-#            : ! ref $_[0] ? { path => shift }
-#            : return $self->error_msg( unexpected => "$type arguments" => $_[0], 'hash ref' )
+        $args->{ path } = shift;
     }
     else {
-        $args = { path => [@_] };
+        $args->{ path } = undef;
     }
+
     $args->{ filesystem } = $self;
     return $args;
 }
 
-
-# TODO: move file?
 
 
 1;

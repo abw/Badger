@@ -24,33 +24,17 @@ use Badger::Class
         is_file => 1,
     };
 
-use Badger::Filesystem::Path ':fields';
 
+# aliases
 *base = \&directory;
 *copy = \&copy_to;
 *move = \&move_to;
 
+
 sub init {
     my ($self, $config) = @_;
-    my ($path, $vol, $dir, $name);
-    my $fs = $self->filesystem;
-
-    if ($config->{ path }) {
-        $path = $self->{ path } = $fs->join_dir($config->{ path });
-        @$self{@VDN_FIELDS} = $fs->split_path($path);
-    }
-    elsif ($self->{ name } = $config->{ name }) {
-        @$self{@VD_FIELDS} = ($vol, $dir) = map { defined($_) ? $_ : '' } @$config{@VD_FIELDS};
-        $self->{ path } = $fs->join_path($vol, $dir, $self->{ name });
-    }
-    else {
-        $self->error_msg( missing => 'path or name' );
-    }
-    
-    my $opts = $self->{ options } = { };
-    $self->encoding( $config->{ encoding } )
-        if $config->{ encoding };
-        
+    $self->init_path($config);
+    $self->init_options($config);
     return $self;
 }
 
@@ -99,6 +83,11 @@ sub write {
     $self->filesystem->write_file($self->{ path }, @_, $self->{ options });
 }
 
+sub append {
+    my $self = shift;
+    $self->filesystem->append_file($self->{ path }, @_, $self->{ options });
+}
+
 sub copy_to {
     my $self = shift;
     $self->filesystem->copy_file($self->{ path }, @_);
@@ -124,11 +113,6 @@ sub print {
     $self->write( join(BLANK, @_) );
 }
 
-sub append {
-    my $self = shift;
-    $self->filesystem->append_file($self->{ path }, @_, $self->{ options });
-}
-
 sub delete {
     my $self = shift;
     $self->filesystem->delete_file($self->{ path }, @_);
@@ -137,23 +121,28 @@ sub delete {
 sub text {
     my $self = shift;
     my $text = $self->read(@_, $self->{ options });
-    # TODO: bless?
     return $text;
+}
+
+sub data {
+    my $self  = shift;
+    my $codec = $self->{ options }->{ codec };
+    my $data;
+    
+    if (@_) {
+        $data = @_ == 1 ? shift : [@_];
+        $data = $codec->encode($data) if $codec;
+        return $self->write($data);
+    }
+    else {
+        $data = $self->read;
+        $data = $codec->decode($data) if $codec;
+        return $data;
+    }
 }
 
 sub accept {
     $_[1]->visit_file($_[0]);
-}
-
-sub encoding {
-    my $self = shift;
-    if (@_) {
-        my $layer = shift;
-        # be generous in what you accept...
-        $layer = ":$layer" unless $layer =~ /^:/;
-        $self->{ options }->{ encoding } = $layer;
-    }
-    return $self->{ options }->{ encoding };
 }
 
 class->methods(
@@ -268,10 +257,29 @@ of component names.
     my $file = File(['path', 'to', 'file']);
 
 You can specify a reference to a hash array of additional configuration items
-as the final argument.  At present, there is only one configuration option,
-C<encoding>, which you can use to specify the encoding of the file.
+as the final argument.  At present, there is are two configuration options.
+The first, C<encoding>, can be use to specify the encoding of the file.
+This is applied through Perl's IO layer encodings.  See C<perldoc binmode>
+for further information.
 
     my $file = File('path' , 'to', 'file', { encoding => 'utf8' });
+
+The other option is C<codec>.  This allows you to define the name of a 
+L<Badger::Codec> which will be used to serialise data to and from the 
+file via the L<data()> method.
+
+    my $file = File('path' , 'to', 'file', { codec => 'storable' });
+    
+    # save some data, automatically serialised via Storable (freeze)
+    $file->data({
+        message => 'Hello World',
+        numbers => [1.618, 2.718, 3.142],
+    });
+    
+    # later... load data again and automatically de-serialise (thaw)
+    $data = $file->data;
+    print $data->{ message }, "\n";             # Hello World
+    print join(', ', @{ $data->{ numbers } });  # 1.618, 2.718, 3.142
 
 =head1 METHODS
 
@@ -449,6 +457,9 @@ This method can be used to get or set the encoding for the file.
 The encoding will affect all operations that read data from, or write data
 to the file.
 
+TODO: note that you can call encoding() on a directory or filesystem to make
+that the default for all files contained therein
+
 =head2 utf()
 
 A method of convenience to set the file's encoding to UTF-8.  
@@ -480,6 +491,68 @@ to C<:crlf>.
 
 Like C<utf8()>, this is a method of convenience to set the file encoding 
 to C<:raw>.
+
+=head2 codec()
+
+This method can be used to get or set the codec used to serialise data to
+and from the file via the L<data()> method.  The codec should be specified
+by name, using any of the names that L<Badger::Codecs> recognises or can 
+load.
+
+    $file->codec('storable');
+    
+    # first save the data to file
+    $file->data($some_data_to_save);
+    
+    # later... load the data back out
+    my $data = $file->data;
+
+You can use chained codec specifications if you want to pass the data through
+more than one codec.
+
+    $file->code('storable+base64');
+
+See L<Badger::Codecs> for further information on codecs. 
+
+TODO: note that you can call codec() on a directory or filesystem to make
+that the default for all files contained therein
+
+=head2 data(@data)
+
+This method is used to read or write serialised data to and from the file.
+When called with arguments, the method serialises the data through any 
+L<codec()> defined and writes it to the file.  A single argument should be 
+a reference to an array or hash array.
+
+    $file->data({               # either: HASH reference
+        e   => 2.718,
+        pi  => 3.142,
+        phi => 1.618,
+    });
+    
+    $file->data([               # or: ARRAY reference
+        2.718,
+        3.142,
+        1.618
+    ]);
+
+If multiple arguments are specified then they are implicitly converted to 
+a list reference.
+
+    $file->data(                # same as ARRAY reference above
+        2.718,
+        3.142,
+        1.618
+    );
+
+When called without any arguments the method will read the data from the file
+and de-serialise it using any L<codec()> that is defined.
+
+    my $data = $file->data;     # HASH or ARRAY reference
+
+If no L<codec()> is defined then the method behaves the same as a direct call
+to either L<read()> (called without arguments) or L<write()> (called with
+arguments).
 
 =head1 AUTHOR
 

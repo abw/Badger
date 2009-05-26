@@ -2,6 +2,20 @@ NAME
     Badger::Changes - Summary of changes in the Badger toolkit
 
 CHANGES
+    This document contains a brief overview of what has changed between
+    successive version of the Badger toolkit.
+
+    Mr T is our badger mascot. He no longer pities the fool that uses Badger
+    in a production system. Which is a roundabout way of saying that Badger
+    is now stable, reliable, and unlikely to change significantly in future
+    versions.
+
+    Badger is already being deployed in commercial production systems that
+    I've built and I wouldn't be doing that if I wasn't 99.9% certain of its
+    suitability and fitness for purpose. There are no guarantees of course,
+    but it may help you to sleep at night knowing that I have a heavily
+    vested interest in keeping the Badger fit and healthy.
+
   Version 0.06
     Added copy_file() and move_file() to Badger::Filesystem and copy() and
     move() methods to Badger::Filesystem::File.
@@ -15,7 +29,11 @@ CHANGES
     the encoding of a file, along with the utf8(), bytes(), crlf() and raw()
     methods for enabling different encoding layers.
 
-    Added Badger::Timestamp.
+    Added the codec() method to Badger::Filesystem::File for specifying a
+    serialisation codec to use in conjunction with the new data() method.
+
+    Added Badger::Timestamp. This is returned by the new created(),
+    accessed() and modified() methods in Badger::Filesystem::Path.
 
     Added Badger::Logic.
 
@@ -62,10 +80,10 @@ CHANGES
                 }
             };
         
-    package main;
+        package main;
         use Badger::Example ':math';
         
-    print e;            # 2.718
+        print e;            # 2.718
         print pi;           # 3.142
         print phi;          # 1.618
 
@@ -166,7 +184,7 @@ AUTHOR
     Andy Wardley <abw@wardley.org>
 
 COPYRIGHT
-    Copyright (C) 2008 Andy Wardley. All Rights Reserved.
+    Copyright (C) 2008-2009 Andy Wardley. All Rights Reserved.
 
     This module is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.

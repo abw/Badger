@@ -17,38 +17,21 @@ use Badger::Class
     debug       => 0,
     base        => 'Badger::Filesystem::Path',
     dumps       => 'path volume directory name stats',
-    constants   => 'ARRAY',
+    constants   => 'ARRAY HASH',
     constant    => {
         is_directory => 1,
         type         => 'Directory',
     };
 
-use Badger::Filesystem::Path ':fields';
-
 *dir    = \&directory;
 *dirs   = \&directories;
 *is_dir = \&is_directory;
 
+
 sub init {
     my ($self, $config) = @_;
-    my ($path, $name, $vol, $dir, @dirs);
-    my $fs = $self->filesystem;
-
-    $self->debug("init(", $self->dump_data_inline($config), ")\n") if $DEBUG;
-    
-    if ($path = $config->{ path }) {
-        $path = $self->{ path } = $fs->join_directory($path);
-        @$self{@VDN_FIELDS} = $fs->split_path($path);
-        $self->debug("path: $self->{ path }  vol: $self->{ volume }  dir: $self->{ directory }  name: $self->{ name }\n") if $DEBUG;
-    }
-    elsif ($self->{ name } = $config->{ name }) {
-        @$self{@VD_FIELDS} = ($vol, $dir) = map { defined($_) ? $_ : '' } @$config{@VD_FIELDS};
-        $self->{ path } = $fs->join_path($vol, $dir, $self->{ name });
-        $self->debug("name: $self->{ name }  vol: $self->{ volume }  dir: $self->{ directory }  name: $self->{ name }  path: $self->{ path }\n") if $DEBUG;
-    }
-    else {
-        $self->error_msg( missing => 'path or name' );
-    }
+    $self->init_path($config);
+    $self->init_options($config);
     return $self;
 }
 
@@ -58,15 +41,17 @@ sub base {
 
 sub directory {
     my $self = shift;
-    return @_
-        ? $self->filesystem->directory( $self->relative(@_) )
+    my $opts = (@_ > 1 && ref $_[-1] eq HASH) ? pop(@_) : $self->{ options };  # needs work
+    return (@_ || %$opts)
+        ? $self->filesystem->directory( @_ ? $self->relative(@_) : (), $opts )
         : $self->{ directory };
 }
 
 sub file {
     my $self = shift;
-    return @_
-        ? $self->filesystem->file( $self->relative(@_) )
+    my $opts = @_ && ref $_[-1] eq HASH ? pop(@_) : $self->{ options };
+    return (@_ || %$opts)
+        ? $self->filesystem->file( @_ ? $self->relative(@_) : (), $opts )
         : $self->error( missing => 'file name' );
 }
 
