@@ -25,6 +25,7 @@ lib/Badger/Exporter.pm
 lib/Badger/Factory.pm
 lib/Badger/Factory/Class.pm
 lib/Badger/Filesystem.pm
+lib/Badger/Filesystem/Base.pm
 lib/Badger/Filesystem/Directory.pm
 lib/Badger/Filesystem/File.pm
 lib/Badger/Filesystem/Path.pm
@@ -118,6 +119,7 @@ t/core/test.t
 t/core/timestamp.t
 t/core/trace.t
 t/core/utils.t
+t/filesystem/codec.t
 t/filesystem/directory.t
 t/filesystem/encoding.t
 t/filesystem/file.t
