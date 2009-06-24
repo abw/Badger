@@ -936,6 +936,8 @@ For example, instead of writing something like this:
 
     package Your::Module;
     
+    use strict;
+    use warnings;
     use base qw( Exporter Class::Base Class::Accessor::Fast );
     use constant {
         name => 'Badger',
@@ -956,19 +958,19 @@ You can write something like this:
     package Your::Module;
     
     use Badger::Class 
-        base        => 'Badger::Base',
-        version     => 3.14,
-        debug       => 0,
-        get_methods => 'nuts berries',
-        utils       => 'blessed',
-        constant    => {
-            name => 'Badger',
-            foo  => 'Nuts',
-            bar  => 'Berries',
+        base      => 'Badger::Base',
+        version   => 3.14,
+        debug     => 0,
+        accessors => 'nuts berries',
+        utils     => 'blessed',
+        constant  => {
+            name  => 'Badger',
+            foo   => 'Nuts',
+            bar   => 'Berries',
         },
-        exports     => { 
-            all => 'name',
-            any => 'nuts berries',
+        exports   => { 
+            all   => 'name',
+            any   => 'foo bar',
         };
 
 There are a number of benefits to this approach. First and foremost, it allows
