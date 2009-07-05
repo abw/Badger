@@ -28,6 +28,18 @@ use Badger::Class
     accessors => 'timestamp',
     as_text   => 'timestamp',
     is_true   => 1,
+    methods   => {
+        not_equal => \&compare,
+    },
+    overload  => {
+        '!='  => \&not_equal,
+        '=='  => \&equal,
+        '<'   => \&before,
+        '>'   => \&after,
+        '<='  => \&not_after,
+        '>='  => \&not_before,
+        fallback => 1,
+    },
     constants => 'HASH',
     constant  => {
         TS        => __PACKAGE__,
@@ -57,7 +69,7 @@ our @HMS             = qw( hour minute second );
 our @SMHD            = qw( second minute hour day );
 our @YMDHMS          = (@YMD, @HMS);
 our @MONTHS          = qw( xxx Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
-our @CACHE           = qw( date time longmonth longdate );
+our @CACHE           = qw( date time etime longmonth longdate );
 our $SECONDS         = {
     s => 1,
     m => 60,
@@ -135,9 +147,11 @@ sub new {
             (@$self{ @YMDHMS }) = reverse( ( localtime($time) )[0..5] );
             $self->{ year  }+= 1900;
             $self->{ month }++;
+            $self->{ etime } = $time;
         }
         elsif (is_object(ref $class || $class, $time)) {
             $self->{ timestamp } = $time->timestamp;
+            $self->{ etime     } = $time->epoch_time;
             $self->split_timestamp;
         }
         else {
@@ -182,7 +196,7 @@ sub join_timestamp {
 
 sub epoch_time {
     my $self = shift;
-    return timelocal(
+    return $self->{ etime } ||= timelocal(
         @$self{@SMHD}, 
         $self->{ month } - 1, 
         $self->{ year  } - 1900
@@ -354,8 +368,19 @@ sub uncache {
 
 sub compare {
     my $self = shift;
-    my $comp = @_ && is_object(ref $self || $self, $_[0]) ? shift : $self->new(@_);
 
+    # optimisation: if the $self object has an epoch time and a single 
+    # numerical argument is passed (also an epoch time) then we can do a 
+    # simple comparison
+    return $self->{ etime } <=> $_[0]
+        if $self->{ etime } 
+        && @_ == 1
+        && numlike $_[0];
+
+    # otherwise we upgrade any argument(s) to another timestamp and comare
+    # them piecewise
+    my $comp = @_ && is_object(ref $self || $self, $_[0]) ? shift : $self->new(@_);
+    
     foreach my $item (@YMDHMS) {
         if ($self->{ $item } < $comp->{ $item }) {
             return -1;  # -1 - self earlier than comparison timestamp
@@ -367,14 +392,24 @@ sub compare {
     return 0;           #  0 - same time
 }
 
+sub equal {
+    shift->compare(@_) == 0;
+}
+
 sub before {
-    my $self = shift;
-    return $self->compare(@_) == -1;
+    shift->compare(@_) == -1;
 }
 
 sub after {
-    my $self = shift;
-    return $self->compare(@_) == 1;
+    shift->compare(@_) == 1;
+}
+
+sub not_before {
+    shift->compare(@_) >= 0;
+}
+
+sub not_after {
+    shift->compare(@_) <= 0;
 }
 
 sub days_in_month {
@@ -717,33 +752,126 @@ Can also be called with an argument to change the seconds.
 
 Returns the timestamp object as the number of seconds since the epoch time.
 
-=head2 before($when)
+=head2 compare($when)
 
-Returns a true value (1) if the date is before the date passed as an argument,
-a false value (0) otherwise.
+This method is used to chronologically compare two timestamps to determine
+if one is earlier, later, or exactly equal to another.
 
 The method can be passed another C<Badger::Timestamp> object to compare
 against or an argument or arguments from which a C<Badger::Timestamp> object
 can be constructed. If no arguments are passed then it defaults to a
 comparison against the current time.
 
-    my $date = Badger::Timestamp->new('2009-01-10 04:20:00');
+    my $stamp = Badger::Timestamp->new('2009-01-10 04:20:00');
     
-    $date->before($another_date_object);       
-    $date->before('2009-04-20 04:20:00');
-    $date->before($epoch_seconds);
-    $date->before;                          # before now
+    $stamp->before($another_timestamp_object);       
+    $stamp->before('2009-04-20 04:20:00');
+    $stamp->before($epoch_seconds);
+    $stamp->before;                          # before now
+
+The method returns -1 if the timestamp object represents a time before the 
+timestamp passed as an argument, 1 if it's after, or 0 if it's equal.  
+
+=head2 equal($when)
+
+This is a method of convenience which uses L<compare()> to test if two
+timestamps are equal.  You can pass it any of the arguments accepted by the
+L<compare()> method.
+
+    if ($time1->equal($time2)) {
+        print "both timestamps are equal\n";
+    }
+
+This method is overloaded onto the C<==> operator, allowing you to perform
+more natural comparisons.
+
+    if ($time1 == $time2) {
+        print "both timestamps are equal\n";
+    }
+
+=head2 before($when)
+
+This is a method of convenience which uses L<compare()> to test if one 
+timestamp occurs before another.  It returns a true value (1) if the first
+timestamp (the object) is before the second (the argument), or a false value
+(0) otherwise.
+
+    if ($time1->before($time2)) {
+        print "time1 is before time2\n";
+    }
+
+This method is overloaded onto the C<E<lt>> operator.
+
+    if ($time1 < $time2) {
+        print "time1 is before time2\n";
+    }
 
 =head2 after($when)
 
-Returns a true value (1) if the date is after the date passed as an argument,
-a false value (0) otherwise.  See L<before()>,
+This is a method of convenience which uses L<compare()> to test if one 
+timestamp occurs after another.  It returns a true value (1) if the first
+timestamp (the object) is after the second (the argument), or a false value
+(0) otherwise.
 
-=head2 compare($when)
+    if ($time1->after($time2)) {
+        print "time1 is after time2\n";
+    }
 
-Returns -1 if the date is before the date passed as an argument, 1 if it's
-after, or 0 if it's equal.  See L<before()> and L<after> for examples of
-the arguments that it accepts.
+This method is overloaded onto the C<E<gt>> operator.
+
+    if ($time1 > $time2) {
+        print "time1 is after time2\n";
+    }
+
+=head2 not_equal($when)
+
+This is an alias to the L<compare()> method.  It returns a true value (-1 or
++1, both of which Perl considers to be true values) if the timestamps are not
+equal or false value (0) if they are.
+
+    if ($time1->not_equal($time2)) {
+        print "time1 is not equal to time2\n";
+    }
+
+This method is overloaded onto the C<!=> operator.
+
+    if ($time1 != $time2) {
+        print "time1 is not equal to time2\n";
+    }
+
+=head2 not_before($when)
+
+This is a method of convenience which uses L<compare()> to test if one
+timestamp does not occur before another. It returns a true value (1) if the
+first timestamp (the object) is equal to or after the second (the argument),
+or a false value (0) otherwise.
+
+    if ($time1->not_before($time2)) {
+        print "time1 is not before time2\n";
+    }
+
+This method is overloaded onto the C<E<gt>=> operator.
+
+    if ($time1 >= $time2) {
+        print "time1 is not before time2\n";
+    }
+
+=head2 not_after($when)
+
+This is a method of convenience which uses L<compare()> to test if one
+timestamp does not occur after another. It returns a true value (1) if the
+first timestamp (the object) is equal to or before the second (the argument),
+or a false value (0) otherwise.
+
+    if ($time1->not_after($time2)) {
+        print "time1 is not after time2\n";
+    }
+
+This method is overloaded onto the C<E<lt>=> operator.
+
+    if ($time1 <= $time2) {
+        print "time1 is not after time2\n";
+    }
 
 =head2 adjust(%adjustments)
 

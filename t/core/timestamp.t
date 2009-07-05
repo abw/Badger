@@ -15,7 +15,7 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
-    tests  => 125, 
+    tests  => 165, 
     debug  => 'Badger::Timestamp',
     args   => \@ARGV;
     
@@ -192,6 +192,71 @@ foreach my $item (qw(second minute hour day month year )) {
 
 
 #-----------------------------------------------------------------------
+# test before(), after() and equal()
+#-----------------------------------------------------------------------
+
+my $old = Timestamp->new('2009-07-05 12:47:42');
+my $new = Timestamp->new('2009-07-05 16:20:00');
+ok( $old->equal($old), 'old is equal to old' );
+ok( $new->equal($new), 'new is equal to new' );
+ok( $old->not_equal($new), 'old is not equal to new' );
+ok( $new->not_equal($old), 'new is not equal to old' );
+
+# before/after/compare/equal all accept another timestamp...
+ok( $old->before($new), 'old is before new' );
+ok( $new->after($old), 'new is after old' );
+
+# ...or a time in epoch seconds...
+ok( $old->before($new->epoch_time), 'old is before new epoch time' );
+ok( $new->after($old->epoch_time), 'new is after old epoch time' );
+
+# ...or a timestamp...
+ok( $old->before($new->timestamp), 'old is before new epoch timestamp' );
+ok( $new->after($old->timestamp), 'new is after old epoch timestamp' );
+
+# ...or a set of named params
+ok( $old->before( year => 2010 ), 'old is before new year' );
+ok( $new->after( year => 1969 ), 'new is after old year' );
+
+# test some negatives to make sure we're not using rose tinted methods
+ok( ! $new->equal($old), 'new is not equal to old' );
+ok( ! $old->equal($new), 'old is not equal to new' );
+ok( ! $new->before($old), 'new is not before old' );
+ok( ! $old->after($new), 'old is not after new' );
+ok( ! $new->equal($old), 'new is not equal to old' );
+ok( ! $old->equal($new), 'old is not equal to new' );
+ok( ! $new->before($old->epoch_time), 'new is not before old epoch time' );
+ok( ! $old->after($new->epoch_time), 'old is not after new epoch time' );
+ok( ! $new->equal($old->epoch_time), 'new is not equal to old epoch time' );
+ok( ! $old->equal($new->epoch_time), 'old is not equal to new epoch time' );
+
+
+#-----------------------------------------------------------------------
+# test comparison operators
+#-----------------------------------------------------------------------
+
+ok( $old == $old, 'old == old' );
+ok( $new == $new, 'new == new' );
+ok( $old != $new, 'old != new' );
+ok( $new != $old, 'new != old' );
+ok( $old < $new, 'old < new' );
+ok( $new > $old, 'new > old' );
+ok( $old <= $new, 'old <= new' );
+ok( $new >= $old, 'new >= old' );
+ok( $old <= $old, 'old <= old' );
+ok( $new >= $new, 'new >= new' );
+
+ok( ! ($old != $old), 'old != old is false' );
+ok( ! ($new != $new), 'new != new is false' );
+ok( ! ($old == $new), 'old == new is false' );
+ok( ! ($new == $old), 'new == old is false' );
+ok( ! ($old > $new), 'old > new is false' );
+ok( ! ($new < $old), 'new < old is false' );
+ok( ! ($old >= $new), 'old >= new is false' );
+ok( ! ($new <= $old), 'new <= old is false' );
+
+
+#-----------------------------------------------------------------------
 # test epoch_seconds()
 #-----------------------------------------------------------------------
 
@@ -228,12 +293,12 @@ my $copy = Timestamp->new($stamp);
 ok( $copy, 'created object from object' );
 is( $copy->compare($stamp), 0, 'copy same as original' );
 
-my $new = $copy->copy;
-ok( $new, 'created new object from object new() method' );
-is( $new->compare($copy), 0, 'new object same as original' );
+my $other = $copy->copy;
+ok( $other, 'created new object from object new() method' );
+is( $other->compare($copy), 0, 'new object same as original' );
 
 isnt( refaddr($stamp), refaddr($copy), 'copy is new object' );
-isnt( refaddr($stamp), refaddr($new), 'new is new object' );
+isnt( refaddr($stamp), refaddr($other), 'new is new object' );
 
 
 #-----------------------------------------------------------------------
