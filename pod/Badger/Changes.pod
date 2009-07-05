@@ -18,6 +18,18 @@ suitability and fitness for purpose. There are no guarantees of course, but it
 may help you to sleep at night knowing that I have a heavily vested interest
 in keeping the Badger fit and healthy.
 
+=head2 Version 0.07
+
+Added the L<permissions()|Badger::Filesystem::Path/permissions()> method
+to L<Badger::Filesystem::Path>.
+
+Added some extra comparison methods to L<Badger::Timestamp>
+(L<not_equal()|Badger::Timestamp/not_equal()>,
+(L<not_before()|Badger::Timestamp/not_before()> and 
+L<not_after()|Badger::Timestamp/not_after()>) and overloaded
+these and other methods onto the C<==>, C<!=>, C<E<lt>>, C<E<gt>>, C<E<lt>=>
+and C<E<gt>=> operators.
+
 =head2 Version 0.06
 
 Added L<copy_file()|Badger::Filesystem/copy_file()> and

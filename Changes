@@ -16,6 +16,13 @@ CHANGES
     but it may help you to sleep at night knowing that I have a heavily
     vested interest in keeping the Badger fit and healthy.
 
+  Version 0.07
+    Added the permissions() method to Badger::Filesystem::Path.
+
+    Added some extra comparison methods to Badger::Timestamp (not_equal(),
+    (not_before() and not_after()) and overloaded these and other methods
+    onto the "==", "!=", "<", ">", "<=" and ">=" operators.
+
   Version 0.06
     Added copy_file() and move_file() to Badger::Filesystem and copy() and
     move() methods to Badger::Filesystem::File.
