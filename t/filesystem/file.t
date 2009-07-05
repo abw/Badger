@@ -19,8 +19,8 @@ use Badger::Filesystem 'FS File';
 use Badger::Filesystem::File '@STAT_FIELDS';
 use Badger::Filesystem::Directory;
 use Badger::Test 
-    tests => 58,
-    debug => 'Badger::Filesystem::File',
+    tests => 60,
+    debug => 'Badger::Filesystem::File Badger::Filesystem::Path Badger::Filesystem',
     args  => \@ARGV;
 
 our $FILE  = 'Badger::Filesystem::File';
@@ -166,6 +166,21 @@ $file5->delete;
 $file6->delete;
 $file7->delete;
 $dir->delete;
+
+
+#-----------------------------------------------------------------------
+# create a file with specific permissions
+#-----------------------------------------------------------------------
+
+umask(0002);
+
+my $file8 = $TDIR->file('testfiles', 'group_write');
+my $fh8   = $file8->open("w", 0664);
+$fh8->print("this is a test file");
+$fh8->close;
+ok( $file8->writeable, 'file is writable' );
+ok( $file8->permissions & 0020, 'file is group writable' );
+
 
 __END__
 test_file('file.t');

@@ -105,6 +105,7 @@ class->methods(
 *up        = \&parent;
 *meta      = \&metadata;
 *canonical = \&absolute;
+*perms     = \&permissions;
 
 
 sub new {
@@ -305,6 +306,10 @@ sub stats {
         :  $stats;
 }
 
+sub permissions {
+    shift->mode & 0777;
+}
+    
 sub chmod {
     my $self = shift;
     $self->filesystem->chmod_path($self->{ path }, @_);
@@ -745,9 +750,9 @@ methods, also listed in the table.
       5     group()         numeric group ID of file’s owner
       6     device_type()   the device identifier (special files only)
       7     size()          total size of file, in bytes
-      8     accessed()      last access time in seconds since the epoch
-      9     modified()      last modify time in seconds since the epoch
-     10     created()       inode change time in seconds since the epoch (*)
+      8     atime()         last access time in seconds since the epoch
+      9     mtime()         last modify time in seconds since the epoch
+     10     ctime()         inode change time in seconds since the epoch (*)
      11     block_size()    preferred block size for file system I/O
      12     blocks()        actual number of blocks allocated
 
@@ -767,44 +772,50 @@ making repeated filesystem calls.
     @list = $path->stats;                   # list context
     $list = $path->stats;                   # scalar context
 
-=head2 device
+=head2 device()
 
 Returns the device number for the file.  See L<stat()>.
 
-=head2 inode 
+=head2 inode()
 
 Returns the inode number for the file.  See L<stat()>.
 
-=head2 mode
+=head2 mode()
 
-Returns the file mode for the file.  See L<stat()>.
+Returns the file mode for the file.  Note that this contains both the 
+file type and permissions.  See L<stat()>.
 
-=head2 links
+=head2 permissions() / perms()
+
+Returns the file permissions.  This is equivalent to 
+C<< $file->mode & 0777 >>.
+
+=head2 links()
 
 Returns the number of hard links to the file.  See L<stat()>.
 
-=head2 user
+=head2 user()
 
 Returns the numeric user ID of the file's owner.  See L<stat()>.
 
-=head2 group
+=head2 group()
 
 Returns the numeric group ID of the file's group.  See L<stat()>.
 
-=head2 device_type 
+=head2 device_type()
 
 Returns the device identifier (for special files only).  See L<stat()>.
 
-=head2 size
+=head2 size()
 
 Returns the total size of the file in bytes.  See L<stat()>.
 
-=head2 atime
+=head2 atime()
 
 Returns the time (in seconds since the epoch) that the file was last accessed.
 See L<stat()>.
 
-=head2 accessed
+=head2 accessed()
 
 Returns a L<Badger::Timestamp> object for the L<atime()> value.  This object
 will auto-stringify to produce an ISO-8601 formatted date.  You can also 
@@ -814,12 +825,12 @@ call various methods to access different parts of the time and/or date.
     print $file->accessed->date;        # 2009/04/20
     print $file->accessed->year;        # 2009
 
-=head2 mtime
+=head2 mtime()
 
 Returns the time (in seconds since the epoch) that the file was last modified.
 See L<stat()>.
 
-=head2 modified
+=head2 modified()
 
 Returns a L<Badger::Timestamp> object for the L<mtime()> value.
 
@@ -827,12 +838,12 @@ Returns a L<Badger::Timestamp> object for the L<mtime()> value.
     print $file->modified->time;        # 16:25:0
     print $file->modified->hour;        # 16
 
-=head2 ctime
+=head2 ctime()
 
 Returns the time (in seconds since the epoch) that the file was created. See
 L<stat()>.
 
-=head2 created
+=head2 created()
 
 Returns a L<Badger::Timestamp> object for the L<ctime()> value.
 
@@ -840,36 +851,36 @@ Returns a L<Badger::Timestamp> object for the L<ctime()> value.
     print $file->created->date;         # 2009/04/20
     print $file->created->time;         # 16:25:00
 
-=head2 block_size
+=head2 block_size()
 
 Returns the preferred block size for file system I/O on the file. See
 L<stat()>.
 
-=head2 blocks 
+=head2 blocks()
 
 Returns the actual number of blocks allocated to the file. See L<stat()>.
 
-=head2 readable
+=head2 readable()
 
 Returns a true value if the file is readable by the current user (i.e. the
 owner of the current process), false if not.  See L<stat()>.
 
-=head2 writeable
+=head2 writeable()
 
 Returns a true value if the file is writeable by the current user (i.e. the
 owner of the current process), false if not.  See L<stat()>.
 
-=head2 executable
+=head2 executable()
 
 Returns a true value if the file is executable by the current user (i.e. the
 owner of the current process), false if not.  See L<stat()>.
 
-=head2 owner                       
+=head2 owner()                
 
 Returns a true value if the file is owned by the current user (i.e. the
 owner of the current process), false if not.  See L<stat()>.
 
-=head2 filesystem
+=head2 filesystem()
 
 Returns a reference to a L<Badger::Filesystem> object, or the name of the
 filesystem class (e.g. L<Badger::Filesystem> or a subclass) that created
