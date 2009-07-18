@@ -191,7 +191,11 @@ sub split_timestamp {
 
 sub join_timestamp {
     my $self = shift;
-    return ($self->{ timestamp } = sprintf($STAMP_FORMAT, @$self{ @YMDHMS }));
+    return ($self->{ timestamp } = sprintf(
+        $STAMP_FORMAT, 
+        map { defined $_ ?  $_ : 0 } 
+        @$self{ @YMDHMS }
+    ));
 }
 
 sub epoch_time {
