@@ -16,7 +16,7 @@ use warnings;
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Exporter;
 use Badger::Test 
-    tests => 78,
+    tests => 92,
     debug => 'Badger::Exporter',
     args  => \@ARGV;
 
@@ -285,6 +285,33 @@ is( phi, 1.618, 'generated phi' );
 #is( food, 'Nuts and Berries', 'generated food' );
 #is( cheese, 'Cheddar', 'generated cheese' );
 
+
+#-----------------------------------------------------------------------
+# test before and after actions
+#-----------------------------------------------------------------------
+
+package test_ba1;
+use Badger::Test;
+use My::Exporter::BeforeAfterOne 'wubble';
+is( wibble, 'wibblesome', 'got wibblesome' );
+is( wobble, 'wobblesome', 'got wobblesome' );
+is( wubble, 'wubblesome', 'got wubblesome' );
+ok( $My::Exporter::BeforeAfterOne::DONE_BEFORE, 'BeforeAfterOne DONE_BEFORE is set' );
+ok( $My::Exporter::BeforeAfterOne::DONE_AFTER,  'BeforeAfterOne DONE_AFTER is set' );
+ok( $My::Exporter::BeforeAfter::DONE_BEFORE,    'BeforeAfter DONE_BEFORE is set' );
+ok( $My::Exporter::BeforeAfter::DONE_AFTER,     'BeforeAfter DONE_AFTER is set' );
+
+
+package test_ba2;
+use Badger::Test;
+use My::Exporter::BeforeAfterTwo 'wubble';
+is( wibble, 'wibbly', 'got wibbly' );
+is( wobble, 'wobbly', 'got wobbly' );
+is( wubble, 'wubbly', 'got wubbly' );
+ok( $My::Exporter::BeforeAfterTwo::DONE_BEFORE, 'BeforeAfterTwo DONE_BEFORE is set' );
+ok( $My::Exporter::BeforeAfterTwo::DONE_AFTER,  'BeforeAfterTwo DONE_AFTER is set' );
+is( $My::Exporter::BeforeAfter::DONE_BEFORE, 2, 'BeforeAfter DONE_BEFORE is 2' );
+is( $My::Exporter::BeforeAfter::DONE_AFTER,  2, 'BeforeAfter DONE_AFTER is 2' );
 
 1;
 
