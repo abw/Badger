@@ -207,7 +207,7 @@ those found in L<Test::Simple> or L<Test::More>.
 
 =head2 plan($tests)
 
-Specify how many tests you plan to run.  You can also sepcify this using
+Specify how many tests you plan to run.  You can also specify this using
 the L<tests> import hook.
 
     plan(1);
@@ -275,7 +275,7 @@ Skip a number of tests.
 
     skip_some(11, "Hugeness of object understated");
 
-=head2 skip_rest(,$reason)
+=head2 skip_rest($reason)
 
 Skip any remaining tests.
 
