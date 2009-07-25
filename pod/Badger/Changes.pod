@@ -30,6 +30,17 @@ L<not_after()|Badger::Timestamp/not_after()>) and overloaded
 these and other methods onto the C<==>, C<!=>, C<E<lt>>, C<E<gt>>, C<E<lt>=>
 and C<E<gt>=> operators.
 
+Added the L<export_before()|Badger::Exporter/export_before()> and
+L<export_after()|Badger::Exporter/export_after()> methods to
+L<Badger::Exporter>.
+
+Added the L<if_env|Badger::Test/if_env> import hook and
+C<-a|Badger::Test/all()> option to L<Badger::Test> to make it easier to 
+define tests that don't get run unless a particular environment variable
+is set (e.g. for Pod coverage/kwalitee tests that you only want to run
+if either of the C<RELEASE_TESTING> or C<AUTOMATED_TESTING> environment 
+variables is set).
+
 =head2 Version 0.06
 
 Added L<copy_file()|Badger::Filesystem/copy_file()> and
