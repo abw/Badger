@@ -187,7 +187,12 @@ Badger::Codec::TT - encode/decode data using TT data syntax
 
 This module implements a subclass of L<Badger::Codec> which encodes and
 decodes data to and from an extended form of the data definition syntax used
-in the Template Toolkit.
+in the Template Toolkit. It mainly exists for testing purposes (so that we
+don't require people to install YAML or JSON just to run some of the Badger
+tests) and to support some legacy systems that use data encoded in this way
+(mostly dating back to the days before YAML and JSON were around). If you're
+starting out afresh then you're probably better off using YAML or JSON unless
+you have good reason not to.
 
 The syntax is similar to Perl in that it uses single quotes for literal
 strings, square brackets for list definitions and curly braces for hash
