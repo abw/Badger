@@ -49,10 +49,12 @@ our $HELPERS  = {       # keep this compact in case we don't need to use it
     'Badger::Logic'     => 'LOGIC Logic',
 };
 our $DELEGATES;         # fill this from $HELPERS on demand
+our $RANDOM_NAME_LENGTH = 32;
 
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed is_object numlike textlike params self_params plural xprintf dotid
+    UTILS blessed is_object numlike textlike params self_params plural 
+    xprintf dotid random_name
 ));
 
 __PACKAGE__->export_fail(\&_export_fail);
@@ -132,6 +134,19 @@ sub dotid {
     my $text = shift;       # munge $text to canonical lower case and dotted form
     $text =~ s/\W+/./g;     # e.g. Foo::Bar ==> Foo.Bar
     return lc $text;        # e.g. Foo.Bar  ==> foo.bar
+}
+
+sub random_name {
+    my $length = shift || $RANDOM_NAME_LENGTH;
+    my $name   = '';
+    require Digest::MD5;
+    
+    while (length $name < $length) {
+        $name .= Digest::MD5::md5_hex(
+            time(), rand(), $$, { }, @_
+        );
+    }
+    return substr($name, 0, $length);
 }
 
 sub _debug {
@@ -324,6 +339,15 @@ embedding positional parameters.
 
     xprintf('The <2> sat on the <1>', 'mat', 'cat');
     xprintf('The <1> costs <2:%.2f>', 'widget', 11.99);
+
+=head2 random_name($length,@data)
+
+Generates a random name of maximum length C<$length> using any additional 
+seeding data passed as C<@args>.  If C<$length> is undefined then the default
+value in C<$RANDOM_NAME_LENGTH> (32) is used.
+
+    my $name = random_name();
+    my $name = random_name(64);
 
 =head1 AUTHOR
 

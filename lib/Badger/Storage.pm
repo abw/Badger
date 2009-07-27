@@ -5,7 +5,7 @@ use Badger::Class
     debug       => 0,
     base        => 'Badger::Prototype',
     init_method => 'configure init_storage',
-    utils       => 'md5_hex',
+    utils       => 'md5_hex random_name',
     config      => [
         'id_length|class:ID_LENGTH=32',
     ];
@@ -36,10 +36,7 @@ sub delete {
 
 sub generate_id {
     my $self = shift;
-    my $text = __PACKAGE__ . time() . md5_hex( 
-        time() . rand() . $$ . { } 
-    );
-    return substr( md5_hex($text), 0, $self->{ id_length } );
+    return random_name( $self->{ id_length }, @_ );
 }
     
 1;
@@ -213,9 +210,20 @@ initialisation.
 =head2 generate_id(@args)
 
 This method is called by the L<create()> method to generate a new identifier
-for the data record.  It is passed all the arguments that were passed to 
-the L<create()> method.  In the base class this method generates a random
-MD5 hex string.  Subclasses can redefine it to do something different.
+for the data record. All of the arguments passed to the 
+L<create()> method are forwarded to the C<generate_id()> method.
+
+In the base class this method generates a random MD5 hex string using the
+L<random_name()|Badger::Utils/random_name()> function imported from
+L<Badger::Utils>.  The length of the identifier default to 32 characters.
+This can be changed using the C<id_length> configuration parameter.
+
+    my $storage = Badger::Storage::Filesystem(
+        path      => '/path/to/dir',
+        id_length => 64,
+    );
+
+Subclasses can redefine the method to do something different.
 
 =head1 AUTHOR
 
