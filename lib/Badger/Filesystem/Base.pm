@@ -51,7 +51,7 @@ sub init_path {
 
 sub init_options {
     my ($self, $config) = @_;
-    my $opts  = $self->{ options } = { };
+    my $opts = $self->{ options } = { };
     my $method;
 
     foreach my $name (@OPTIONS) {

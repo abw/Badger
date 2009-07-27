@@ -958,7 +958,7 @@ This is exactly the same as:
     use lib "$Bin/../lib";
 
 One benefit is that you can use it in conjunction with other import options
-to save on a little typiing.  For example:
+to save on a little typing.  For example:
 
     use Badger::Filesystem 'Cwd File $Bin';
 

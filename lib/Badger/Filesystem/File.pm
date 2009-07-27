@@ -129,6 +129,8 @@ sub data {
     my $codec = $self->{ options }->{ codec };
     my $data;
     
+    $self->debug("filesystem codec: $codec") if DEBUG;
+    
     if (@_) {
         $data = @_ == 1 ? shift : [@_];
         $data = $codec->encode($data) if $codec;
