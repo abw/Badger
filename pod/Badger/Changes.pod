@@ -20,6 +20,10 @@ in keeping the Badger fit and healthy.
 
 =head2 Version 0.07
 
+Added L<Badger::Storage> and L<Badger::Storage::Filesystem>.
+
+Added L<Badger::Codec::TT>. 
+
 Added the L<permissions()|Badger::Filesystem::Path/permissions()> method
 to L<Badger::Filesystem::Path>.
 
