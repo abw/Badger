@@ -19,7 +19,7 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Prototype Badger::Filesystem::Base',
     import    => 'class',
-    utils     => 'params is_object',
+    utils     => 'params is_object random_name',
     constants => 'HASH ARRAY TRUE REFS PKG',
     constant  => {
         virtual     => 0,
@@ -87,6 +87,7 @@ sub _export_findbin_hook {
 *delete_dir   = \&delete_directory;
 *open_dir     = \&open_directory;
 *read_dir     = \&read_directory;
+*temp_dir     = \&temp_directory;
 *dir_child    = \&directory_child;
 *dir_children = \&directory_children;
 *mkdir        = \&create_directory;
@@ -579,6 +580,26 @@ sub directory_children {
     }   $self->read_directory($dir, @_);
     return wantarray ? @paths : \@paths;
 }
+
+
+#-----------------------------------------------------------------------
+# temporary directory/file methods
+#-----------------------------------------------------------------------
+
+sub temp_directory {
+    my $self = shift;
+    return $self->directory( FILESPEC->tmpdir, @_ )->must_exist(1);
+}
+
+sub temp_file {
+    my $self = shift;
+    return $self->temp_directory->file( @_ ? @_ : random_name() )
+}
+
+
+#-----------------------------------------------------------------------
+# visitor methods
+#-----------------------------------------------------------------------
 
 sub visitor {
     my $self  = shift;
@@ -1441,6 +1462,28 @@ Returns an object to represent a single item in a directory. Files are
 returned as L<Badger::Filesystem::File> objects, directories as
 L<Badger::Filesystem::File> objects. Anything else is returned as a generic
 L<Badger::Filesystem::Path> object.
+
+=head1 TEMPORARY DIRECTORY AND FILE METHODS
+
+=head2 temp_dir($dir) / temp_directory($dir)
+
+This returns a reference to a L<Badger::Filesystem::Directory> object for the
+temporary directory on your system (as reported by C<tmpdir> in L<File::Spec>).
+
+    my $tmp = $fs->temp_dir;
+
+If any arguments are specified then they are appended as sub-directories to
+the temporary directory path.
+
+    my $tmp = $fs->temp_dir('foo', 'bar');  # e.g. /tmp/foo/bar 
+
+=head2 temp_file($name)
+
+This returns a reference to a L<Badger::Filesystem::File> object for a named
+file created in the temporary directory returned by the L<temp_directory()>
+method.
+
+    my $file = $fs->temp_file('foo.tmp');   # e.g. /tmp/foo.tmp
 
 =head1 VISITOR METHODS
 

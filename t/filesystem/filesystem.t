@@ -17,7 +17,7 @@ use warnings;
 use File::Spec;
 use Badger::Filesystem 'FS VFS :types :dirs cwd getcwd $Bin Bin';
 use Badger::Test 
-    tests => 52,
+    tests => 59,
     debug => 'Badger::Filesystem',
     args  => \@ARGV;
 
@@ -105,6 +105,25 @@ ok( $dir, 'created dir using FS class' );
 
 $dir = FS->directory->new('/foo/bar');
 ok( $dir, 'created directory using FS class' );
+
+
+#-----------------------------------------------------------------------
+# test temp_directory() and temp_file()
+#-----------------------------------------------------------------------
+
+my $tmp = FS->temp_directory;
+ok( $tmp, "got temp_directory() $tmp" );
+
+$tmp = FS->temp_directory('foo', 'bar');
+ok( $tmp, "got temp_directory() $tmp" );
+$tmp = $tmp->file('badger_test1.tmp');
+ok( $tmp->write("Hello World\n"), "wrote text to $tmp" );
+ok( $tmp->delete, 'deleted temporary file' );
+
+$tmp = FS->temp_file('badger_test2.tmp');
+ok( $tmp, "got temp_file() $tmp" );
+ok( $tmp->write("Hello World\n"), 'wrote text to tmp file' );
+ok( $tmp->delete, 'deleted temporary file' );
 
 
 #-----------------------------------------------------------------------
