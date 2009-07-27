@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural';
 use Badger::Debug;
 use Badger::Test 
-    tests => 40,
+    tests => 45,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -188,6 +188,21 @@ ok( blessed $logic && $logic->isa('Badger::Logic'), 'Logic returned a Badger::Lo
 
 is( plural('gateway'), 'gateways', 'pluralised gateway/gateways' );
 is( plural('fairy'), 'fairies', 'pluralised fairy/fairies' );
+
+
+#-----------------------------------------------------------------------
+# test random_name()
+#-----------------------------------------------------------------------
+
+use Badger::Utils 'random_name';
+
+is( length random_name(), $Badger::Utils::RANDOM_NAME_LENGTH, 
+    "default random_name() length is $Badger::Utils::RANDOM_NAME_LENGTH" );
+is( length random_name(16), 16, 'random_name(16) length is 16');
+is( length random_name(32), 32, 'random_name(16) length is 32');
+is( length random_name(48), 48, 'random_name(16) length is 48');
+is( length random_name(64), 64, 'random_name(16) length is 64');
+
 
 __END__
 
