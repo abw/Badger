@@ -24,8 +24,11 @@ Added L<Badger::Storage> and L<Badger::Storage::Filesystem>.
 
 Added L<Badger::Codec::TT>. 
 
-Added the L<permissions()|Badger::Filesystem::Path/permissions()> method
-to L<Badger::Filesystem::Path>.
+Added the L<permissions()|Badger::Filesystem::Path/permissions()> method to
+L<Badger::Filesystem::Path>. Added
+L<temp_directory()|Badger::Filesystem/temp_directory()> and
+L<temp_file()|Badger::Filesystem/temp_file()> methods to
+L<Badger::Filesystem>.
 
 Added some extra comparison methods to L<Badger::Timestamp>
 (L<not_equal()|Badger::Timestamp/not_equal()>,
@@ -44,6 +47,9 @@ define tests that don't get run unless a particular environment variable
 is set (e.g. for Pod coverage/kwalitee tests that you only want to run
 if either of the C<RELEASE_TESTING> or C<AUTOMATED_TESTING> environment 
 variables is set).
+
+Added the L<random_name()|Badger::Utils/random_name()> function to 
+L<Badger::Utils>.
 
 =head2 Version 0.06
 
