@@ -39,6 +39,7 @@ our $CODECS     = {
     yaml     => 'Badger::Codec::YAML',
     json     => 'Badger::Codec::JSON',
     html     => 'Badger::Codec::HTML',
+    tt       => 'Badger::Codec::TT',
     map {
         my $name = $_; $name =~ s/\W//g;
         $_ => [ENCODING, ENCODING.PKG.$name],
