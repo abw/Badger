@@ -12,9 +12,10 @@
 
 package Badger::Config;
 
+use Badger::Debug ':dump';
 use Badger::Class
     version   => 0.01,
-    debug     => { default => 0, import => ':dump' },
+    debug     => 0,
     import    => 'class',
     base      => 'Badger::Prototype',
     utils     => 'blessed numlike',
@@ -27,7 +28,8 @@ our $AUTOLOAD;
 
 sub init {
     my ($self, $config) = @_;
-    my $data = $self->{ data } = $config->{ data } || $config;
+    my $data  = $self->{ data } = $config->{ data } || $config;
+    my $class = $self->class;
     
     # merge all $ITEMS in package variables with those listed in 
     # $config->{ items } and all other $config keys.
@@ -36,11 +38,18 @@ sub init {
     );
     
     # store hash lookup table marking valid items
-    $self->{ item } = {
+    $items = $self->{ item } = {
         map { $_ => 1 } 
         map { split DELIMITER } 
         @$items 
     };
+
+    # load up all the configuraion items from package variables
+    foreach my $item (keys %$items) {
+        $data->{ $item } = $config->{ $item }
+            || $class->any_var( uc $item );
+        $self->debug("config set $item => ", $data->{ $item }, "\n") if DEBUG;
+    }
     
     if (DEBUG) {
         $self->debug("config items: ", $self->dump_data($self->{ items }));
