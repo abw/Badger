@@ -23,7 +23,7 @@ use Badger::Codecs;
 
 our $tmp_dir = Bin->dir('tmp_store');
 our $storage = Badger::Storage::Filesystem->new(
-    root => $tmp_dir
+    path => $tmp_dir
 );
 our $foo = {
     name    => 'foo',
@@ -63,7 +63,7 @@ ok( $tmp_dir->file('foo')->exists, 'foo file exists' );
 #-----------------------------------------------------------------------
 
 $storage = Badger::Storage::Filesystem->new(
-    root  => $tmp_dir,
+    path  => $tmp_dir,
     codec => 'tt',
 );
 
@@ -89,7 +89,7 @@ like( $tt, qr/e=$bar->{ e }/, "TT contains e: $bar->{ e }" );
 my $codec = Badger::Codecs->codec( tt => { assign => ':', comma => ',' } );
 
 $storage = Badger::Storage::Filesystem->new(
-    root  => $tmp_dir,
+    path  => $tmp_dir,
     codec => $codec,
 );
 
