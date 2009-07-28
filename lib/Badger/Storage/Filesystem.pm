@@ -6,11 +6,12 @@ use Badger::Class
     debug       => 0,
     base        => 'Badger::Storage',
     utils       => 'params',
-    accessors   => 'filesystem root codec',
-    filesystem  => 'VFS',
+    accessors   => 'filesystem path codec',
+    filesystem  => 'VFS Dir',
     config      => [
-        'root|path|class:ROOT|class:PATH!',
+        'path|class:PATH!',
         'codec|class:CODEC=storable',
+        'mkdir|class:MKDIR=0',
     ],
     messages    => {
         not_found => 'File not found: %s', 
@@ -21,13 +22,16 @@ sub init_storage {
 
     # configure() has already been called by init() method constructed 
     # via the Badger::Class init_method hook in Badger::Storage base class.
+
+    # make sure the root directory exists and/or create it if mkdir set
+    Dir( $self->{ path } )->must_exist( $self->{ mkdir } );
     
     $self->{ filesystem } = VFS->new(
         # NOTE: this could be a list ref for multiple root VFSs
-        root  => $self->{ root  },
+        root  => $self->{ path  },
         codec => $self->{ codec }
     );
-    
+
     $self->debug("initialised filesystem storage") if DEBUG;
     
     return $self;
