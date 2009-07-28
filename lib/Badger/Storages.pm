@@ -28,6 +28,9 @@ sub type_args {
         $type = $args->{ type } 
             || return $self->error_msg( missing => 'storage type' );
     }
+    elsif (! $type ) {
+        return $self->error_msg( missing => 'storage type' );
+    }
     else {
         $args = @_ == 1 ? shift : { @_ };
     }

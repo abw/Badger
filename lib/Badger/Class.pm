@@ -2873,7 +2873,7 @@ C<Badger::Constants>
 
 =head2 DEBUG
 
-A comepile time constant defined from the value of the C<$DEBUG> package 
+A compile time constant defined from the value of the C<$DEBUG> package 
 variable.  To enable debugging in C<Badger::Class> set the C<$DEBUG>
 package variable I<before> you load C<Badger::Class>.  Also be aware that
 most other C<Badger> modules use C<Badger::Class> so you should set it 

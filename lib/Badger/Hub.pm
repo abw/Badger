@@ -13,6 +13,7 @@
 
 package Badger::Hub;
 
+use Badger::Debug ':dump';
 use Badger::Class
     version   => 0.01,
     debug     => 0,
@@ -45,14 +46,24 @@ our $AUTOLOAD;
 
 sub init {
     my ($self, $args) = @_;
+
     # We're looking for a specific 'config' item which the user can provide to
     # points to a master configuration object or class name.  We default to the 
     # value in the $CONFIG package variable, which in this case is Badger::Config,
     # but could be re-defined by a subclass to be something else.
     my $config = delete($args->{ config }) || $self->class->any_var('CONFIG');
     class($config)->load unless ref $config;
+
+    # merge all values in $CONFIG_ITEMS in with $args->{ items };
+    $args->{ items } = $self->class->list_vars( 
+        CONFIG_ITEMS => delete($args->{ config_items }), $args->{ items }
+    );
+
+    $self->debug("hub config items: ", $self->dump_data($args->{ items })) if DEBUG;
+    
     $config = $config->new($args) unless blessed $config;
     $self->{ config } = $config;
+
     $self->debug("hub config: $self->{ config }\n") if DEBUG;
     return $self;
 }
@@ -204,7 +215,8 @@ sub configure {
         # $self->{ config } can be a hash ref with a $name item
         $config = $config->{ $name };
     }
-    elsif ($config && ($method = UNIVERSAL::can($self->{ config }, $name))) {
+#    elsif ($config && ($method = UNIVERSAL::can($self->{ config }, $name))) {
+    elsif ($config && ($method = $self->{ config }->can($name))) {
         # $self->{ config } can be an object with a $name method which we call
         $config = $method->($config);
     }
