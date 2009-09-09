@@ -57,7 +57,7 @@ use Time::Local;
 use POSIX 'strftime';
 
 # Example timestamp: 2006/12/31 23:59:59
-our $DATE_REGEX      = qr{ (\d{4})\D(\d{2})\D(\d{2}) }x;
+our $DATE_REGEX      = qr{ (\d{4})\D(\d{1,2})\D(\d{1,2}) }x;
 our $TIME_REGEX      = qr{ (\d{2})\D(\d{2})\D(\d{2}) }x;
 our $STAMP_REGEX     = qr{ ^\s* $DATE_REGEX (?:(?:T|\s) $TIME_REGEX)? }x;
 our $DATE_FORMAT     = '%04d-%02d-%02d';
