@@ -120,8 +120,21 @@ sub export_tags {
     my $args = (@_ == 1) && (ref $_[0] eq HASH) ? shift : { @_ };
     my $tags = $self->export_variable( EXPORT_TAGS => { } );
 
-    # add new tags into $EXPORT_TAGS hash ref
-    @$tags{ keys %$args } = values %$args;
+    # Add new tags into $EXPORT_TAGS hash ref
+    @$tags{ keys %$args } = map {
+        # Tags can be defined as hash arrays containing (key => '=value')
+        # declarataions.  We upgrade each '=value' to a constant subroutine.
+        if (ref && ref eq HASH) {
+            while (my ($key, $value) = each %$_) {
+                if ($value =~ s/^=//) {
+                    _debug("export_tags() constructing constant: $key => $value\n") if $DEBUG;
+                    $_->{ $key } = sub() { $value };
+                }
+            }
+        }
+        $_;
+    }
+    values %$args;
 
     # all symbols referenced in tagsets (except other tag sets) must be 
     # flagged as exportable
@@ -320,8 +333,15 @@ sub export {
             my $type = "&";
             $symbol =~ s/^(\W)//;
             $source =~ s/^(\W)// and $type = $1;
+            # NOTE: '=value' should *probably* never be found at this point
+            # because we're now upgrading them to constant subroutines in 
+            # the import_tags() method.  However, I'm leaving this in here
+            # until I've had a chance to properly review the code and convince
+            # myself that this assumption is correct.
+            _debug("export() constructing constant: $symbol => $source\n") 
+                if $DEBUG && $type eq '=';
             $source = $pkg.PKG.$source unless $source =~ /::/ or $type eq '=';
-           _debug("exporting $type$symbol from $source into $target\n") if $DEBUG;
+            _debug("exporting $type$symbol from $source into $target\n") if $DEBUG;
             *{ $target.PKG.$symbol } =
                 $type eq '&' ?    \&{$source} :
                 $type eq '$' ?    \${$source} :
