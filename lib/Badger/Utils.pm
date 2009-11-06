@@ -17,7 +17,7 @@ use warnings;
 use base 'Badger::Exporter';
 use File::Path;
 use Scalar::Util qw( blessed );
-use Badger::Constants 'HASH PKG DELIMITER';
+use Badger::Constants 'HASH PKG DELIMITER BLANK';
 use Badger::Debug ':dump';
 use overload;
 use constant {
@@ -54,7 +54,7 @@ our $RANDOM_NAME_LENGTH = 32;
 
 __PACKAGE__->export_any(qw(
     UTILS blessed is_object numlike textlike params self_params plural 
-    xprintf dotid random_name
+    xprintf dotid random_name camel_case
 ));
 
 __PACKAGE__->export_fail(\&_export_fail);
@@ -96,12 +96,50 @@ sub textlike($) {
 }
 
 sub params {
+    # enable $DEBUG to track down calls to self_params() that pass an 
+    # off number of arguments, typically when the rhs argument returns
+    # an empty list, e.g. $obj->foo( x => this_returns_empty_list() )
+    odd_params(@_)
+        if $DEBUG 
+        && ref $_[0] ne HASH 
+        && (scalar @_) % 2;
+
     @_ && ref $_[0] eq HASH ? shift : { @_ };
 }
 
 sub self_params {
+    # enable $DEBUG to track down calls to self_params() that pass an 
+    # off number of arguments, typically when the rhs argument returns
+    # an empty list, e.g. $obj->foo( x => this_returns_empty_list() )
+    odd_params(@_)
+        if $DEBUG 
+        && ref $_[0] ne HASH 
+        && (scalar @_) % 2;
+        
     (shift, @_ && ref $_[0] eq HASH ? shift : { @_ });
 }
+
+sub odd_params {
+    my $method = (caller(1))[3];
+    warn(
+        "$method() called with an odd number of arguments: ", 
+        join(', ', @_),
+        "\n"
+    );
+    my $i = 2;
+    while (1) {
+        my @info = caller($i);
+        last unless @info;
+        my ($pkg, $file, $line, $sub) = @info;
+        warn(
+            sprintf(
+                "%4s: Called from %s in %s at line %s\n",
+                '#' . ($i++ - 1), $sub, $file, $line
+            )
+        );
+    }
+}
+    
 
 sub plural {
     my $name = shift;
@@ -134,6 +172,17 @@ sub dotid {
     my $text = shift;       # munge $text to canonical lower case and dotted form
     $text =~ s/\W+/./g;     # e.g. Foo::Bar ==> Foo.Bar
     return lc $text;        # e.g. Foo.Bar  ==> foo.bar
+}
+
+sub camel_case {
+    join(
+        BLANK, 
+        map {
+            map { ucfirst $_ } 
+            split '_'
+        } 
+        @_
+    );
 }
 
 sub random_name {
@@ -267,6 +316,36 @@ the argument list.
         # do something...
     }
 
+=head2 odd_params(@_)
+
+This is an internal function used by L<params()> and L<self_params()> to 
+report any attempt to pass an odd number of arguments to either of them.
+It can be enabled by setting C<$Badger::Utils::DEBUG> to a true value.
+
+    use Badger::Utils 'params';
+    $Badger::Utils::DEBUG = 1;
+    
+    my $hash = params( foo => 10, 20 );    # oops!
+
+The above code will raise a warning showing the arguments passed and a 
+stack backtrace, allowing you to easily track down and fix the offending
+code.  Apart from obvious typos like the above, this is most likely to 
+happen if you call a function or methods that returns an empty list.  e.g.
+
+    params(
+        foo => 10,
+        bar => get_the_bar_value(),
+    );
+
+If C<get_the_bar_value()> returns an empty list then you'll end up with an
+odd number of elements being passed to C<params()>.  You can correct this
+by providing C<undef> as an alternative value.  e.g.
+
+    params(
+        foo => 10,
+        bar => get_the_bar_value() || undef,
+    );
+
 =head2 plural($noun)
 
 The function makes a very naive attempt at pluralising the singular noun word
@@ -324,6 +403,16 @@ Returns the module name passed as an argument as a relative filesystem path
 suitable for feeding into C<require()>
 
     print module_file('My::Module');     # My/Module.pm
+
+=head2 camel_case($lower_case_string)
+
+Converts a lower case string where words are separated by underscores (e.g.
+C<like_this_example>) into CamelCase where each word is capitalised and words
+are joined together (e.g. C<LikeThisExample>).
+
+According to Perl convention (and personal preference), we use the lower case
+form wherever possible. However, Perl's convention also dictates that module
+names should be in CamelCase.  This function performs that conversion.
 
 =head2 dotid($text)
 

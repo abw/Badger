@@ -53,7 +53,6 @@ BEGIN {
     *DEBUG = sub() { $DEBUG };
 }
 
-
 #-----------------------------------------------------------------------
 # Methods that we delegate to other modules.  The module name is 
 # determined by calling the constant method (first argument on RHS
@@ -250,7 +249,6 @@ class(CLASS)->methods(
     }
     keys %$DELEGATES
 );
-
 
 
 #-----------------------------------------------------------------------
@@ -807,7 +805,6 @@ sub _autoload {
     unless ( defined ${ $class.PKG.LOADED  } 
           || defined ${ $class.PKG.VERSION }            # TODO: ??
           || @{ $class.PKG.ISA }) {
-
         _debug("autoloading $class\n") if DEBUG;
         $v = ${ $class.PKG.VERSION } ||= 0;             # TODO: ??
         local $SIG{__DIE__};
