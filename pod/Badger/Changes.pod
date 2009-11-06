@@ -48,8 +48,11 @@ is set (e.g. for Pod coverage/kwalitee tests that you only want to run
 if either of the C<RELEASE_TESTING> or C<AUTOMATED_TESTING> environment 
 variables is set).
 
-Added the L<random_name()|Badger::Utils/random_name()> function to 
-L<Badger::Utils>.
+Added the L<random_name()|Badger::Utils/random_name()> and
+L<camel_case()|Badger::Utils/camel_case()> functions to L<Badger::Utils>. Also
+add some extra debugging code to L<params()|Badger::Utils/params()> and
+L<self_params()|Badger::Utils/self_params()> to catch any attempt to pass
+an odd number of arguments.  
 
 =head2 Version 0.06
 
