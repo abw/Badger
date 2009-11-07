@@ -121,9 +121,15 @@ sub item {
     my $canon = dotid $type;
 
     $self->debug("Looking for '$type' or '$canon' in $self->{ items }") if DEBUG;
-    
-    my $item  = $items->{ $type  } 
-            ||= $items->{ $canon }
+    $self->debug("types: ", $self->dump_data($self->{ types })) if DEBUG;
+
+    # false but defined entry indicates the item is not found
+    return $self->not_found($type, \@args)
+        if exists $items->{ $type }
+           && not $items->{ $type };
+
+    my $item = $items->{ $type  } 
+            || $items->{ $canon }
             # TODO: this needs to be defined-or, like //
             # Plugins can return an empty string to indicate that they 
             # do nothing.
@@ -131,6 +137,8 @@ sub item {
             ||  $self->find($type, \@args)
             ||  $self->default($type, \@args)
             ||  return $self->not_found($type, \@args);
+
+    $items->{ $type } = $item;
 
     return $self->found($type, $item, \@args);
 }
