@@ -20,7 +20,7 @@ use Badger::Base;
 use Badger::Test 
     debug => 'Badger::Debug',
     args  => \@ARGV,
-    tests => 30;
+    tests => 31;
     
 
 #-----------------------------------------------------------------------
@@ -211,4 +211,25 @@ is( My::Debugger3->debug_dynamic_status, 'off', 'debugger3 dynamic debugging is 
 ok( Badger::Debug->export('foo', '$DEBUG' => 1), 'exported from Badger::Debug' );
 
 
+#-----------------------------------------------------------------------
+# test debug_at();
+#-----------------------------------------------------------------------
 
+package Badger::Test::Debug::At;
+
+use Badger::Debug ':debug';
+use Badger::Class
+    base  => 'Badger::Base',
+    debug => 1;
+
+package main;
+
+my $at = Badger::Test::Debug::At->new;
+is(
+    $at->debug_at(
+        { where => 'At the edge of time', line  => 420 }, 
+        'Flying sideways'
+    ),
+    "[At the edge of time line 420] Flying sideways\n",
+    'I can fly sideways through time'
+);

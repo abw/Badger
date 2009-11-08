@@ -27,7 +27,8 @@ use Badger::Class
     },
     exports   => {
         tags  => {
-            debug => 'debugging debug debug_up debug_caller debug_args',
+            debug => 'debugging debug debugf debug_up debug_at debug_caller 
+                      debug_args',
             dump  => 'dump dump_data dump_data_inline
                       dump_ref dump_hash dump_list dump_text'
         },
@@ -45,9 +46,10 @@ use Badger::Class
 our $PAD       = '    ';
 our $MAX_TEXT  = 48;
 our $MAX_DEPTH = 3;     # prevent runaways in debug/dump
-our $FORMAT    = "[<class> line <line>] <msg>"  
+our $FORMAT    = "[<where> line <line>] <msg>"  
     unless defined $FORMAT;
-our $CALLER_UP = 0;     # hackola to allow debug() to use a different caller
+our $CALLER_UP = 0;      # hackola to allow debug() to use a different caller
+our $CALLER_AT = { };    # ditto
 our $DEBUG     = 0 unless defined $DEBUG;
 
 
@@ -151,22 +153,36 @@ sub debug {
     my $class  = ref $self || $self;
     my $format = $FORMAT;
     my ($pkg, $file, $line) = caller($CALLER_UP);
-    $class .= " ($pkg)" unless $class eq $pkg;
+    my $where  = $class eq $pkg ? $class : $class . " ($pkg)";
     $msg .= "\n" unless $msg =~ /\n$/;
     my $data = {
         msg   => $msg,
+        where => $where,
         class => $class,
         file  => $file,
         line  => $line,
+        %$CALLER_AT,
     };
     $format =~ s/<(\w+)>/defined $data->{ $1 } ? $data->{ $1 } : "<$1 undef>"/eg;
     print STDERR $format;
 }
 
 
+sub debugf {
+    shift->debug( sprintf(@_) );
+}
+
+
 sub debug_up {
     my $self = shift;
     local $CALLER_UP = shift;
+    $self->debug(@_);
+}
+
+
+sub debug_at {
+    my $self = shift;
+    local $CALLER_AT = shift;
     $self->debug(@_);
 }
 
@@ -771,6 +787,12 @@ was called.
 
 At some point in the future this will be extended to allow you to tie in
 debug hooks, e.g. to forward to a logging module.
+
+=head2 debugf($format, $arg1, $arg2, ...)
+
+This method provides a C<printf()>-like wrapper around L<debug()>.
+
+    $object->debugf('%s is %s', e => 2.718);    # e is 2.718
 
 =head2 debug_up($n, $msg1, $msg2, ...)
 

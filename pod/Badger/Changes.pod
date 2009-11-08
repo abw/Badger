@@ -54,6 +54,10 @@ add some extra debugging code to L<params()|Badger::Utils/params()> and
 L<self_params()|Badger::Utils/self_params()> to catch any attempt to pass
 an odd number of arguments.  
 
+Added the L<debugf()|Badger::Debug/debugf()> and 
+L<debug_at()|Badger::Debug/debug_at()> methods to 
+L<Badger::Debug>.
+
 =head2 Version 0.06
 
 Added L<copy_file()|Badger::Filesystem/copy_file()> and
