@@ -10,7 +10,7 @@ use Badger::Class
     words     => 'DEBUG DEBUG_MODULES',
     exports   => {
         all   => 'plan ok is isnt like unlike pass fail     
-                  skip_some skip_rest skip_all',
+                  skip_some skip_rest skip_all manager',
         after => \&_after_hook,
         hooks => {
             lib      => [\&_lib_hook,    1],
@@ -18,7 +18,7 @@ use Badger::Class
             if_env   => [\&_if_env_hook, 1],
             debug    => \&_debug_hook,
             map { $_ => \&_export_hook }
-            qw( manager summary colour color args tests )
+            qw( summary colour color args tests )
         },
     };
 
@@ -63,6 +63,7 @@ sub _debug_hook {
     # define $DEBUG in caller
     no strict 'refs';
     *{ $target.PKG.DEBUG } = \$DEBUG;
+    *{ $target.PKG.DEBUG } = sub { $DEBUG };
 
     # set $DEBUG_MODULE in this class to contain the argument passed - a list
     # of class names to enable $DEBUG in when/if debugging is enabled
@@ -122,7 +123,9 @@ sub args {
             $self->colour(1);
         }
         elsif ($arg =~ /^(-d|--debug)$/) {
-            $self->debugging(1);
+            # physically set $DEBUG in this package (required for exported
+            # aliases) and also call debugging() for any subclasses to use
+            $self->debugging( $DEBUG = 1 );
         }
         elsif ($arg =~ /^(-s|--summary)$/) {
             $self->summary(1);
@@ -156,7 +159,7 @@ sub debug_modules {
 
 sub debugging {
     my $self    = shift;
-    my $flag    = $DEBUG = @_ ? shift : 1;
+    my $flag    = $DEBUG = (@_ ? shift : 1);
     my $modules = $self->class->var(DEBUG_MODULES) || return;
     $DEBUGGER->debug_modules($modules);
 }

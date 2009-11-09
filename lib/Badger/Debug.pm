@@ -151,7 +151,7 @@ sub debug {
     my $self   = shift;
     my $msg    = join('', @_),
     my $class  = ref $self || $self;
-    my $format = $FORMAT;
+    my $format = $CALLER_AT->{ format } || $FORMAT;
     my ($pkg, $file, $line) = caller($CALLER_UP);
     my $where  = $class eq $pkg ? $class : $class . " ($pkg)";
     $msg .= "\n" unless $msg =~ /\n$/;
