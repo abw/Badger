@@ -15,8 +15,8 @@ use strict;
 use warnings;
 
 use lib qw( t/core/lib ./lib ../lib ../../lib );
+use Badger::Debug modules => 'Badger::Utils';
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural';
-use Badger::Debug;
 use Badger::Test 
     tests => 51,
     debug => 'Badger::Utils',
@@ -94,10 +94,9 @@ sub baz { params(@_) }
 
 { 
     my @warnings;
-    local $SIG{__WARN__} = sub {
-        push(@warnings, @_);
+    local $Badger::Utils::WARN = sub {
+        push(@warnings, join('', @_));
     };
-    $Badger::Utils::DEBUG = 1;
     foo(1, 2, 3);
     is( 
         $warnings[0], 

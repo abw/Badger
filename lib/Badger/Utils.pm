@@ -18,7 +18,9 @@ use base 'Badger::Exporter';
 use File::Path;
 use Scalar::Util qw( blessed );
 use Badger::Constants 'HASH PKG DELIMITER BLANK';
-use Badger::Debug ':dump';
+use Badger::Debug 
+    import  => ':dump',
+    default => 0;
 use overload;
 use constant {
     UTILS  => 'Badger::Utils',
@@ -28,8 +30,9 @@ use constant {
 };
 
 our $VERSION  = 0.01;
-our $DEBUG    = 0 unless defined $DEBUG;
+#our $DEBUG    = 0 unless defined $DEBUG;
 our $ERROR    = '';
+our $WARN     = sub { warn @_ };  # for testing - see t/core/utils.t
 our $MESSAGES = { };
 our $HELPERS  = {       # keep this compact in case we don't need to use it
     'Digest::MD5'       => 'md5 md5_hex md5_base64',
@@ -96,45 +99,42 @@ sub textlike($) {
 }
 
 sub params {
-    # enable $DEBUG to track down calls to self_params() that pass an 
-    # off number of arguments, typically when the rhs argument returns
-    # an empty list, e.g. $obj->foo( x => this_returns_empty_list() )
-    odd_params(@_)
-        if $DEBUG 
-        && ref $_[0] ne HASH 
-        && (scalar @_) % 2;
+    # enable $DEBUG to track down calls to params() that pass an odd number 
+    # of arguments, typically when the rhs argument returns an empty list, 
+    # e.g. $obj->foo( x => this_returns_empty_list() )
+    my @args = @_;
+    local $SIG{__WARN__} = sub {
+        odd_params(@args);
+    } if DEBUG;
 
     @_ && ref $_[0] eq HASH ? shift : { @_ };
 }
 
 sub self_params {
-    # enable $DEBUG to track down calls to self_params() that pass an 
-    # off number of arguments, typically when the rhs argument returns
-    # an empty list, e.g. $obj->foo( x => this_returns_empty_list() )
-    odd_params(@_)
-        if $DEBUG 
-        && ref $_[0] ne HASH 
-        && (scalar @_) % 2;
-        
+    my @args = @_;
+    local $SIG{__WARN__} = sub {
+        odd_params(@args);
+    } if DEBUG;
+    
     (shift, @_ && ref $_[0] eq HASH ? shift : { @_ });
 }
 
 sub odd_params {
-    my $method = (caller(1))[3];
-    warn(
+    my $method = (caller(2))[3];
+    $WARN->(
         "$method() called with an odd number of arguments: ", 
-        join(', ', @_),
+        join(', ', map { defined $_ ? $_ : '<undef>' } @_),
         "\n"
     );
-    my $i = 2;
+    my $i = 3;
     while (1) {
         my @info = caller($i);
         last unless @info;
         my ($pkg, $file, $line, $sub) = @info;
-        warn(
+        $WARN->(
             sprintf(
                 "%4s: Called from %s in %s at line %s\n",
-                '#' . ($i++ - 1), $sub, $file, $line
+                '#' . ($i++ - 2), $sub, $file, $line
             )
         );
     }
@@ -295,7 +295,7 @@ L<Scalar::Util>.
 
 =head2 params(@args)
 
-Method to coerce a list of named paramters to a hash array reference.  If the
+Method to coerce a list of named parameters to a hash array reference.  If the
 first argument is a reference to a hash array then it is returned.  Otherwise
 the arguments are folded into a hash reference.
 
@@ -303,6 +303,22 @@ the arguments are folded into a hash reference.
     
     params({ a => 10 });            # { a => 10 }
     params( a => 10 );              # { a => 10 }
+
+Pro Tip: If you're getting warnings about an "Odd number of elements in
+anonymous hash" then try enabling debugging in C<Badger::Utils>. To do this,
+add the following to the start of your program before you've loaded
+C<Badger::Utils>:
+
+    use Badger::Debug
+        modules => 'Badger::Utils'
+
+When debugging is enabled in C<Badger::Utils> you'll get a full stack 
+backtrace showing you where the subroutine was called from.  e.g.
+
+    Badger::Utils::self_params() called with an odd number of arguments: <undef>
+    #1: Called from Foo::bar in /path/to/Foo/Bar.pm at line 210
+    #2: Called from Wam::bam in /path/to/Wam/Bam.pm at line 420
+    #3: Called from main in /path/to/your/script.pl at line 217
 
 =head2 self_params(@args)
 
@@ -315,6 +331,10 @@ the argument list.
         my ($self, $params) = self_params(@_);
         # do something...
     }
+
+If you enable debugging in C<Badger::Utils> then you'll get a stack backtrace
+in the event of an odd number of parameters being passed to this function.
+See L<params()> for further details.
 
 =head2 odd_params(@_)
 
