@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Debug modules => 'Badger::Utils';
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural';
 use Badger::Test 
-    tests => 51,
+    tests => 52,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -241,16 +241,20 @@ is( length random_name(64), 64, 'random_name(16) length is 64');
 
 
 #-----------------------------------------------------------------------
-# test camel_case()
+# test camel_case() and CamelCase
 #-----------------------------------------------------------------------
 
-use Badger::Utils 'camel_case';
+use Badger::Utils 'camel_case CamelCase';
 
 is( camel_case('hello_world'), 'HelloWorld', 
    "camel_case('hello_world') => 'HelloWorld'" 
 );
 is( camel_case('FOO_bar'), 'FOOBar', 
    "camel_case('FOO_bar') => 'FOOBar'"
+);
+
+is( CamelCase('hello_world'), 'HelloWorld', 
+   "CamelCase('hello_world') => 'HelloWorld'" 
 );
 
 

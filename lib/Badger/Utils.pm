@@ -57,13 +57,17 @@ our $RANDOM_NAME_LENGTH = 32;
 
 __PACKAGE__->export_any(qw(
     UTILS blessed is_object numlike textlike params self_params plural 
-    xprintf dotid random_name camel_case
+    xprintf dotid random_name camel_case CamelCase
 ));
 
 __PACKAGE__->export_fail(\&_export_fail);
 
 # looks_like_number() is such a mouthful.  I prefer numlike() to go with textlike()
 *numlike = \&Scalar::Util::looks_like_number;
+
+# it would be too confusing not to have this alias
+*CamelCase = \&camel_case;
+
 
 sub _export_fail {    
     my ($class, $target, $symbol, $more_symbols) = @_;
@@ -424,7 +428,7 @@ suitable for feeding into C<require()>
 
     print module_file('My::Module');     # My/Module.pm
 
-=head2 camel_case($lower_case_string)
+=head2 camel_case($string) / CamelCase($string)
 
 Converts a lower case string where words are separated by underscores (e.g.
 C<like_this_example>) into CamelCase where each word is capitalised and words
