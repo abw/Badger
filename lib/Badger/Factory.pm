@@ -121,7 +121,7 @@ sub item {
     my $canon = dotid $type;
 
     $self->debug("Looking for '$type' or '$canon' in $self->{ items }") if DEBUG;
-    $self->debug("types: ", $self->dump_data($self->{ types })) if DEBUG;
+#   $self->debug("types: ", $self->dump_data($self->{ types })) if DEBUG;
 
     # false but defined entry indicates the item is not found
     return $self->not_found($type, \@args)

@@ -13,10 +13,9 @@
 
 use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Test
-    tests => 49,
+    tests => 55,
     debug => 'Badger::Class::Methods',
     args  => \@ARGV;
-
 
 #-----------------------------------------------------------------------
 # test using Badger::Class::Methods directly
@@ -174,6 +173,43 @@ ok( $mutate, 'created mutator method' );
 is( $mutate->($dummy, 3.14159), 3.14159, 'mutator works' );
 is( $access->($dummy), 3.14159, 'value updated' );
 
+
+
+#-----------------------------------------------------------------------
+# test the auto_can() method
+#-----------------------------------------------------------------------
+
+package Badger::Test::Autocan;
+
+use Badger::Class
+    base        => 'Badger::Base',
+    auto_can    => 'test_method',
+    accessors   => 'x y',
+    config      => 'x=10 y=20',
+    init_method => 'configure';
+
+sub test_method {
+    my ($self, $name) = @_;
+    
+    if ($name =~ /^test_/) {
+        return sub {
+            my $this = shift;
+            return "You called $name(" . join(', ', @_) . ')';
+        }
+    }
+}
+
+package main;
+
+use constant AUTOCAN => 'Badger::Test::Autocan';
+
+my $xy = AUTOCAN->new;
+ok( $xy, 'created auto_can object' );
+is( $xy->x, 10, 'x is 10' );
+is( $xy->y, 20, 'y is 20' );
+is( $xy->test_foo(30), 'You called test_foo(30)', 'called test_foo()' );
+ok( ! $xy->try->bad_foo(30), 'failed to call bad_foo()' );
+like( $xy->reason->info, "Invalid method 'bad_foo' called on Badger::Test::Autocan", 'got error message' );
 
 
 __END__

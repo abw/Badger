@@ -74,6 +74,7 @@ our $DELEGATES = {
     mutators     => [ METHODS    => 'mutators'       ],
     slots        => [ METHODS    => 'slots'          ],
     init_method  => [ METHODS    => 'initialiser'    ],
+    auto_can     => [ METHODS    => 'auto_can'       ],
     utils        => [ UTILS      => 'export'         ],
     vars         => [ VARS       => 'vars'           ],
 };
@@ -96,7 +97,7 @@ our $EXPORT_HOOKS = {
         base uber mixin mixins version constant constants words vars 
         config exports throws messages utils codec codecs filesystem
         hooks methods slots accessors mutators get_methods set_methods 
-        hash_methods init_method overload as_text is_true
+        hash_methods init_method auto_can overload as_text is_true
     )
 };
 

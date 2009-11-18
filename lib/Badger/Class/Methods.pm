@@ -17,13 +17,13 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Base',
     import    => 'class BCLASS',
-    constants => 'DELIMITER ARRAY HASH',
+    constants => 'DELIMITER ARRAY HASH PKG',
     utils     => 'is_object',
     exports   => {
         hooks => {
             init => \&initialiser,
             map { $_ => [\&generate, 1] }
-            qw( accessors mutators get set slots hash )
+            qw( accessors mutators get set slots hash auto_can )
         },
     },
     messages  => {
@@ -38,6 +38,7 @@ use Badger::Class
 *get = \&accessors;
 *set = \&mutators;
 
+our $AUTOLOAD;
 
 sub generate {
     my $class   = shift;
@@ -143,6 +144,36 @@ sub slots {
             }
         );
     }
+}
+
+sub auto_can {
+    my ($class, $target, $methods) = shift->args(@_);
+
+    die "auto_can only support a single method at this time\n"
+        if @$methods != 1;
+        
+    my $method = shift @$methods;
+
+    $target->import_symbol( 
+        can => sub {
+            my ($this, $name, @args) = @_;
+            my $target;
+            return $this->SUPER::can($name)
+                || $this->$method($name, @args);
+        }
+    );
+
+    $target->import_symbol( 
+        AUTOLOAD => sub {
+            my ($this, @args) = @_;
+            my ($name) = ($AUTOLOAD =~ /([^:]+)$/ );
+            return if $name eq 'DESTROY';
+            if (my $method = $this->can($name, @args)) {
+                return $method->($this, @args);
+            }
+            return $this->error_msg( bad_method => $name, ref $this, (caller())[1,2] );
+        }
+    );
 }
 
 sub args {
@@ -428,6 +459,45 @@ The methods generated are mutators.  That is, you can pass an argument
 to update the slot value.
 
     $bus->size('large');
+
+=head2 auto_can($class,$method)
+
+This method installs a custom C<AUTOLOAD> method into C<$class> that calls
+its own C<can()> method.  It then installs a C<can()> method that calls
+the C<$method> specified to see if it can automatically generate a method.
+
+Consider this example:
+
+    package Badger::Test::Autocan;
+    
+    use Badger::Class
+        base     => 'Badger::Base',
+        auto_can => 'new_method';
+
+    sub new_method {
+        my ($self, $name) = @_;
+
+        return sub {
+            my $this = shift;
+            return "This is the new $name method";
+        };
+    }
+
+If you call a method that doesn't exist then the C<new_method()> method 
+will be called to generate the method.  The method is then installed in the
+package so that subsequent calls to it will resolve directly to it.
+
+    my $obj = Badger::Test::Autocan->new;
+    print $obj->wibble;     # This is the new wibble method
+
+You can also call C<can()> and the method will be auto-created.
+
+    my $method = $obj->can('wobble');
+    print $obj->$method();  # This is the new wobble method
+
+If the generator method (C<new_method()> in this example) returns a false 
+value then C<can()> will return false and the C<AUTOLOAD> method will raise
+an "Invalid method..." error.
 
 =head1 INTERNAL METHODS
 
