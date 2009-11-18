@@ -169,6 +169,7 @@ sub auto_can {
             my ($name) = ($AUTOLOAD =~ /([^:]+)$/ );
             return if $name eq 'DESTROY';
             if (my $method = $this->can($name, @args)) {
+                $target->method( $name => $method );
                 return $method->($this, @args);
             }
             return $this->error_msg( bad_method => $name, ref $this, (caller())[1,2] );
