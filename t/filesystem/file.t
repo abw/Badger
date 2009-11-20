@@ -180,7 +180,7 @@ $fh8->print("this is a test file");
 $fh8->close;
 ok( $file8->writeable, 'file is writable' );
 ok( $file8->permissions & 0020, 'file is group writable' );
-
+$file8->delete;
 
 __END__
 test_file('file.t');
