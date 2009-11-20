@@ -463,42 +463,94 @@ to update the slot value.
 
 =head2 auto_can($class,$method)
 
-This method installs a custom C<AUTOLOAD> method into C<$class> that calls
-its own C<can()> method.  It then installs a C<can()> method that calls
-the C<$method> specified to see if it can automatically generate a method.
+This can be used to define a method that automatically generates other
+methods on demand.  
 
-Consider this example:
+Suppose you have a view class that renders a view of a tree. In classic
+I<double dispatch> style, each node in the tree calls a method against the
+view object corresponding to the node's type. A C<text> node calls
+C<$view-E<gt>view_text($self)>, a C<bold> node calls
+C<$view-E<gt>view_bold($self)>, and so on (we're assuming that this is some
+kind of document object model we're rendering, but it could apply to
+anything).
 
-    package Badger::Test::Autocan;
-    
-    use Badger::Class
-        base     => 'Badger::Base',
-        auto_can => 'new_method';
+Our view methods might look something like this:
 
-    sub new_method {
-        my ($self, $name) = @_;
-
-        return sub {
-            my $this = shift;
-            return "This is the new $name method";
-        };
+    sub view_text {
+        my ($self, $node) = @_;
+        print "TEXT: $node\n";
     }
 
-If you call a method that doesn't exist then the C<new_method()> method 
-will be called to generate the method.  The method is then installed in the
-package so that subsequent calls to it will resolve directly to it.
+    sub view_bold {
+        my ($self, $node) = @_;
+        print "BOLD: $node\n";
+    }
 
-    my $obj = Badger::Test::Autocan->new;
-    print $obj->wibble;     # This is the new wibble method
+This can get rather repetitive and boring if you've got lots of different
+node types.  So instead of defining all the methods manually, you can declare
+an C<auto_can> method that will create methods on demand.
 
-You can also call C<can()> and the method will be auto-created.
+    use Badger::Class
+        auto_can => 'can_view';
 
-    my $method = $obj->can('wobble');
-    print $obj->$method();  # This is the new wobble method
+    sub can_view {
+        my ($self, $name) = @_;
+        my $NAME = uc $name;
+        
+        return sub {
+            my ($self, $node) = @_;
+            print "$NAME: $node";
+        }
+    }
 
-If the generator method (C<new_method()> in this example) returns a false 
-value then C<can()> will return false and the C<AUTOLOAD> method will raise
-an "Invalid method..." error.
+The method should return a subroutine reference or any false value if it
+declines to generate a method.  For example, you might want to limit the 
+generator method to only creating methods that match a particular format.
+
+    sub can_view {
+        my ($self, $name) = @_;
+
+        # only create methods that are prefixed with 'view_'
+        if ($name =~ s/^view_//) {
+            my $NAME = uc $name;
+            
+            return sub {
+                my ($self, $node) = @_;
+                print "$NAME: $node";
+            }
+        }
+        else {
+            return undef;
+        }
+    }
+
+The C<auto_can()> method adds C<AUTOLOAD()> and C<can()> methods to your 
+class.  The C<can()> method first looks to see if the method is pre-defined
+(i.e. it does what the default C<can()> method does).  If it isn't, it then
+calls the C<can_view()> method that we've declared using the C<auto_can> 
+option (you can call your method C<auto_can()> if you like, but in this 
+case we're calling it C<can_view()> just to be different).  The end result
+is that you can call C<can()> and it will generate any missing methods on
+demand.
+
+    # this calls can_view() which returns a CODE sub 
+    my $method = $object->can('view_italic');
+
+The C<AUTOLOAD()> method is invoked whenever you call a method that 
+doesn't exist.  It calls the C<can()> method to automatically generate 
+the method and then installs the new method in the package's symbol table.
+The next time you call the method it will be there waiting for you.  There's
+no need for the C<AUTOLOAD()> method to get involved from that point on.
+
+    # this calls can_view() to create the method and then calls it
+    $object->view_cheese('Camembert');      # CHEESE: Camembert
+    
+    # this directly calls the new method
+    $object->view_cheese('Cheddar');        # CHEESE: Cheddar
+
+If your C<can_view()> method returns a false value then C<AUTOLOAD()> 
+will raise the familiar "Invalid method..." error that you would normally
+get from calling a non-existent method.
 
 =head1 INTERNAL METHODS
 

@@ -2022,6 +2022,42 @@ See the L<init_method()> method and the
 L<initialiser()|Badger::Class::Methods/initialiser()> method in
 L<Badger::Class::Methods> for further information.
 
+=head2 auto_can
+
+This can be used to define a method that automatically generates other 
+methods on demand.  
+
+    use Badger::Class
+        auto_can => 'auto_can';
+        
+    sub auto_can {
+        my ($self, $name) = @_;
+        
+        return sub {
+            my $self = shift;
+            print "This is the auto-generated $name method";
+        }
+    }
+
+Now when you call an undefined method it will be generated on demand:
+
+    $object->foo;       # This is the auto-generated foo method
+
+Your method doesn't have to be called C<auto_can()>.  You can call it 
+anything you like.
+
+    use Badger::Class
+        auto_can => 'method_maker';
+        
+    sub method_maker {
+        my ($self, $name) = @_;
+
+        #...etc...
+    }
+
+See the L<auto_can()> method in L<Badger::Class::Methods> for further
+information.
+
 =head2 overload
 
 This can be used as a shortcut to the C<overload> module to overload
