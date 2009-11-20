@@ -153,7 +153,7 @@ sub debug {
     my $class  = ref $self || $self;
     my $format = $CALLER_AT->{ format } || $FORMAT;
     my ($pkg, $file, $line) = caller($CALLER_UP);
-    my $where  = $class eq $pkg ? $class : $class . " ($pkg)";
+    my $where  = ($class eq $pkg) ? $class : $class . " ($pkg)";
     $msg .= "\n" unless $msg =~ /\n$/;
     my $data = {
         msg   => $msg,
@@ -169,6 +169,7 @@ sub debug {
 
 
 sub debugf {
+    local $CALLER_UP = 1;
     shift->debug( sprintf(@_) );
 }
 
@@ -356,7 +357,7 @@ sub enable_colour {
 
     # colour the debug format
     $FORMAT 
-         = cyan('[<class> line <line>]')
+         = cyan('[<where> line <line>]')
          . yellow(' <msg>');
 
     # exceptions are in red

@@ -59,6 +59,7 @@ sub _debug_hook {
     my ($class, $target, $key, $symbols, $import) = @_;
     croak "You didn't specify any values for the 'debug' load option.\n" 
         unless @$symbols;
+        
 
     # define $DEBUG in caller
     no strict 'refs';
