@@ -12,6 +12,7 @@ lib/Badger/Codec/Encode.pm
 lib/Badger/Codec/Encoding.pm
 lib/Badger/Codec/JSON.pm
 lib/Badger/Codec/Storable.pm
+lib/Badger/Codec/TT.pm
 lib/Badger/Codec/Unicode.pm
 lib/Badger/Codec/URI.pm
 lib/Badger/Codec/URL.pm
@@ -71,6 +72,7 @@ t/codec/encoding.t
 t/codec/json.t
 t/codec/lib/My/Codec/Foo.pm
 t/codec/storable.t
+t/codec/tt.t
 t/codec/unicode.t
 t/codec/uri.t
 t/codec/url.t
@@ -95,6 +97,9 @@ t/core/lib/My/Debugger2.pm
 t/core/lib/My/Debugger3.pm
 t/core/lib/My/Exporter/Base1.pm
 t/core/lib/My/Exporter/Base2.pm
+t/core/lib/My/Exporter/BeforeAfter.pm
+t/core/lib/My/Exporter/BeforeAfterOne.pm
+t/core/lib/My/Exporter/BeforeAfterTwo.pm
 t/core/lib/My/Exporter/Explicit.pm
 t/core/lib/My/Exporter/Generator.pm
 t/core/lib/My/Exporter/Subclass1.pm
@@ -128,6 +133,8 @@ t/filesystem/path.t
 t/filesystem/testfiles/callsigns
 t/filesystem/testfiles/dirtest1
 t/filesystem/testfiles/dirtest2
+t/filesystem/testfiles/group_write
+t/filesystem/testfiles/gw2
 t/filesystem/testfiles/newfile
 t/filesystem/testfiles/utf8_data
 t/filesystem/testfiles/vdir_four/wibble
