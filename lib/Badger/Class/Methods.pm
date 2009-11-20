@@ -492,7 +492,7 @@ an C<auto_can> method that will create methods on demand.
 
     use Badger::Class
         auto_can => 'can_view';
-
+        
     sub can_view {
         my ($self, $name) = @_;
         my $NAME = uc $name;
@@ -509,7 +509,7 @@ generator method to only creating methods that match a particular format.
 
     sub can_view {
         my ($self, $name) = @_;
-
+        
         # only create methods that are prefixed with 'view_'
         if ($name =~ s/^view_//) {
             my $NAME = uc $name;

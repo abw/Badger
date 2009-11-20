@@ -2051,12 +2051,12 @@ anything you like.
         
     sub method_maker {
         my ($self, $name) = @_;
-
+        
         #...etc...
     }
 
-See the L<auto_can()> method in L<Badger::Class::Methods> for further
-information.
+See the L<auto_can()|Badger::Class::Methods/auto_can()> method in
+L<Badger::Class::Methods> for further information.
 
 =head2 overload
 
