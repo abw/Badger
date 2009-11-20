@@ -61,6 +61,8 @@ L<Badger::Debug>.
 Added the L<auto_can()|Badger::Class::Methods/auto_can()> method to 
 L<Badger::Class::Methods>.
 
+Added the L<Badger::Codec::HTML> module which defines the C<html> codec. 
+
 =head2 Version 0.06
 
 Added L<copy_file()|Badger::Filesystem/copy_file()> and

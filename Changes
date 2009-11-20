@@ -45,6 +45,8 @@ CHANGES
 
     Added the auto_can() method to Badger::Class::Methods.
 
+    Added the Badger::Codec::HTML module which defines the "html" codec.
+
   Version 0.06
     Added copy_file() and move_file() to Badger::Filesystem and copy() and
     move() methods to Badger::Filesystem::File.

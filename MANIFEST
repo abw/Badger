@@ -10,6 +10,7 @@ lib/Badger/Codec/Base64.pm
 lib/Badger/Codec/Chain.pm
 lib/Badger/Codec/Encode.pm
 lib/Badger/Codec/Encoding.pm
+lib/Badger/Codec/HTML.pm
 lib/Badger/Codec/JSON.pm
 lib/Badger/Codec/Storable.pm
 lib/Badger/Codec/TT.pm
@@ -69,6 +70,7 @@ t/codec/codec.t
 t/codec/codecs.t
 t/codec/encode.t
 t/codec/encoding.t
+t/codec/html.t
 t/codec/json.t
 t/codec/lib/My/Codec/Foo.pm
 t/codec/storable.t
@@ -133,8 +135,6 @@ t/filesystem/path.t
 t/filesystem/testfiles/callsigns
 t/filesystem/testfiles/dirtest1
 t/filesystem/testfiles/dirtest2
-t/filesystem/testfiles/group_write
-t/filesystem/testfiles/gw2
 t/filesystem/testfiles/newfile
 t/filesystem/testfiles/utf8_data
 t/filesystem/testfiles/vdir_four/wibble
