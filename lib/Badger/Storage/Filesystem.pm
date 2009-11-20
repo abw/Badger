@@ -105,14 +105,8 @@ Badger::Storage::Filesystem - filesystem-based persistent storage
 
 =head1 DESCRIPTION
 
-This module implements an abstract interface for storing persistent data.
-It is not intended to be used by itself, but as a base class for other modules
-that implement the specifics of storing data in a filesystem, database, or
-some other environment.
-
-The L<Badger::Storage::Filesystem> module is a subclass for storing data in
-files on your local filesystem.  Other storage modules are expected to follow
-in the fullness of time.
+The L<Badger::Storage::Filesystem> module is a subclass of L<Badger::Storage>
+for storing data in files on your local filesystem.
 
 =head1 METHODS
 
