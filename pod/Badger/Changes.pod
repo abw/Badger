@@ -58,10 +58,16 @@ Added the L<debugf()|Badger::Debug/debugf()> and
 L<debug_at()|Badger::Debug/debug_at()> methods to 
 L<Badger::Debug>.
 
+Added the L<alias()|Badger::Class/alias()> method to 
+L<Badger::Class>.
+
 Added the L<auto_can()|Badger::Class::Methods/auto_can()> method to 
 L<Badger::Class::Methods>.
 
 Added the L<Badger::Codec::HTML> module which defines the C<html> codec. 
+
+Changed the L<throw()|Badger::Base/throw()> method in L<Badger::Base> to
+pass the exception type to L<exception()|Badger::Base/exception()>.
 
 =head2 Version 0.06
 

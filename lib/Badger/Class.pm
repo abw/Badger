@@ -96,8 +96,9 @@ our $EXPORT_HOOKS = {
     qw( 
         base uber mixin mixins version constant constants words vars 
         config exports throws messages utils codec codecs filesystem
-        hooks methods slots accessors mutators get_methods set_methods 
-        hash_methods init_method auto_can overload as_text is_true
+        hooks methods alias slots accessors mutators get_methods 
+        set_methods hash_methods init_method auto_can overload as_text 
+        is_true
     )
 };
 
@@ -692,6 +693,23 @@ sub methods {
     return $self;
 }
 
+sub alias {
+    my $self = shift;
+    my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
+    my $pkg  = $self->{ name };
+    no strict REFS;
+    
+    while (my ($name, $code) = each %$args) {
+        _debug("defining alias: $self\::$name => $code\n") if DEBUG;
+        *{ $pkg.PKG.$name } 
+            = ref $code eq CODE 
+                ? $code 
+                : $self->method($code)
+               || croak "Invalid method specified for '$name' alias: $code";
+    }
+    return $self;
+}
+
 sub overload {
     my $self = shift;
     my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
@@ -747,7 +765,7 @@ sub maybe_load {
         my $name = $self->{ name };
         $name =~ s/\W+/\\W+/g;
         _debug("checking to see if we couldn't locate $name\n") if DEBUG;
-        die $@ if $@ && $@ !~ /^Can't locate $name.*? in \@INC/;
+        croak $@ if $@ && $@ !~ /^Can't locate $name.*? in \@INC/;
         0;
     }
 }
@@ -810,7 +828,7 @@ sub _autoload {
         $v = ${ $class.PKG.VERSION } ||= 0;             # TODO: ??
         local $SIG{__DIE__};
         eval "use $class";
-        die $@ if $@;
+        croak $@ if $@;
         ${ $class.PKG.LOADED } ||= 1;
     }
     return $class;
@@ -1936,6 +1954,18 @@ subroutines or methods into a class.
 
 See the L<methods> method for further details.
 
+=head2 alias
+
+This can be used to define aliases to existing methods.
+
+    use Badger::Class
+        methods => {
+            foo => \&bar,
+            baz => 'bam',
+        };
+
+See the L<methods> method for further details.
+
 =head2 slots
 
 This can be used to define methods for list-based objects.
@@ -2727,6 +2757,35 @@ This method can be used to define new methods in the target class.
         foo => sub { ... }, 
         bar => sub { ... },
     )       
+
+=head2 alias(\%methods)
+
+This method can be used to define aliases for existing methods in the target
+class. The alias can be defined as an anonymous subroutine in which case it
+behaves in exactly the same way as L<methods()>.
+
+    class->alias( 
+        foo => sub { ... }
+    );
+
+However, it's more common to want to alias one method to another existing
+method:
+
+    class->alias( 
+        foo => \&bar,
+    );
+    
+    sub bar {
+        ...
+    }
+
+You can also create aliases by name. In this case, the method will be resolved
+(using the L<method()> method) to find the method in the current class or any
+of the base classes.
+
+    class->alias( 
+        foo => 'bar',
+    );
 
 =head2 accessors($names) / get_methods($names)
 

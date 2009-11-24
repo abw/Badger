@@ -266,7 +266,11 @@ sub exception {
     my $self  = shift;
     my $type  = reftype $self || BLANK;
     my $emod;
-    
+
+    # TODO: Move this into Template::Class.  It's so rare that you want to 
+    # set an exception type this way.  Then we can have throw() pass the $type
+    # to exception() and allow subclasses to make a decision about what kind
+    # of exception to return based on the $type.
     if (@_) {
         # as per throws() above, we have to be careful to only treat $self
         # like a hash when it is a hash-based object

@@ -90,6 +90,9 @@ sub text {
 
     # TODO: extend Badger::Utils::xprintf to handle this
     $text  =~ s/<(\w+)>/defined $self->{ $1 } ? $self->{ $1 } : "(no $1)"/eg;
+    
+    # TODO: not sure we should add file and line automatically - better to 
+    # leave it up to the $FORMAT
     $text .= " in $self->{ file }"      if $self->{ file };
     $text .= " at line $self->{ line }" if $self->{ line };
     

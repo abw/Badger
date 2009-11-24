@@ -15,7 +15,7 @@ use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 BEGIN { $Badger::Class::DEBUG = 1 if grep /-d/, @ARGV }
 use Badger::Class;
 use Badger::Test
-    tests => 128,
+    tests => 133,
     debug => 'Badger::Class Badger::Exporter',
     args  => \@ARGV;
 
@@ -663,6 +663,46 @@ package main;
 
 is( Badger::Test::BClass->thingy, 'frusset pouch', 
     'you have pleasantly wibbled my frusset pouch' );
+
+
+#-----------------------------------------------------------------------
+# test alias method
+#-----------------------------------------------------------------------
+
+package Badger::Test::Alias;
+use Badger::Class
+    base    => 'Badger::Base',
+    debug   => 0,
+    import  => 'class';
+
+sub foo {
+    'this is foo';
+}
+
+class->alias( bar => 'foo' );
+
+package main;
+
+my $alias = Badger::Test::Alias->new;
+is( $alias->foo, 'this is foo', 'alias foo' );
+is( $alias->bar, 'this is foo', 'alias bar' );
+
+
+package Badger::Test::SubAlias;
+use Badger::Class
+    base    => 'Badger::Test::Alias',
+    alias   => {
+        wiz => 'foo',
+    };
+
+package main;
+
+$alias = Badger::Test::SubAlias->new;
+is( $alias->foo, 'this is foo', 'sub alias foo' );
+is( $alias->bar, 'this is foo', 'sub alias bar' );
+is( $alias->wiz, 'this is foo', 'sub alias wiz' );
+
+
 
 __END__
 #-----------------------------------------------------------------------
