@@ -18,7 +18,7 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Base;
 use Badger::Test 
-    tests => 107,
+    tests => 111,
     debug => 'Badger::Exporter',
     args  => \@ARGV;
 
@@ -551,6 +551,12 @@ sub not_done {
     $self->todo('with argument');
 }
 
+sub sensitive {
+    return wantarray
+        ? ('called', 'in', 'list', 'context')
+        : 'called in scalar context';
+}
+
 package main;
 my $mouse = Danger::Mouse->new();
 ok( ! eval { $mouse->hurl('cheese') }, 'eval failed' );
@@ -568,9 +574,15 @@ like( $mouse->reason, qr/danger\.mouse error - not_done\(\) is TODO for Danger::
 ok( ! $mouse->try( not_done => 10 ), 'not_done with arg' );
 like( $mouse->reason, qr/danger\.mouse error - not_done\(\) with argument is TODO for Danger::Mouse/, 'danger mouse todo' );
 
+my $result = $mouse->try('sensitive');
+is( $result, 'called in scalar context', 'try() preserves scalar context' );
+
+my @result = $mouse->try('sensitive');
+is( join(', ', @result), 'called, in, list, context', 'try() preserves list context' );
+
 
 #-----------------------------------------------------------------------
-# test try monad
+# test try nomad
 #-----------------------------------------------------------------------
 
 ok( ! $mouse->try->hurl('cheese'), 'try trial failed' );
@@ -584,6 +596,13 @@ like( $mouse->reason, qr/danger\.mouse error - not_done\(\) is TODO for Danger::
 
 ok( ! $mouse->try->not_done(10), 'not_done trial with arg' );
 like( $mouse->reason, qr/danger\.mouse error - not_done\(\) with argument is TODO for Danger::Mouse/, 'danger mouse trial todo' );
+
+$result = $mouse->try->sensitive;
+is( $result, 'called in scalar context', 'try-> preserves scalar context' );
+
+@result = $mouse->try->sensitive;
+is( join(', ', @result), 'called, in, list, context', 'try-> preserves list context' );
+
 
 
 #-----------------------------------------------------------------------

@@ -220,9 +220,17 @@ sub throw {
 sub try {
     my $self = shift;
     if (@_) {
-        my $method = shift;     # || return $self->error_msg( missing_to => method => 'try' );
-        eval { $self->$method(@_) }
-            || $self->decline($@);
+        my $method = shift;
+        if (wantarray) {
+            my @result = eval { $self->$method(@_) };
+            $self->decline($@) if $@;
+            return @result;
+        }
+        else {
+            my $result = eval { $self->$method(@_) };
+            $self->decline($@) if $@;
+            return $result;
+        }
     }
     else {
         return TRIAL->_bind_($self);
@@ -470,7 +478,7 @@ sub _dispatch_handlers {
 
 
 #-----------------------------------------------------------------------
-# Badger::Base::Trial - monadic object for $object->try operation
+# Badger::Base::Trial - nomadic object for $object->try operation
 #-----------------------------------------------------------------------
 
 package Badger::Base::Trial;
@@ -483,17 +491,21 @@ sub _bind_ {
 
 sub AUTOLOAD {
     my $self = shift;
-    my ($name) = ($AUTOLOAD =~ /([^:]+)$/ );
-    return if $name eq 'DESTROY';
+    my ($method) = ($AUTOLOAD =~ /([^:]+)$/ );
+    return if $method eq 'DESTROY';
 
     # call method on target object in eval block, and downgrade
+    if (wantarray) {
+        my @result = eval { $$self->$method(@_) };
+        $$self->decline($@) if $@;
+        return @result;
+    }
+    else {
+        my $result = eval { $$self->$method(@_) };
+        $$self->decline($@) if $@;
+        return $result;
+    }
 
-    my $result = eval { $$self->$name(@_) };
-#    $$self->debug("result ($@): [", defined $result ? $result : '<undef>', ']');
-    return defined $result
-        ? $result
-        : $$self->decline($@);
-    
     # TODO: catch missing error methods
 }
 

@@ -69,6 +69,10 @@ Added the L<Badger::Codec::HTML> module which defines the C<html> codec.
 Changed the L<throw()|Badger::Base/throw()> method in L<Badger::Base> to
 pass the exception type to L<exception()|Badger::Base/exception()>.
 
+Changed the L<try()|Badger::Base/try()> method in L<Badger::Base> to
+preserve the list/scalar calling context and to handle false but defined
+values.
+
 =head2 Version 0.06
 
 Added L<copy_file()|Badger::Filesystem/copy_file()> and
