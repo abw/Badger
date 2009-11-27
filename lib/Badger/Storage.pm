@@ -8,12 +8,29 @@ use Badger::Class
     utils       => 'md5_hex random_name',
     config      => [
         'id_length|class:ID_LENGTH=32',
-    ];
+    ],
+    messages    => {
+        not_found => 'Storage record not found: %s', 
+    };
+
 
 sub init_storage {
     # return $self in base class - most subclasses will redefine this method
     $_[0];
 }
+
+
+sub generate_id {
+    my $self = shift;
+    return random_name( $self->{ id_length }, @_ );
+}
+    
+
+
+#-----------------------------------------------------------------------
+# The canonical method names are create(), store(), fetch() and delete().
+# These are the ones that sub-classes should re-define.
+#-----------------------------------------------------------------------
 
 sub create {
     my $self = shift;
@@ -34,11 +51,76 @@ sub delete {
     shift->not_implemented;
 }
 
-sub generate_id {
-    my $self = shift;
-    return random_name( $self->{ id_length }, @_ );
+
+#-----------------------------------------------------------------------
+# We also create wrapper methods, either to provide a compatible 
+# interface with other module (e.g. Cache::Cache) or just for the sake 
+# of convenience.  Note that we create full blown methods that delegate
+# to the canonical method.   We avoid the temptation to create aliases
+# because they would alias the base class methods and avoid any re-
+# definitions of the core methods by subclasses.
+#
+# Here we have insert(), set(), get() and remove().
+#-----------------------------------------------------------------------
+
+sub insert {
+    shift->create(@_);
 }
-    
+
+sub set {
+    shift->store(@_);
+}
+
+sub get {
+    shift->fetch(@_);
+}
+
+sub remove {
+    shift->delete(@_);
+}
+
+#-----------------------------------------------------------------------
+# We also add post() and put() to complete the REST names (along with 
+# get() and delete() defined above).
+#-----------------------------------------------------------------------
+
+sub post {
+    shift->create(@_);
+}
+
+sub put {
+    shift->store(@_);
+}
+
+
+#-----------------------------------------------------------------------
+# Finally we add the ones we're missing for a CRUD set: retrieve()
+# and update().
+#-----------------------------------------------------------------------
+
+sub retrieve {
+    shift->fetch(@_);
+}
+
+sub update {
+    shift->store(@_);
+}
+
+
+#-----------------------------------------------------------------------
+# What do you mean some people think the 'R' in 'CRUD' stands for 'Read'?
+# Oh well, here you go then.  Here's read() and write()
+#-----------------------------------------------------------------------
+
+sub read {
+    shift->fetch(@_);
+}
+
+sub write {
+    shift->store(@_);
+}
+
+
 1;
 
 __END__
@@ -103,7 +185,11 @@ The L<Badger::Storage::Filesystem> module is a subclass for storing data in
 files on your local filesystem.  Other storage modules are expected to follow
 in the fullness of time.
 
-=head1 METHODS
+=head1 THE BIG FOUR METHODS
+
+The following four methods are the canonical methods for creating, fetching,
+storing and deleting storage records.  Subclasses should re-define these
+methods.
 
 =head2 create($data)
 
@@ -126,27 +212,6 @@ This is equivalent to:
 
     my $id = eval { $storage->create($data) }
         || warn $storage->error;
-
-=head2 store($id,$data)
-
-This method is used to store data.  The first argument is a unique identifier
-for the data.  The second argument should be a reference to the data to be
-stored (e.g. a hash or list reference).
-
-    $storage->store($id, $data);
-
-It returns a true value which you can test if you want the warm glow of
-satisfaction that it performed its job as expected.  
-
-    if ($storage->store($id, $data)) {
-        # phew!
-    }
-
-However, all errors are thrown as L<exceptions|Badger::Exception> so there's
-no need to test the return value at all. If the method returns, then it
-succeeded. You can use C<eval { }> if you want to trap errors, or the
-L<try()|Badger::Base/try()> method, as shown in the documentation for 
-L<create()>.
 
 =head2 fetch($id)
 
@@ -188,6 +253,27 @@ unloaded for whatever reason.
     my $config = $storage->fetch( $config_file_name )
         || die $storage->error;
 
+=head2 store($id,$data)
+
+This method is used to store data.  The first argument is a unique identifier
+for the data.  The second argument should be a reference to the data to be
+stored (e.g. a hash or list reference).
+
+    $storage->store($id, $data);
+
+It returns a true value which you can test if you want the warm glow of
+satisfaction that it performed its job as expected.  
+
+    if ($storage->store($id, $data)) {
+        # phew!
+    }
+
+However, all errors are thrown as L<exceptions|Badger::Exception> so there's
+no need to test the return value at all. If the method returns, then it
+succeeded. You can use C<eval { }> if you want to trap errors, or the
+L<try()|Badger::Base/try()> method, as shown in the documentation for 
+L<create()>.
+
 =head2 delete($id)
 
 Permanently deletes the data associated with the identifier passed as an
@@ -199,6 +285,72 @@ Returns a true value on success. If the data does not exist then it returns
 C<undef>. All errors are thrown as L<exceptions|Badger::Exception>. As with
 L<fetch()>, deleting a resource that does not exists is not considered an
 error.  The method will L<decline()|Badger::Base/decline()> gracefully.
+
+=head1 ALTERNATE METHODS
+
+A number of additional methods are defined as wrappers around the four core
+methods described above.  These exist to provide a compatible interface with 
+other modules (e.g. C<Cache::Cache>), protocols (e.g. C<REST>, C<CRUD>) or 
+simply for the sake of programmer convenience.
+
+    Core methods       create(), fetch(), store(), delete()
+    Cache::Cache       insert(), get(), set(), remove()
+    CRUD methods       create(), retrieve(), update(), delete()
+    REST methods       post(), get(), put(), delete()
+    File/IO methods    create(), read(), write(), remove()
+    
+=head2 insert()
+
+A wrapper of convenience around the L<create()> method.  This is the method
+that C<Cache::Cache> modules are expecting to use, among others.
+
+=head2 post()
+
+A wrapper of convenience around the L<create()> method for compatibility 
+with the REST (Representational State Transfer) architectural style.
+
+=head2 get()
+
+A wrapper of convenience around the L<fetch()> method for compatibility with
+C<Cache::Cache> and the REST (Representational State Transfer) architectural
+style.
+
+=head2 retrieve()
+
+A wrapper of convenience around the L<fetch()> method for compatibility 
+with the CRUD (Create/Retrieve/Update/Delete) architectural style.
+
+=head2 read()
+
+A wrapper of convenience around the L<fetch()> method for people who think
+that the 'R' in 'CRUD' stands for 'Read', or people who feel at home talking
+to filesystems.
+
+=head2 set()
+
+A wrapper of convenience around the L<store()> method for compatibility with
+C<Cache::Cache> and to keep everyone happy in the Department of Stating the
+Bleedin' Obvious.
+
+=head2 put() 
+
+A wrapper of convenience around the L<store()> method for compatibility 
+with the REST (Representational State Transfer) architectural style.
+
+=head2 update()
+
+A wrapper of convenience around the L<store()> method for compatibility 
+with the CRUD (Create/Retrieve/Update/Delete) architectural style.
+
+=head2 write()
+
+A wrapper of convenience around the L<store()> method to go with C<read()>
+for the filesystem geeks.
+
+=head2 remove()
+
+A wrapper of convenience around the L<delete()> method.  This is the method
+that C<Cache::Cache> modules are expecting to use, among others.
 
 =head1 INTERNAL METHODS
 
