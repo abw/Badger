@@ -1,0 +1,6 @@
+/Makefile
+/blib
+/pm_to_blib
+/t/filesystem/testfiles/encoded.str
+/t/log/logs/
+

@@ -20,8 +20,9 @@ use Badger::Class
     };
 
 our $VERSION = '0.06_01';              # Just for ExtUtils::MakeMaker.  Ick
-our $HUB     = 'Badger::Hub';
+our $HUB     = 'Badger::Hub::Badger';
 our $AUTOLOAD;
+
 
 sub _export_handler {
     # TODO: we should be able to refactor this down, now that Badger::Exporter
