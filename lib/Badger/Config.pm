@@ -20,11 +20,11 @@ use Badger::Class
     base      => 'Badger::Prototype',
     utils     => 'blessed numlike',
     constants => 'HASH ARRAY CODE DELIMITER',
+    auto_can  => 'can_configure',
     messages  => {
         get => 'Cannot fetch configuration item <1>.<2> (<1> is <3>)',
     };
 
-our $AUTOLOAD;
 
 sub init {
     my ($self, $config) = @_;
@@ -44,7 +44,11 @@ sub init {
         @$items 
     };
 
-    # load up all the configuraion items from package variables
+    # load up all the configuration items from package variables
+    #
+    # TODO: We need different init rules here with fallbacks.  This should
+    # be merged in with the code in Badger::Class::Config, or rather B:C:C
+    # should define a config schema.
     foreach my $item (keys %$items) {
         $data->{ $item } = $config->{ $item }
             || $class->any_var( uc $item );
@@ -58,6 +62,7 @@ sub init {
 
     return $self;
 }
+
 
 sub get {
     my $self  = shift;
@@ -90,6 +95,7 @@ sub get {
     return $data;
 }
 
+
 sub set {
     my $self = shift;
     my $name = shift;
@@ -99,82 +105,24 @@ sub set {
     return $data;
 }
 
-sub can {
-    my ($self, $name) = @_;
-    return $self->SUPER::can($name)
-        || $self->{ item }->{ $name }
-        && $self->generate_config_method($name);
-}
 
-sub generate_config_method {
+sub can_configure {
     my ($self, $name) = @_;
-    my $method = sub {
+
+    $self = $self->prototype unless ref $self;
+
+    return 
+        unless $name && $self->{ item }->{ $name };
+
+    return sub {
         return @_ > 1
             ? shift->set( $name => @_ )     # set
             : $self->{ data }->{ $name };   # get
     };
-    $self->class->method( $name => $method );
-    return $method;
 }
 
-sub AUTOLOAD {
-    my $self = shift;
-    my ($name) = ($AUTOLOAD =~ /([^:]+)$/ );
-    return if $name eq 'DESTROY';
-    $self = $self->prototype unless ref $self;
-
-    $self->debug("AUTOLOAD: $name in ", $self->dump_data($self->{ data })) if DEBUG;
-    
-    # generate method on demand for valid items, then call it
-    return $self->{ item }->{ $name }
-        ? $self->generate_config_method($name)->($self, @_)
-        : $self->error_msg( bad_method => $name, ref $self, (caller())[1,2] );
-}
-
-
-
-#------------------------------------------------------------------------
-# generate_config_methods()
-#
-# Generate an accessor method for each of the items passed as arguments
-#------------------------------------------------------------------------
-
-sub _OLD_generate_config_methods {
-    my $class   = shift;
-    my $methods = shift; # || $class->pkgvar('METHODS');
-    $class = ref $class || $class;
-
-    # engage cloaking shield to protect us from Perl's beady eyes and nagging tongue
-    no strict 'refs';
-
-    foreach my $method (@$methods) {
-        $class->debug("Generating method: $method()\n") if $DEBUG;
-
-        *{"${class}::$method"} = sub {
-            my $self = shift;
-            # look for the item in the $self->{ config } or an UPPER CASE package variable.
-            my $item = ref $self ? $self->{ config }->{ $method } : $self->pkgvar(uc $method);
-
-            # return any value that isn't a hash ref
-            return $item unless ref $item eq 'HASH';
-            
-            if (@_) {
-                # if we have any arguments then merge them with the default
-                # values in the $item hash and return a new composite set
-                my $config = @_ && ref $_[0] eq 'HASH' ? shift : { @_ };
-                return { 
-                    %$item,
-                    %$config,
-                };
-            }
-            else {
-                # otherwise return a copy of the defaults
-                return { %$item };
-            }
-        } unless defined &{"${class}::$method"};
-    }
-}
 1;
+
 __END__
 
 =head1 NAME
@@ -327,24 +275,13 @@ Method to store a value in the configuration.
 At present this does I<not> allow you to set nested data items in the way that
 the L<get()> method does.
 
-=head2 can($name)
-
-Replacement for the C<can()> method that would otherwise be inherited from
-C<UNIVERSAL>. If the named method doesn't exist and is one of the known
-configuration items for this object then it calls L<generate_config_method()>
-to automatically generate an accessor method. A C<CODE> reference to this
-method is then returned.
-
 =head1 INTERNAL METHODS
 
-=head2 AUTOLOAD
+=head2 can_configure($name)
 
-The C<AUTOLOAD> method automatically generates a method on demand for any
-valid configuration items.
-
-=head2 generate_config_method($name)
-
-Internal method used to generate accessor methods on demand.
+Internal method used to generate accessor methods on demand.  This is 
+installed using the L<auto_can|Badger::Class/auto_can> hook in 
+L<Badger::Class>.
 
 =head1 AUTHOR
 
