@@ -1,3 +1,4 @@
+\.git
 \.svn
 \.DS_Store
 ^MANIFEST\.
