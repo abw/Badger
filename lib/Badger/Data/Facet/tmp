@@ -1,0 +1,51 @@
+#-----------------------------------------------------------------------
+# any - text must match one of a pre-defined set of values
+# TODO: change name to 'any'.  Should we accept facets and make a 
+# literal match a facet too?
+#-----------------------------------------------------------------------
+
+package Badger::Data::Facet::Any;
+
+use Badger::Class
+    base      => 'Badger::Data::Facet',
+    constants => 'ARRAY';
+
+
+sub init {
+    my ($self, $config) = @_;
+    
+    $self->SUPER::init($config);
+
+    # TODO: should we updgrade these to facets? (prolly)
+
+    # ensure value is folded to a list reference
+    my $value = $self->{ value };
+    $self->{ values } = 
+        ref $value eq ARRAY
+            ?  $value
+            : [$value];
+
+    return $self
+}
+
+sub validate {
+    my ($self, $value, $type) = @_;
+    
+    # TODO: should we worry about numerical comparisons?  In the original
+    # context of XML::Schema there was no need because all data originates
+    # from text documents and a text comparison is what defined equality.
+    # (e.g. 1.0 is not the same as 1)
+    foreach my $expect (@{ $self->{ values } }) {
+        return $value
+            if $value eq $expect;
+    }
+
+    return $self->invalid_msg( not_any => $type || 'Text', $self->{ values }, $value );
+}
+
+
+
+#-----------------------------------------------------------------------
+# whitespace
+#-----------------------------------------------------------------------
+
