@@ -12,12 +12,13 @@
 
 package Badger::Class::Methods;
 
+use Carp;
 use Badger::Class
     version   => 0.01,
     debug     => 0,
     base      => 'Badger::Base',
     import    => 'class BCLASS',
-    constants => 'DELIMITER ARRAY HASH PKG',
+    constants => 'DELIMITER ARRAY HASH PKG CODE',
     utils     => 'is_object',
     exports   => {
         hooks => {
@@ -154,10 +155,18 @@ sub auto_can {
         
     my $method = shift @$methods;
 
+    croak "Invalid auto_can method specified: $method\n"
+        if ref $method eq CODE;
+        
+    # avoid runaways
+    my $seen = { };
+
     $target->import_symbol( 
         can => sub {
             my ($this, $name, @args) = @_;
             my $target;
+            return if $seen->{ $name };
+            $seen->{ $name } = 1;
             return $this->SUPER::can($name)
                 || $this->$method($name, @args);
         }
@@ -172,6 +181,7 @@ sub auto_can {
                 $target->method( $name => $method );
                 return $method->($this, @args);
             }
+            # Hmmm... what if $this isn't a subclass of Badger::Base
             return $this->error_msg( bad_method => $name, ref $this, (caller())[1,2] );
         }
     );
