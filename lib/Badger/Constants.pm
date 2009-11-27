@@ -43,6 +43,7 @@ use constant {
     LAST            => -1,
     CRLF            => "\015\012",          # unambiguous CR+LF sequence
     PKG             => '::',                # for joining pkg names
+    DOT             => '.',                 # for joining dotty names
     REFS            => 'refs',              # no strict REFS
     ONCE            => 'once',              # use warnings ONCE
     WARN            => 'warn',              # default warning handler
@@ -54,7 +55,7 @@ use constant {
 };
 
 CONSTANTS->export_any(qw( 
-    CONSTANTS FIRST LAST CRLF PKG REFS ONCE WARN BLANK SPACE 
+    CONSTANTS FIRST LAST CRLF PKG DOT REFS ONCE WARN BLANK SPACE 
     DELIMITER WILDCARD 
 ));
 
@@ -203,6 +204,10 @@ used to construct symbol references.
     use constant EXAMPLE => 'EXAMPLE';
     
     my $var = ${ $pkg.PKG.EXAMPLE };   # same as: ${"${pkg}::EXAMPLE"}
+
+=head2 DOT
+
+An alias for a dot C<.>.
 
 =head2 REFS
 
