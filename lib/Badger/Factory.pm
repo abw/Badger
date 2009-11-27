@@ -17,7 +17,7 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Prototype Badger::Exporter',
     import    => 'class',
-    utils     => 'plural blessed textlike dotid',
+    utils     => 'plural blessed textlike dotid camel_case',
     words     => 'ITEM ITEMS ISA',
     constants => 'PKG ARRAY HASH REFS ONCE',
     constant  => {
@@ -279,13 +279,16 @@ sub construct {
 
 sub module_names {
     my $self = shift;
-    my @bits = map { split /\.+/ } @_;
+    my @bits = 
+        map { camel_case($_) }
+        map { split /[\.]+/ } @_;
 
     return (
         join( PKG, map { ucfirst $_ } @bits ),
         join( PKG, @bits )
     );
 }
+
 
 sub can {
     my ($self, $name) = @_;
