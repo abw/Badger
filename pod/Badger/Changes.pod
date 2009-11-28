@@ -18,6 +18,11 @@ suitability and fitness for purpose. There are no guarantees of course, but it
 may help you to sleep at night knowing that I have a heavily vested interest
 in keeping the Badger fit and healthy.
 
+As of version 0.07, Badger is being used as the foundation for the new
+version of the Template Toolkit, TT3.  It's not on CPAN yet (although it 
+might be by the time you read this), but you can access the git repository
+at L<http://github.com/abw/Template-TT3>.
+
 =head2 Version 0.07
 
 Added L<Badger::Storage>, L<Badger::Storage::Memory>.
@@ -29,7 +34,10 @@ Added the L<permissions()|Badger::Filesystem::Path/permissions()> method to
 L<Badger::Filesystem::Path>. Added
 L<temp_directory()|Badger::Filesystem/temp_directory()> and
 L<temp_file()|Badger::Filesystem/temp_file()> methods to
-L<Badger::Filesystem>.
+L<Badger::Filesystem>. Also changed the L<Path()|Badger::Filesystem/Path()>,
+L<File()|Badger::Filesystem/File()> and L<Dir()|Badger::Filesystem/Dir()>
+functions to short-circuit and return if passed a single object that is
+already of the expected type.
 
 Added some extra comparison methods to L<Badger::Timestamp>
 (L<not_equal()|Badger::Timestamp/not_equal()>,

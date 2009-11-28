@@ -65,7 +65,7 @@ Loads, instantiates and returns a L<Badger::Filesystem> object.
 
 =head2 pod()
 
-Loads and returns a L<Badger::Pod> object. This is a work in progress
+Loads and returns a C<Badger::Pod> object. This is a work in progress
 so it's almost certainly not installed on your machine.  Sorry about that.
 
 =head1 AUTHOR
