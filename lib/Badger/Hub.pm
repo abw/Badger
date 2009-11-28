@@ -161,6 +161,9 @@ sub auto_delegate {
     # foo => [bar, baz] is mapped to $self->bar->baz
     my ($m1, $m2) = ref $deleg eq ARRAY ? @$deleg : ($deleg, $name);
 
+    return $self->error("Cannot auto_delegate() a method to itself: $m1 -> $m2")
+        if $m1 eq $m2;
+
     return sub {
         shift->$m1->$m2(@_);
     };
@@ -181,36 +184,40 @@ sub auto_delegate {
 sub configure {
     my $self = shift;
     my $name = shift;
-    my $args = @_ && ref($_[0]) eq 'HASH' ? shift : { @_ };
+    my $args = @_ && ref($_[0]) eq HASH ? shift : { @_ };
 
-    $self->debug("configure($name)\n") if DEBUG;
+    $self->debug("configure($name)") if DEBUG;
     
     # $NAME pkg var can be a module name or hash ref with 'module' item
     my $pkgvar = $self->class->any_var(uc $name);
     my $pkgmod = ref $pkgvar eq HASH ? $pkgvar->{ module } : $pkgvar;
     my $config = $self->{ config };
+    my $params;
     my $method;
 
     if ($config && ref $config eq HASH) {
         # $self->{ config } can be a hash ref with a $name item
-        $config = $config->{ $name };
+        $params = $config->{ $name };
     }
     elsif (blessed $config && ($method = $self->{ config }->can($name))) {
         # $self->{ config } can be an object with a $name method which we call
-        $config = $method->($config);
+        $params = $method->($config);
     }
     else {
         # no local config data so we'll fall back on a package variable
-        $config = $pkgvar;
+        $params = $pkgvar;
     }
+    
+    # if $params isn't defined then we default to the entire $config hash
+    $params ||= $config;
 
     # if $config isn't a hash then it's the name of the module to use
-    $config = { module => $config } unless ref $config eq HASH;
+    $params = { module => $params } unless ref $params eq HASH;
 
     $self->debug("$name module config: ", $self->dump_data($config)) if DEBUG;
     
     # see if a module name is specified in $args, config hash or use $pkgmod
-    my $module = $args->{ module } ||= $config->{ module } ||= $pkgmod
+    my $module = $args->{ module } ||= $params->{ module } ||= $pkgmod
         || return $self->error_msg( no_module => $name );
 
     $self->debug("$name module: $module") if DEBUG;
@@ -219,11 +226,11 @@ sub configure {
     class($module)->load;
 
     # add any extra arguments to the config hash
-    $config = { %$config, %$args } if %$args;
+    $params = { %$params, %$args } if %$args;
 
-    $self->debug("$name merged config: ", $self->dump_data($config)) if DEBUG;
+    $self->debug("$name merged config: ", $self->dump_data($params)) if DEBUG;
 
-    return $module->new($config);
+    return $module->new($params);
 }
 
 
