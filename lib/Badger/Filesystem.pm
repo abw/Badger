@@ -118,12 +118,35 @@ sub _export_findbin_hook {
 # factory subroutines
 #-----------------------------------------------------------------------
 
-sub Path      { return @_ ? FS->path(@_)      : PATH      }
-sub File      { return @_ ? FS->file(@_)      : FILE      }
-sub Directory { return @_ ? FS->directory(@_) : DIRECTORY }
-sub Cwd       { FS->directory }
-sub Bin       { class(FINDBIN)->load; 
-                FS->directory($FindBin::Bin) }
+sub Path { 
+    return PATH unless @_; 
+    return @_ == 1 && is_object(PATH, $_[0])
+        ? $_[0]                                 # return existing Path object
+        : FS->path(@_);                         # or construct a new one
+}
+
+sub File { 
+    return FILE unless @_; 
+    return @_ == 1 && is_object(FILE, $_[0])
+        ? $_[0]                                 # ditto for File object
+        : FS->file(@_);
+}
+
+sub Directory { 
+    return DIRECTORY unless @_; 
+    return @_ == 1 && is_object(DIRECTORY, $_[0]) 
+        ? $_[0]                                 # ditto for Directory object
+        : FS->directory(@_);
+}
+
+sub Cwd { 
+    FS->directory 
+}
+
+sub Bin { 
+    class(FINDBIN)->load; 
+    FS->directory($FindBin::Bin);
+}
 
 
 #-----------------------------------------------------------------------
