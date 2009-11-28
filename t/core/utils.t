@@ -16,9 +16,9 @@ use warnings;
 
 use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Debug modules => 'Badger::Utils';
-use Badger::Utils 'UTILS blessed xprintf reftype textlike plural';
+use Badger::Utils 'UTILS blessed xprintf reftype textlike plural permute_fragments';
 use Badger::Test 
-    tests => 52,
+    tests => 61,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -257,6 +257,42 @@ is( CamelCase('hello_world'), 'HelloWorld',
    "CamelCase('hello_world') => 'HelloWorld'" 
 );
 
+
+
+#-----------------------------------------------------------------------
+# test permute_fragments()
+#-----------------------------------------------------------------------
+
+test_permute('foo', 'foo');
+test_permute('Template(X)', 'Template', 'TemplateX');
+test_permute('Template(X|)', 'TemplateX', 'Template');
+test_permute(
+    'Template(X)::(XS::TT3|TT3)::Foo', 
+    'Template::XS::TT3::Foo', 
+    'Template::TT3::Foo',
+    'TemplateX::XS::TT3::Foo', 
+    'TemplateX::TT3::Foo',
+);
+
+sub test_permute {
+    my $input   = shift;
+    my @outputs = permute_fragments($input);
+#    print("  INPUT: $input\n");
+#    print("OUTPUTS: ", join(', ', @outputs), "\n");
+    
+    foreach my $output (@outputs) {
+        if (@_) {
+            my $expect = shift;
+            is( $output, $expect, "$input => $expect" );
+        }
+        else {
+            fail("$input permuted unexpected value: $output");
+        }
+    }
+    foreach my $expect (@_) {
+        fail("$input did not permute expected value: $expect");
+    }
+}
 
 __END__
 

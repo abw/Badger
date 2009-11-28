@@ -485,7 +485,7 @@ The C<$WIDGET_PATH> is used to define one or more base module names under
 which your widgets are located.  The name of this variable is derived 
 from the upper case item name in C<$ITEM> with C<_PATH> appended.  In this
 example, the factory will look for the C<Foo::Bar> module as either 
-C<My::Widget::Foo::Bar> or C<Your::Widget::Foo::Bar>.
+C<My::Widget::Foo::Bar> or C<Your::Widget::Foo::Bar>.  
 
 The C<$WIDGET_MAP> is used to define any additional name mappings. This is
 usually required to handle unusual spellings or capitalisations that the

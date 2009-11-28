@@ -18,7 +18,7 @@ use Badger::Factory::Class
     version   => 0.01,
     debug     => 0,
     item      => 'codec',
-    path      => 'Badger::Codec BadgerX::Codec',
+    path      => 'Badger(X)::Codec',
     import    => 'class CLASS',
     constants => 'HASH ARRAY DELIMITER PKG',
     constant  => {

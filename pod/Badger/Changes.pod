@@ -57,11 +57,17 @@ is set (e.g. for Pod coverage/kwalitee tests that you only want to run
 if either of the C<RELEASE_TESTING> or C<AUTOMATED_TESTING> environment 
 variables is set).
 
-Added the L<random_name()|Badger::Utils/random_name()> and
-L<camel_case()|Badger::Utils/camel_case()> functions to L<Badger::Utils>. Also
-add some extra debugging code to L<params()|Badger::Utils/params()> and
-L<self_params()|Badger::Utils/self_params()> to catch any attempt to pass
-an odd number of arguments.  
+Added the L<random_name()|Badger::Utils/random_name()>,
+L<camel_case()|Badger::Utils/camel_case()> and
+L<permute_fragments()|Badger::Utils/permute_fragments()> functions to
+L<Badger::Utils>. Also add some extra debugging code to
+L<params()|Badger::Utils/params()> and
+L<self_params()|Badger::Utils/self_params()> to catch any attempt to pass an
+odd number of arguments.
+
+Changed the L<Badger::Factory> module to use
+L<permute_fragments()|Badger::Utils/permute_fragments()> on the module
+path when specified as a single string.
 
 Added the L<debugf()|Badger::Debug/debugf()> and 
 L<debug_at()|Badger::Debug/debug_at()> methods to 

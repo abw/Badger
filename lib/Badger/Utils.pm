@@ -57,7 +57,7 @@ our $RANDOM_NAME_LENGTH = 32;
 
 __PACKAGE__->export_any(qw(
     UTILS blessed is_object numlike textlike params self_params plural 
-    xprintf dotid random_name camel_case CamelCase
+    xprintf dotid random_name camel_case CamelCase permute_fragments
 ));
 
 __PACKAGE__->export_fail(\&_export_fail);
@@ -200,6 +200,69 @@ sub random_name {
         );
     }
     return substr($name, 0, $length);
+}
+
+sub alternates {
+    my $text = shift;
+    return  [ 
+        $text =~ /\|/
+            ? split(qr<\|>, $text, -1)  # alternates: (foo|bar) as ['foo', 'bar']
+            : ('', $text)               # optional (foo) as (|foo) as ['', 'foo']
+    ];
+}
+
+sub permute_fragments {
+    my $input = shift;
+    my (@frags, @outputs);
+
+    # Lookup all the (a) optional fragments and (a|b|c) alternate fragments
+    # replace them with %s.  This gives us an sprintf format that we can later
+    # user to re-fill the fragment slots.  Meanwhile create a list of @frags
+    # with each item corresponding to a (...) fragment which is represented 
+    # by a list reference containing the alternates.  e.g. the input
+    # string 'Fo(o|p) Ba(r|z)' generates @frags as ( ['o','p'], ['r','z'] ),
+    # leaving $input set to 'Fo%s Ba%s'.  We treat (foo) as sugar for (|foo), 
+    # so that 'Template(X)' is permuted as ('Template', 'TemplateX'), for 
+    # example.
+    
+    $input =~ 
+        s/ 
+            \( ( .*? ) \) 
+        /
+            push(@frags, alternates($1));
+            '%s';
+        /gex;
+
+    # If any of the fragments have multiple values then $format will still contain
+    # one or more '%s' tokens and @frags will have the same number of list refs
+    # in it, one for each fragment.  To iterate across all permutations of the 
+    # fragment values, we calculate the product P of the sizes of all the lists in 
+    # @frags and loop from 0 to P-1.  Then we use a div and a mod to get the right 
+    # value for each fragment, for each iteration.  We divide $n by the product of
+    # all fragment lists to the right of the current fragment and mod it by the size
+    # of the current fragment list.  It's effectively counting with a different base
+    # for each column. e.g. consider 3 fragments with 7, 3, and 5 values respectively
+    #   [7]            [3]           [5]         P = 7 * 3 * 5 = 105
+    #   [n / 15 % 7]   [n / 5 % 3]   [n % 5]     for 0 < n < P 
+
+    if (@frags) {
+        my $product = 1; $product *= @$_ for @frags;
+        for (my $n = 0; $n < $product; $n++) {
+            my $divisor = 1;
+            my @args = reverse map {
+                my $item = $_->[ $n / $divisor % @$_ ];
+                $divisor *= @$_;
+                $item;
+            } reverse @frags;   # working backwards from right to left
+            push(@outputs, sprintf($input, @args));
+        }
+    }
+    else {
+        push(@outputs, $input);
+    }
+    return wantarray
+        ?  @outputs
+        : \@outputs;
 }
 
 sub _debug {
@@ -461,6 +524,32 @@ value in C<$RANDOM_NAME_LENGTH> (32) is used.
 
     my $name = random_name();
     my $name = random_name(64);
+
+=head2 permute_fragments($text)
+
+This function permutes any optional or alternate fragments embedded in 
+parentheses. For example, C<Badger(X)> is permuted as (C<Badger>, C<BadgerX>)
+and C<Badger(X|Y)> is permuted as (C<BadgerX>, C<BadgerY>).
+
+    permute('Badger(X)');           # Badger, BadgerX
+    permute('Badger(X|Y)');         # BadgerX, BadgerY
+
+Multiple fragments may be embedded. They are expanded in order from left to
+right, with the rightmost fragments changing most often.
+
+    permute('A(1|2):B(3|4)')        # A1:B3, A1:B4, A2:B3, A2:B4
+
+=head2 alternates($text)
+
+This function is used internally by the L<permute_fragments()> function. It
+returns a reference to a list containing the alternates split from C<$text>.
+
+    alternates('foo|bar');          # returns ['foo','bar']
+    alternates('foo');              # returns ['','bar']
+
+If the C<$text> doesn't contain the C<|> character then it is assumed to be
+an optional item.  A list reference is returned containing the empty string
+as the first element and the original C<$text> string as the second.
 
 =head1 AUTHOR
 

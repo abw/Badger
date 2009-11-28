@@ -19,7 +19,7 @@ use Badger::Class
     uber      => 'Badger::Class',
     hooks     => 'item path map',
     words     => 'ITEM ITEMS',
-    utils     => 'plural',
+    utils     => 'plural permute_fragments',
     import    => 'CLASS',
     constants => 'DELIMITER ARRAY HASH',
     constant  => {
@@ -80,7 +80,7 @@ sub path {
         || croak "\$ITEM is not defined for $self.  Please add an 'item' option";
     my $var = uc($type) . PATH_SUFFIX;
 
-    $path = [ split(DELIMITER, $path) ]
+    $path = [ map { permute_fragments($_) } split(DELIMITER, $path) ]
         unless ref $path eq ARRAY;
 
     $self->debug("adding $var => [", join(', ', @$path), "]") if DEBUG;
@@ -170,6 +170,42 @@ A list of module names that form the search path when loading modules. This
 will set the relevant package variable depending on the value of C<$ITEMS> (or
 the regular plural form of C<$ITEM> if C<$ITEMS> is undefined).  For example,
 is C<$ITEMS> is set to C<widgets> then this method will set C<$WIDGETS_PATH>.
+
+You can specify the path as a reference to a list of module bases, e.g.
+
+    use Badger::Factory::Class
+        item => 'widget',
+        path => ['My::Widget', 'Your::Widget'];
+
+Or as a single string containing multiple values separated by whitespace.
+
+    use Badger::Factory::Class
+        item => 'widget',
+        path => 'My::Widget Your::Widget';
+
+If you specify it as a single string then you can also include optional 
+and/or alternate parts in parentheses.  For example the above can be 
+written more concisely as:
+
+    use Badger::Factory::Class
+        item => 'widget',
+        path => '(My|Your)::Widget';
+
+If the parentheses don't contain a vertical bar then then enclosed fragment
+is treated as being optional.  So instead of writing something like:
+
+    use Badger::Factory::Class
+        item => 'widget',
+        path => 'Badger::Widget BadgerX::Widget';
+
+You can write:
+
+    use Badger::Factory::Class
+        item => 'widget',
+        path => 'Badger(X)::Widget';
+
+See the L<permute_fragments()|Badger::Utils/permute_fragments()> function in
+L<Badger::Utils> for further details on how fragments are expanded.
 
 =head2 map($map)
 
