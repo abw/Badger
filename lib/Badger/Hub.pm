@@ -480,15 +480,6 @@ This method returns a single entry from the delegates table.
 
     print $hub->delegate('warm_fuzz');  # fuzzbox
 
-=head2 can()
-
-The method re-defines the C<can()> method that would otherwise be inherited
-from the L<UNIVERSAL> module.  In addition to returning references to methods
-already defined in the hub class, it will also create methods on demand that
-either creates a component (if the method has an entry in L<$COMPONENTS>) 
-or delegates to another method (if the method has an entry in L<$DELEGATES>).
-If none of the above apply then the C<can()> method returns C<undef>.
-
 =head2 destroy()
 
 This method can be manually called to destroy the hub and any components
@@ -512,12 +503,20 @@ component.  The component is then cached for subsequent use.
     use Your::Module::Fuzzbox;
     Your::Module::Fuzzbox->new({ volume => 11, hub => $hub });
 
-=head2 generate_component_method($name,$module)
+=head2 auto_can($name)
+
+This method is installed as an L<auto_can|Badger::Class/auto_can> handler
+which is called to resolved undefined methods.  If the method called matches
+the name of a component then it calls L<auto_component()> to generate a 
+method to access the component.  If it matches the name of a delegate method
+then it calls L<auto_delegate()> to generate a delegate method.
+
+=head2 auto_component($name,$module)
 
 This method generates a component method named C<$name> which accesses an
 instance of the C<$module> component module.
 
-=head2 generate_delegate_method($name,$component)
+=head2 auto_delegate($name,$component)
 
 This method generates a delegate method named C<$name> which delegates to
 the C<$name> method of the C<$component> component.

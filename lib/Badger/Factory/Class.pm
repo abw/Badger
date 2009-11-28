@@ -17,13 +17,14 @@ use Badger::Class
     version   => 0.01,
     debug     => 0,
     uber      => 'Badger::Class',
-    hooks     => 'item path',
+    hooks     => 'item path map',
     words     => 'ITEM ITEMS',
     utils     => 'plural',
     import    => 'CLASS',
     constants => 'DELIMITER ARRAY HASH',
     constant  => {
         PATH_SUFFIX => '_PATH',
+        MAP_SUFFIX  => '_MAP',
         FACTORY     => 'Badger::Factory',
     };
 #    exports   => {
@@ -93,6 +94,23 @@ sub path {
 }
 
 
+sub map {
+    my ($self, $map) = @_;
+    my $type = $self->var(ITEM)
+        || croak "\$ITEM is not defined for $self.  Please add an 'item' option";
+    my $var = uc($type) . MAP_SUFFIX;
+
+    $self->debug("adding $var => {", join(', ', %$map), "}") if DEBUG;
+    $self->base(FACTORY);
+
+    # we use import_symbol() rather than var() so that it gets declared 
+    # properly, thus avoiding undefined symbol warnings
+    $self->import_symbol( $var => \$map );
+    
+    return $self;
+}
+
+
 =head1 NAME
 
 Badger::Factory::Class - class module for Badger::Factory sub-classes
@@ -110,6 +128,10 @@ This module can be used to create subclasses of L<Badger::Factory>.
         widgets => {
             extra => 'Another::Widget::Module',
             super => 'Golly::Gosh',
+        },
+        map     => {
+            html  => 'HTML',
+            color => 'Colour',
         };
 
     package main;
@@ -148,6 +170,12 @@ A list of module names that form the search path when loading modules. This
 will set the relevant package variable depending on the value of C<$ITEMS> (or
 the regular plural form of C<$ITEM> if C<$ITEMS> is undefined).  For example,
 is C<$ITEMS> is set to C<widgets> then this method will set C<$WIDGETS_PATH>.
+
+=head2 map($map)
+
+A reference to a hash array of name mappings. This can be used to handle any
+unusual spellings or capitalisations. See L<Badger::Factory> for further
+details.
 
 =head1 AUTHOR
 

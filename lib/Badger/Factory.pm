@@ -25,6 +25,7 @@ use Badger::Class
         FOUND        => 'found',
         FOUND_REF    => 'found_ref',
         PATH_SUFFIX  => '_PATH',
+        MAP_SUFFIX   => '_MAP',
     },
     messages  => {
         no_item    => 'No item(s) specified for factory to manage',
@@ -41,7 +42,7 @@ our $AUTOLOAD;
 sub init_factory {
     my ($self, $config) = @_;
     my $class = $self->class;
-    my ($item, $items, $path);
+    my ($item, $items, $path, $map);
 
     # 'item' and 'items' can be specified as config params or we look for
     # $ITEM and $ITEMS variables in the current package or those of any 
@@ -63,17 +64,25 @@ sub init_factory {
     # use 'items' in config, or grokked from $ITEMS, or guess plural
     $items = $config->{ items } || $items || plural($item);
 
-    $path = $config->{ $item.'_path' } || $config->{ path };
+    my $imap  = $item.MAP_SUFFIX;
+    my $ipath = $item.PATH_SUFFIX;
+    
+    $map  = $config->{ $imap  } || $config->{ map };
+    $path = $config->{ $ipath } || $config->{ path };
     $path = [ $path ] if $path && ref $path ne ARRAY;
-    $self->{ path   } = $class->list_vars(uc $item . PATH_SUFFIX, $path);
+    $self->{ map    } = $class->hash_vars(uc $imap, $map);
+    $self->{ path   } = $class->list_vars(uc $ipath, $path);
     $self->{ $items } = $class->hash_vars(uc $items, $config->{ $items });
     $self->{ items  } = $items;
     $self->{ item   } = $item;
     $self->{ loaded } = { };
 
-    $self->debug("Initialised $item/$items factory") if DEBUG;
-    $self->debug("Path: [", join(', ', @{ $self->{ path } }), "]") if DEBUG;
-        
+    $self->debug(
+        "Initialised $item/$items factory\n",
+        "Path: ", $self->dump_data($self->{ path }), "\n",
+        "Map: ", $self->dump_data($self->{ map })
+    ) if DEBUG;
+
     return $self;
 }
 
@@ -158,6 +167,10 @@ sub find {
     my $bases  = $self->path;
     my $module;
     
+    # run the type through the type map to handle any unusual capitalisation,
+    # spelling, aliases, etc.
+    $type = $self->{ map }->{ $type } || $type;
+    
     foreach my $base (@$bases) {
         return $module
             if $module = $self->load( $self->module_names($base, $type) );
@@ -183,7 +196,7 @@ sub load {
         }
                         
         no strict REFS;
-        $self->debug("attempting to load $module\n") if DEBUG;
+        $self->debug("attempting to load $module") if DEBUG;
 
         # Some filesystems are case-insensitive (like Apple's HFS), so an 
         # attempt to load Badger::Example::foo may succeed, when the correct 
@@ -194,11 +207,11 @@ sub load {
 
         if ( ( $loaded->{ $module } = class($module)->maybe_load )
         &&   ( ${ $module.PKG.VERSION } || @{ $module.PKG.ISA }  ) ) {
-            $self->debug("loaded $module\n") if DEBUG;
+            $self->debug("loaded $module") if DEBUG;
             return $module 
         }
 
-        $self->debug("failed to load $module\n") if DEBUG;
+        $self->debug("failed to load $module") if DEBUG;
     }
 
     return undef;
@@ -318,7 +331,7 @@ sub AUTOLOAD {
     my ($name) = ($AUTOLOAD =~ /([^:]+)$/ );
     return if $name eq 'DESTROY';
 
-    $self->debug("AUTOLOAD $name\n") if DEBUG;
+    $self->debug("AUTOLOAD $name") if DEBUG;
 
     local $RUNAWAY = $RUNAWAY;
     $self->error("AUTOLOAD went runaway on $name")
@@ -327,7 +340,7 @@ sub AUTOLOAD {
     # upgrade class methods to calls on prototype
     $self = $self->prototype unless ref $self;
 
-    $self->debug("factory item: $self->{ item }\n") if DEBUG;
+    $self->debug("factory item: $self->{ item }") if DEBUG;
     
     if ($name eq $self->{ item }) {
         $self->class->method( $name => $self->can('item') );
@@ -444,6 +457,9 @@ define a factory for them like so:
     our $ITEM        = 'widget';
     our $ITEMS       = 'widgets';
     our $WIDGET_PATH = ['My::Widget', 'Your::Widget'];
+    our $WIDGET_MAP  = {
+        html => 'HTML',
+    };
 
     # lookup table for any non-standard spellings/capitalisations/paths
     our $WIDGETS     = {
@@ -470,6 +486,13 @@ which your widgets are located.  The name of this variable is derived
 from the upper case item name in C<$ITEM> with C<_PATH> appended.  In this
 example, the factory will look for the C<Foo::Bar> module as either 
 C<My::Widget::Foo::Bar> or C<Your::Widget::Foo::Bar>.
+
+The C<$WIDGET_MAP> is used to define any additional name mappings. This is
+usually required to handle unusual spellings or capitalisations that the
+default name mapping algorithm would get wrong. For example, a request for an
+C<html> widget would look for C<My::Widget::Html> or C<Your::Widget::Html>.
+Adding a C<$WIDGET_MAP> entry mapping C<html> to C<HTML> will instead send
+it looking for C<My::Widget::HTML> or C<Your::Widget::HTML>.
 
 If you've got any widgets that aren't located in one of these locations,
 or if you want to provide some aliases to particular widgets then you can
@@ -537,6 +560,15 @@ Used to get or set the factory module path.
     $widgets->path(['My::Widgets', 'Your::Widgets', 'Our::Widgets']);
 
 Calling the method with arguments replaces any existing list.
+
+=head2 map($map)
+
+Used to get or set the factory name map.
+
+    my $map = $widgets->map;
+    $widgets->map({ html => 'HTML' });
+
+Calling the method with arguments replaces any existing map.
 
 =head2 items(%items)
 
