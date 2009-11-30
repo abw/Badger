@@ -66,8 +66,11 @@ L<self_params()|Badger::Utils/self_params()> to catch any attempt to pass an
 odd number of arguments.
 
 Changed the L<Badger::Factory> module to use
-L<permute_fragments()|Badger::Utils/permute_fragments()> on the module
-path when specified as a single string.
+L<permute_fragments()|Badger::Utils/permute_fragments()> on the module path
+when specified as a single string. Also added the
+L<default()|Badger::Factory/default()> and 
+L<names()|Badger::Factory/names()> methods along with their corresponding 
+package variable magic.
 
 Added the L<debugf()|Badger::Debug/debugf()> and 
 L<debug_at()|Badger::Debug/debug_at()> methods to 

@@ -19,16 +19,18 @@ use Badger::Class
     import    => 'class',
     utils     => 'plural blessed textlike dotid camel_case',
     words     => 'ITEM ITEMS ISA',
-    constants => 'PKG ARRAY HASH REFS ONCE',
+    constants => 'PKG ARRAY HASH REFS ONCE DEFAULT',
     constant  => {
-        OBJECT       => 'object',
-        FOUND        => 'found',
-        FOUND_REF    => 'found_ref',
-        PATH_SUFFIX  => '_PATH',
-        MAP_SUFFIX   => '_MAP',
+        OBJECT         => 'object',
+        FOUND          => 'found',
+        FOUND_REF      => 'found_ref',
+        PATH_SUFFIX    => '_PATH',
+        NAMES_SUFFIX   => '_NAMES',
+        DEFAULT_SUFFIX => '_DEFAULT',
     },
     messages  => {
         no_item    => 'No item(s) specified for factory to manage',
+        no_default => 'No default defined for %s factory',
         bad_ref    => 'Invalid reference for %s factory item %s: %s',
         bad_method => qq{Can't locate object method "%s" via package "%s" at %s line %s},
     };
@@ -42,7 +44,7 @@ our $AUTOLOAD;
 sub init_factory {
     my ($self, $config) = @_;
     my $class = $self->class;
-    my ($item, $items, $path, $map);
+    my ($item, $items, $path, $map, $default);
 
     # 'item' and 'items' can be specified as config params or we look for
     # $ITEM and $ITEMS variables in the current package or those of any 
@@ -64,23 +66,36 @@ sub init_factory {
     # use 'items' in config, or grokked from $ITEMS, or guess plural
     $items = $config->{ items } || $items || plural($item);
 
-    my $imap  = $item.MAP_SUFFIX;
-    my $ipath = $item.PATH_SUFFIX;
+    my $ipath    = $item.PATH_SUFFIX;
+    my $inames   = $item.NAMES_SUFFIX;
+    my $idefault = $item.DEFAULT_SUFFIX;
     
-    $map  = $config->{ $imap  } || $config->{ map };
-    $path = $config->{ $ipath } || $config->{ path };
-    $path = [ $path ] if $path && ref $path ne ARRAY;
-    $self->{ map    } = $class->hash_vars(uc $imap, $map);
-    $self->{ path   } = $class->list_vars(uc $ipath, $path);
+    # Merge all XXXX_PATH package vars with any 'xxxx_path' or 'path' config 
+    # items.  Ditto for XXXX_NAME / 'xxxx_name' / 'aka' and  XXXXS/ 'xxxxs'
+    
+    my @path  = @$config{ path  => $ipath  };
+    my @names = @$config{ names => $inames };
+    $self->{ path   } = $class->list_vars(uc $ipath, @path);
+    $self->{ names  } = $class->hash_vars(uc $inames, @names);
     $self->{ $items } = $class->hash_vars(uc $items, $config->{ $items });
     $self->{ items  } = $items;
     $self->{ item   } = $item;
     $self->{ loaded } = { };
 
+    # see if a 'xxxx_default' or 'default' configuration option is specified
+    # or look for the first XXXX_DEFAULT or DEFAULT package variable.
+    $default = $config->{ $idefault } 
+            || $config->{ default }
+            || $class->any_var_in( uc $idefault, uc DEFAULT );
+    if ($default) {
+        $self->debug("Setting default to $default") if DEBUG;
+        $self->{ default } = $self->{ names }->{ default } = $default;
+    }
+
     $self->debug(
         "Initialised $item/$items factory\n",
-        "Path: ", $self->dump_data($self->{ path }), "\n",
-        "Map: ", $self->dump_data($self->{ map })
+        " Path: ", $self->dump_data($self->{ path }), "\n",
+        "Names: ", $self->dump_data($self->{ names })
     ) if DEBUG;
 
     return $self;
@@ -91,6 +106,13 @@ sub path {
     return @_ 
         ? ($self->{ path } = ref $_[0] eq ARRAY ? shift : [ @_ ])
         :  $self->{ path };
+}
+
+sub default {
+    my $self = shift->prototype;
+    return @_ 
+        ? ($self->{ default } = $self->{ names }->{ default } = shift)
+        :  $self->{ default };
 }
 
 sub items {
@@ -104,7 +126,7 @@ sub items {
 }
 
 sub item {
-    my $self = shift->prototype;
+    my $self = shift; $self = $self->prototype unless ref $self;
     my ($type, @args) = $self->type_args(@_);
 
     # In most cases we're expecting $type to be a name (e.g. Table) which we
@@ -144,7 +166,7 @@ sub item {
             # do nothing.
             # HMMM.... or does it?
             ||  $self->find($type, \@args)
-            ||  $self->default($type, \@args)
+#            ||  $self->default($type, \@args)
             ||  return $self->not_found($type, \@args);
 
     $items->{ $type } = $item;
@@ -153,12 +175,14 @@ sub item {
 }
 
 sub type_args {
-    # Simple pass-through method to grok $type and @args from argument list
-    # Subclasses can re-define this to insert their own type mapping or 
+    # Simple method to grok $type and @args from argument list.  The only
+    # processing it does is to set $type to 'default' if it is undefined or
+    # false. Subclasses can re-define this to insert their own type mapping or 
     # argument munging, e.g. to inject values into the configuration params 
     # for an object
     shift;
-    return @_;
+    my $type = shift || DEFAULT;
+    return ($type, @_);
 }
 
 sub find {
@@ -169,7 +193,7 @@ sub find {
     
     # run the type through the type map to handle any unusual capitalisation,
     # spelling, aliases, etc.
-    $type = $self->{ map }->{ $type } || $type;
+    $type = $self->{ names }->{ $type } || $type;
     
     foreach my $base (@$bases) {
         return $module
@@ -217,10 +241,6 @@ sub load {
     return undef;
 }
 
-sub default {
-    # No default, by default.  Subclasses can do something here
-    return undef;
-}
 
 sub found {
     my ($self, $type, $item, $args) = @_;
@@ -280,8 +300,11 @@ sub found_array {
 }
 
 sub not_found {
-    my ($self, $name, @args) = @_;
-    $self->error_msg( not_found => $self->{ item }, $name );
+    my ($self, $type, @args) = @_;
+
+    return $type eq DEFAULT
+        ? $self->error_msg( no_default => $self->{ item } )
+        : $self->error_msg( not_found => $self->{ item }, $type );
 }
 
 sub construct {
@@ -454,10 +477,11 @@ define a factory for them like so:
     package My::Widgets;
     use base 'Badger::Factory';
     
-    our $ITEM        = 'widget';
-    our $ITEMS       = 'widgets';
-    our $WIDGET_PATH = ['My::Widget', 'Your::Widget'];
-    our $WIDGET_MAP  = {
+    our $ITEM           = 'widget';
+    our $ITEMS          = 'widgets';
+    our $WIDGET_PATH    = ['My::Widget', 'Your::Widget'];
+    our $WIDGET_DEFAULT = 'foo';
+    our $WIDGET_NAMES   = {
         html => 'HTML',
     };
 
@@ -487,12 +511,18 @@ from the upper case item name in C<$ITEM> with C<_PATH> appended.  In this
 example, the factory will look for the C<Foo::Bar> module as either 
 C<My::Widget::Foo::Bar> or C<Your::Widget::Foo::Bar>.  
 
-The C<$WIDGET_MAP> is used to define any additional name mappings. This is
-usually required to handle unusual spellings or capitalisations that the
-default name mapping algorithm would get wrong. For example, a request for an
-C<html> widget would look for C<My::Widget::Html> or C<Your::Widget::Html>.
-Adding a C<$WIDGET_MAP> entry mapping C<html> to C<HTML> will instead send
-it looking for C<My::Widget::HTML> or C<Your::Widget::HTML>.
+The C<$WIDGET_DEFAULT> specifies the default item name to use if a request
+is made for a module using an undefined or false name.  If you don't specify
+any value for a default then it uses the literal string C<default>.  Adding
+a C<default> entry to your C<$WIDGET_NAMES> or C<$WIDGETS> will have the same
+effect.
+
+The C<$WIDGET_NAMES> is used to define any additional name mappings. This is
+usually required to handle alternate spellings or unusual capitalisations that
+the default name mapping algorithm would get wrong. For example, a request for
+an C<html> widget would look for C<My::Widget::Html> or C<Your::Widget::Html>.
+Adding a C<$WIDGET_MAP> entry mapping C<html> to C<HTML> will instead send it
+looking for C<My::Widget::HTML> or C<Your::Widget::HTML>.
 
 If you've got any widgets that aren't located in one of these locations,
 or if you want to provide some aliases to particular widgets then you can
@@ -525,6 +555,15 @@ You can specify additional arguments that will be forwarded to the object
 constructor method.
 
     my $foo_bar = $widgets->widget('Foo::Bar', x => 10, y => 20);
+
+If you've specified a C<$WIDGET_DEFAULT> for your factory then you can call
+the L<widget()> method without any arguments to get the default object.
+
+    my $widget = $widgets->widget;
+
+You can use the L<default()> method to change the default module.
+
+    $widgets->default('bar');
 
 The factory module can be customised using configuration parameters. For
 example, you can provide additional values for the C<widget_path>, or define
@@ -561,14 +600,20 @@ Used to get or set the factory module path.
 
 Calling the method with arguments replaces any existing list.
 
-=head2 map($map)
+=head2 names($names)
 
-Used to get or set the factory name map.
+Used to get or set the names mapping table.
 
-    my $map = $widgets->map;
-    $widgets->map({ html => 'HTML' });
+    my $names = $widgets->names;
+    $widgets->names({ html => 'HTML' });
 
-Calling the method with arguments replaces any existing map.
+Calling the method with arguments replaces any existing names table.
+
+=head2 default($name)
+
+Used to get or set a name for the default item name.  The default value is
+the literal string C<default>.  This allows you to add a C<default> entry
+to either your L<names()> or L<items()> and it will be located automatically.
 
 =head2 items(%items)
 
@@ -643,13 +688,6 @@ each of the module name passed as arguments until it successfully loads
 one.  At that point it returns the module name that was successfully 
 loaded and ignores the remaining arguments.  If none of the modules can
 be loaded then it returns C<undef>
-
-=head2 default($type,\@args)
-
-This method is called to provide a default value in the case that L<find()>
-wasn't able to find and load a module.  It does nothing in the base class
-factory module, but can be re-defined by subclasses to do something more 
-interesting.
 
 =head2 found($name,$item,\@args)
 

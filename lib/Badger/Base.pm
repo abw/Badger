@@ -48,15 +48,12 @@ our $MESSAGES  = {
 
 sub new {
     my $class = shift;
-    if (DEBUG && ((@_ == 1 && ref $_[0] ne HASH) || (@_ > 2 and @_ % 2))) {
-        # catch any "Odd number of elements..." warnings before they happen
-        # so we can report where this method was called from.
-        my ($pkg, $file, $line) = caller();
-        $class->debug(
-            "WARNING: odd number of elements passed to $class->new(", 
-            join(', ', @_), ")\ncalled from $pkg in $file at line $line\n"
-        );
-    }
+
+    # install warning handling for odd number of parameters when DEBUG enabled
+    local $SIG{__WARN__} = sub {
+        Badger::Utils::odd_params(@_);
+    } if DEBUG;
+    
     my $args  = @_ && ref $_[0] eq HASH ? shift : { @_ };
     my $self  = bless { }, ref $class || $class;
        $self  = $self->init($args);

@@ -17,23 +17,38 @@ use Badger::Class
     version   => 0.01,
     debug     => 0,
     uber      => 'Badger::Class',
-    hooks     => 'item path map',
+    hooks     => 'item path names default',
     words     => 'ITEM ITEMS',
     utils     => 'plural permute_fragments',
     import    => 'CLASS',
     constants => 'DELIMITER ARRAY HASH',
     constant  => {
-        PATH_SUFFIX => '_PATH',
-        MAP_SUFFIX  => '_MAP',
-        FACTORY     => 'Badger::Factory',
+        PATH_SUFFIX  => '_PATH',
+        NAMES_SUFFIX => '_MAP',
+        FACTORY      => 'Badger::Factory',
     };
+# chicken and egg
 #    exports   => {
-#        fail  => _export_fail_hook,
+#        fail  => \&_export_fail_hook,
 #    };
 
+CLASS->export_before(\&_export_before_hook);
 CLASS->export_fail(\&_export_fail_hook);
 
 # catch a hook that has the same name as the items, i.e. widgets
+
+sub _export_before_hook {
+    my ($class, $target) = @_;
+    my $klass = class($target, $class);
+    # special-case: we don't want to force the factory base class on 
+    # Badger::Class if it's loading this module as the uber parent of a
+    # Factory::Class subclass (e.g. Template::TT3::Factory::Class).
+    return if $target eq 'Badger::Class';
+    $class->debug("$class setting $klass ($target) base class to ", $class->FACTORY)
+        if DEBUG;
+    $klass->base($class->FACTORY);
+}
+
 
 sub _export_fail_hook {
     my ($class, $target, $symbol, $symbols) = @_;
@@ -60,19 +75,27 @@ sub _export_fail_hook {
     }
 }
 
+
+sub default {
+    my ($self, $item) = @_;
+    $self->var( DEFAULT => $item );
+    return $self;
+}
+
+
 sub item {
     my ($self, $item) = @_;
-    $self->base(FACTORY);
     $self->var( ITEM => $item );
     return $self;
 }
 
+
 sub items {
     my ($self, $items) = @_;
-    $self->base(FACTORY);
     $self->var( ITEMS => $items );
     return $self;
 }
+
 
 sub path {
     my ($self, $path) = @_;
@@ -84,7 +107,7 @@ sub path {
         unless ref $path eq ARRAY;
 
     $self->debug("adding $var => [", join(', ', @$path), "]") if DEBUG;
-    $self->base(FACTORY);
+#    $self->base(FACTORY);
 
     # we use import_symbol() rather than var() so that it gets declared 
     # properly, thus avoiding undefined symbol warnings
@@ -94,14 +117,13 @@ sub path {
 }
 
 
-sub map {
+sub names {
     my ($self, $map) = @_;
     my $type = $self->var(ITEM)
         || croak "\$ITEM is not defined for $self.  Please add an 'item' option";
-    my $var = uc($type) . MAP_SUFFIX;
+    my $var = uc($type) . NAMES_SUFFIX;
 
     $self->debug("adding $var => {", join(', ', %$map), "}") if DEBUG;
-    $self->base(FACTORY);
 
     # we use import_symbol() rather than var() so that it gets declared 
     # properly, thus avoiding undefined symbol warnings
@@ -129,7 +151,7 @@ This module can be used to create subclasses of L<Badger::Factory>.
             extra => 'Another::Widget::Module',
             super => 'Golly::Gosh',
         },
-        map     => {
+        names   => {
             html  => 'HTML',
             color => 'Colour',
         };
@@ -207,11 +229,15 @@ You can write:
 See the L<permute_fragments()|Badger::Utils/permute_fragments()> function in
 L<Badger::Utils> for further details on how fragments are expanded.
 
-=head2 map($map)
+=head2 names($names)
 
 A reference to a hash array of name mappings. This can be used to handle any
 unusual spellings or capitalisations. See L<Badger::Factory> for further
 details.
+
+=head2 default($name)
+
+The default name to use when none is specified in a request for a module.
 
 =head1 AUTHOR
 

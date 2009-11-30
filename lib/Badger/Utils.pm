@@ -57,7 +57,7 @@ our $RANDOM_NAME_LENGTH = 32;
 
 __PACKAGE__->export_any(qw(
     UTILS blessed is_object numlike textlike params self_params plural 
-    xprintf dotid random_name camel_case CamelCase permute_fragments
+    odd_params xprintf dotid random_name camel_case CamelCase permute_fragments
 ));
 
 __PACKAGE__->export_fail(\&_export_fail);

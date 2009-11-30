@@ -16,9 +16,42 @@ use warnings;
 
 use lib qw( core/lib t/core/lib ./lib ../lib ../../lib );
 use Badger::Test 
-    tests => 22,
+    tests => 29,
     debug => 'Badger::Factory',
     args  => \@ARGV;
+
+
+#-----------------------------------------------------------------------
+# define a factory object
+#-----------------------------------------------------------------------
+
+package Badger::Test::FactoryObject;
+use Badger::Test;
+use Badger::Factory;
+
+my $factory = Badger::Factory->new(
+    item => 'thingy',
+    path => ['My', 'Your'],
+);
+
+ok( $factory, 'Created factory' );
+my $widget = $factory->thingy('widget');
+ok( $widget, 'fetched a widget from the factory' );
+is( ref $widget, 'My::Widget', 'got a My::Widget object' );
+
+# check we get a 'no default' error
+ok(! $factory->try->thingy, 'No thingy' );
+is( 
+    $factory->reason, 
+    'factory error - No default defined for thingy factory',
+    'got no default error'
+);
+
+$factory->default('widget');
+$widget = $factory->thingy;
+ok( $widget, 'fetched a default widget from the factory' );
+is( ref $widget, 'My::Widget', 'got a My::Widget object as the default' );
+
 
 
 #-----------------------------------------------------------------------
@@ -60,7 +93,7 @@ sub init {
 
 package main;
 
-my $widget = My::Factory->item('Widget');
+$widget = My::Factory->item('Widget');
 ok( $widget, 'got a widget' );
 is( ref $widget, 'My::Widget', 'isa My::Widget object' );
 
