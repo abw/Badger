@@ -15,7 +15,7 @@ package Badger::Debug;
 use Carp;
 use Badger::Rainbow 
     ANSI => 'bold red yellow green cyan white';
-use Scalar::Util 'blessed';
+use Scalar::Util qw( blessed refaddr );
 use Badger::Class
     base      => 'Badger::Exporter',
     version   => 0.01,
@@ -50,6 +50,7 @@ our $FORMAT    = "[<where> line <line>] <msg>"
     unless defined $FORMAT;
 our $CALLER_UP = 0;      # hackola to allow debug() to use a different caller
 our $CALLER_AT = { };    # ditto
+our $DUMPING   = { };
 our $DEBUG     = 0 unless defined $DEBUG;
 
 
@@ -250,6 +251,12 @@ sub dump {
 
 
 sub dump_data {
+    local $DUMPING = { };
+    _dump_data(@_);
+}
+
+    
+sub _dump_data {
     if (! defined $_[1]) {
         return UNDEF;
     }
@@ -268,6 +275,7 @@ sub dump_data {
 
 sub dump_ref {
     my ($self, $data, $indent) = @_;
+    return "<$data>" if $DUMPING->{ $data }++;
     
     # TODO: change these to reftype
     if (UNIVERSAL::isa($data, HASH)) {
@@ -317,7 +325,7 @@ sub dump_hash {
     
     return "\{\n" 
         . join( ",\n", 
-                map { "$pad$PAD$_ => " . $self->dump_data($hash->{$_}, $indent + 1) }
+                map { "$pad$PAD$_ => " . _dump_data($self, $hash->{$_}, $indent + 1) }
                 sort grep { $keys ? $keys->{ $_ } : 1 } keys %$hash 
            ) 
         . "\n$pad}";
@@ -332,7 +340,7 @@ sub dump_list {
     return '[ ]' unless @$list;
     return "\[\n$pad$PAD" 
         . ( @$list 
-            ? join(",\n$pad$PAD", map { $self->dump_data($_, $indent + 1) } @$list) 
+            ? join(",\n$pad$PAD", map { _dump_data($self, $_, $indent + 1) } @$list) 
             : '' )
         . "\n$pad]";
 }
