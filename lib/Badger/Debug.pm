@@ -46,8 +46,11 @@ use Badger::Class
 our $PAD       = '    ';
 our $MAX_TEXT  = 48;
 our $MAX_DEPTH = 3;     # prevent runaways in debug/dump
-our $FORMAT    = "[<where> line <line>] <msg>"  
+our $FORMAT    = "[<where> line <line>]\n<msg>"  
     unless defined $FORMAT;
+our $PROMPT    = '> ' 
+    unless defined $PROMPT;
+our $MESSAGE   = "$PROMPT %s";
 our $CALLER_UP = 0;      # hackola to allow debug() to use a different caller
 our $CALLER_AT = { };    # ditto
 our $DUMPING   = { };
@@ -154,13 +157,19 @@ sub debug {
     my $class  = ref $self || $self;
     my $format = $CALLER_AT->{ format } || $FORMAT;
     my ($pkg, $file, $line) = caller($CALLER_UP);
-    my $where  = ($class eq $pkg) ? $class : $pkg . " ($class)";
-    
+    my (undef, undef, undef, $sub) = caller($CALLER_UP + 1);
+    $sub =~ s/.*?([^:]+)$/::$1()/;
+    my $where  = ($class eq $pkg) 
+        ? $class . $sub
+        : $class . $sub . " ($class)";
+
+    $msg = join("\n", map { sprintf($MESSAGE, $_) } split("\n", $msg));
+#    $msg =~ s/^/$PROMPT/gm;
+
     # We load this dynamically because it uses Badger::Debug and we don't
     # want to end up in a gruesome birth spiral 
     require Badger::Timestamp;
     my $now  = Badger::Timestamp->now;
-
     my $data = {
         msg   => $msg,
         where => $where,
@@ -168,6 +177,7 @@ sub debug {
         file  => $file,
         line  => $line,
         pkg   => $pkg,
+        sub   => $sub,
         date  => $now->date,
         time  => $now->time,
         %$CALLER_AT,
@@ -375,9 +385,10 @@ sub enable_colour {
     print bold green "Enabling debug in $symbol from $target\n";
 
     # colour the debug format
+    $MESSAGE = cyan($PROMPT) . yellow('%s');
     $FORMAT 
          = cyan('[<where> line <line>]')
-         . yellow(' <msg>');
+         . "\n<msg>";
 
     # exceptions are in red
     $Badger::Exception::FORMAT 
