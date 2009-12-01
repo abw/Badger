@@ -57,10 +57,10 @@ $SIG{__DIE__} = sub {
 my $obj = Badger::Base->new();
 
 $obj->debug("Hello World\n");
-like( $dbgmsg, qr/\[main \(Badger::Base\) line \d\d\] Hello World/, 'Hello World' );
+like( $dbgmsg, qr/\[main \(Badger::Base\) line \d\d\]\n> Hello World/, 'Hello World' );
 
 $obj->debug('Hello ', "Badger\n");
-like( $dbgmsg, qr/\[main \(Badger::Base\) line \d\d\] Hello Badger/, 'Hello Badger' );
+like( $dbgmsg, qr/\[main \(Badger::Base\) line \d\d\]\n> Hello Badger/, 'Hello Badger' );
 
 
 #-----------------------------------------------------------------------
@@ -181,7 +181,7 @@ package main;
 
 $dbgmsg = '';
 My::Debugger2->hello;
-is( $dbgmsg, "[My::Debugger2 line 23] Hello world\n", 'got debug message' );
+is( $dbgmsg, "[My::Debugger2::hello() line 23]\n> Hello world\n", 'got debug message' );
 
 #-----------------------------------------------------------------------
 # test debug load option
@@ -230,7 +230,7 @@ is(
         { where => 'At the edge of time', line  => 420 }, 
         'Flying sideways'
     ),
-    "[At the edge of time line 420] Flying sideways\n",
+    "[At the edge of time line 420]\n> Flying sideways\n",
     'I can fly sideways through time'
 );
 
@@ -251,7 +251,8 @@ use Badger::Timestamp 'Now';
 my $format = Badger::Test::Debug::Format->new;
 
 {
-    local $Badger::Debug::FORMAT = '<pkg> <class> <where> <line> <msg>';
+    local $Badger::Debug::FORMAT  = '<pkg> <class> <where> <line> <msg>';
+    local $Badger::Debug::MESSAGE = '%s';
 
     is( 
         $format->debug_at(
