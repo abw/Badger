@@ -166,8 +166,7 @@ sub configure {
         
         FALLBACK: foreach $alias ($name, @{ $element->{ fallback } || [ ] }) {
             next unless defined $alias;
-            if (ref $alias) {
-                $self->debug("Dispatching handler to set $name\n") if DEBUG;
+            if (ref $alias eq ARRAY) {
                 ($code, @args) = @$alias;
                 ($ok, $value) = $code->($self, $class, $name, $config, $target, @args);
                 if ($ok) {

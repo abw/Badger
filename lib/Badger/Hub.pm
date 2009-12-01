@@ -140,7 +140,7 @@ sub auto_component {
         $self = $self->prototype unless ref $self;
 
         return $self->{ $name } 
-            ||= $self->configure( 
+            ||= $self->construct( 
                 $name => { 
                     # TODO: figure out what's going on here in terms of
                     # possible combinations of configuration options
@@ -181,12 +181,12 @@ sub auto_delegate {
 # method to find $name (e.g. $hash->{ $name }, $object->$name, or
 # $class->name()).  This is merged with $params.
 
-sub configure {
+sub construct {
     my $self = shift;
     my $name = shift;
     my $args = @_ && ref($_[0]) eq HASH ? shift : { @_ };
 
-    $self->debug("configure($name)") if DEBUG;
+    $self->debug("construct($name)") if DEBUG;
     
     # $NAME pkg var can be a module name or hash ref with 'module' item
     my $pkgvar = $self->class->any_var(uc $name);
@@ -487,7 +487,7 @@ that it is using.
 
 =head1 INTERNAL METHODS
 
-=head2 configure($component,\%params)
+=head2 construct($component,\%params)
 
 This method configures and instantiates a component. The first argument is the
 component name. This is mapped to a module via the L<component()> method and
@@ -496,8 +496,8 @@ array of named paramters may follow. A reference to the hub is added to these
 as the C<hub> item before forwarding them to the constructor method for the
 component.  The component is then cached for subsequent use.
 
-    # calling the configure() method like this...
-    $hub->configure( fuzzbox => { volume => 11 } );
+    # calling the construct() method like this...
+    $hub->construct( fuzzbox => { volume => 11 } );
 
     # ...results in code equivalent to this:
     use Your::Module::Fuzzbox;

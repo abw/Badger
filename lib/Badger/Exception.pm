@@ -37,11 +37,11 @@ use Badger::Class
         caller => "<4> called from <1>\n  in <2> at line <3>",
     };
 
-our $FORMAT  = '<type> error - <info>'  unless defined $FORMAT;
-our $TYPE    = 'undef'                  unless defined $TYPE;
-our $INFO    = 'no information'         unless defined $INFO;
-our $ANON    = 'unknown'                unless defined $ANON;
-our $TRACE   = 0                        unless defined $TRACE;
+our $FORMAT  = '<type> error - <info>' unless defined $FORMAT;
+our $TYPE    = 'undef'                 unless defined $TYPE;
+our $INFO    = 'no information'        unless defined $INFO;
+our $ANON    = 'unknown'               unless defined $ANON;
+our $TRACE   = 0                       unless defined $TRACE;
 
 
 sub init {

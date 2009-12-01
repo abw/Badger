@@ -95,7 +95,8 @@ preserve the list/scalar calling context and to handle false but defined
 values.
 
 Cleaned up and generalised the L<Badger::Hub> module.  The Badger-specific
-data has now been moved into L<Badger::Hub::Badger>.
+data has now been moved into L<Badger::Hub::Badger>.  The C<configure()>
+method is now called L<construct()|Badger::Hub/construct()>.
 
 =head2 Version 0.06
 
