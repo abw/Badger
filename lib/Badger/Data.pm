@@ -65,7 +65,9 @@ use Badger::Class
     }
 }
 
-
+# This is a throwback to the Template::TT3::Type object on which this is
+# based... these methods probably won't be staying here - they should be 
+# in Badger::Data::Type
 
 our $METHODS = {
     method    => \&method,       # TODO: can() as alias to method()?
@@ -120,7 +122,6 @@ sub methods {
 }
 
 
-
 sub ref {
     return CORE::ref($_[0]);
 }
@@ -157,13 +158,13 @@ refers to the old name and relates to TT-specific use.
 
 =head1 NAME
 
-Template::TT3::Type - base class for Text, List and Hash objects
+Badger::Data - base class for data object
 
 =head1 SYNOPSIS
 
-    # defining a Thing subclass object
-    package Template::TT3::Type::Thing;
-    use base 'Template::TT3::Type';
+    # defining a subclass data type
+    package Badger::Data::Thing;
+    use base 'Badger::Data';
     
     our $METHODS = {
         wibble => \&wibble,
@@ -180,50 +181,22 @@ Template::TT3::Type - base class for Text, List and Hash objects
         # some wobble code...
     }
 
+=head1 PLEASE NOTE
+
+This module is being merged in from the prototype C<Template-TT3> code. The
+implementation is subject to change and the documentation may be incomplete or
+incorrect in places.
+
 =head1 DESCRIPTION
 
-The C<Template::TT3::Type> module implements a base class for the
-L<Template::TT3::Type::Text>, L<Template::TT3::Type::List> and
-L<Template::TT3::Type::Hash> virtual objects.  These implement the virtual 
-methods that can be applied to text, list and hash items using
-the dot operator:
-
-    [% text = 'Hello World' %]
-    [% text.length %]            # 11
-
-    [% list = [10, 20, 30] %]
-    [% list.size %]              # 3
-
-    [% hash = { x=10, y=20 } %]
-    [% hash.size %]              # 2
-
-They can also be used to create objects for those who prefer
-to do things in a stricter object-oriented style.
-
-    [% text = Text.new('Hello World')  %]
-    [% list = List.new(10, 20, 30)     %]
-    [% hash = Hash.new(x = 10, y = 20) %]
-
-TT3 uses L<Template::TT3::Variable> objects to represent variables internally.
-When a variable is first accessed in a template, the L<Template::Variables>
-module responsible for managing variables creates a variable object to
-represent it. 
-
-Variables that contain scalar text (or numbers which we treat as just another
-kind of text for all intents and purposes) are represented using
-L<Template::TT3::Variable::Text> objects. Hash array references use
-L<Template::TT3::Variable::Hash> objects, list references use
-L<Template::TT3::Variable::List> reference, and so on. Undefined values get
-their own special variable type, L<Template::TT3::Variable::Undef>. 
-
-In each case, these variable objects have a corresponding
-L<Template::TT3::Type> module which defines the virtual methods applicable 
-to that type. 
+The C<Badger::Data> module implements a base class for the
+L<Badger::Data::Text>, L<Badger::Data::List> and L<Badger::Data::Hash> data
+objects.
 
 =head1 METHODS
 
 The following methods are defined in addition to those inherited from 
-L<Template::TT3::Base> and L<Badger::Base>.
+L<Badger::Prototype> and L<Badger::Base>.
 
 =head2 init(\%config)
 
@@ -231,12 +204,6 @@ Initialialisation method to handle any per-object initialisation. This is
 called by the L<new()|Badger::Base/new()> method inherited from
 L<Badger::Base> . In this base class, the method simply copies all items in
 the C<$config> hash array into the C<$self> object.
-
-This method can also be called directly to add any further items to
-the object.  Named parameters can be provided as a list or by
-reference to a hash array, as per the L<new()|Badger::Base/new()> method.
-
-    $object->init( phi => 1.618 );
 
 =head2 clone()
 
@@ -270,11 +237,53 @@ entire hash reference, as per L<methods()>.
 
     my $method = $object->method->{ foo };
 
+=head2 metadata($name,$value)
+
+This method provides access to an out-of-band (i.e. stored separately from the 
+data itself) hash array of metadata for the data item.  It returns a reference
+to a hash array when called without arguments.
+
+    # fetch metadata hash and add an entry
+    my $metadata = $data->metadata;
+    $metadata->{ author } = 'Arthur Dent';
+    
+    # later... print the metadata
+    print $data->metadata->{ author };
+
+It returns the value of an item in the metadata hash when called with a single
+argument.
+
+    print $data->metadata('author');
+
+It sets the value of an item when called with two arguments.
+
+    $data->metadata( author => 'Ford Prefect' );
+
 =head2 ref()
 
 Returns the name of the object type, e.g. C<Template::TT3::Type>,
 C<Template::TT3::Type::Text>, L<Template::TT3::Type::List>, etc., exactly as
 Perl's C<ref()> function does.
+
+=head2 defined()
+
+Returns a true/false (C<1>/C<0>) value to indicate if the target data is 
+defined.
+
+=head2 undefined()
+
+Returns a true/false (C<1>/C<0>) value to indicate if the target data is 
+undefined.
+
+=head2 true()
+
+Returns a true/false (C<1>/C<0>) value to indicate if the target data has 
+a true value (using by Perl's definition of what constitutes truth).
+
+=head2 false()
+
+Returns a true/false (C<1>/C<0>) value to indicate if the target data has 
+a false value (using by Perl's definition of what constitutes truth).
 
 =head1 AUTHOR
 
