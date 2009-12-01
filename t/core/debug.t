@@ -57,10 +57,10 @@ $SIG{__DIE__} = sub {
 my $obj = Badger::Base->new();
 
 $obj->debug("Hello World\n");
-like( $dbgmsg, qr/\[main \(Badger::Base\) line \d\d\]\n> Hello World/, 'Hello World' );
+like( $dbgmsg, qr/\[main \(Badger::Base\) line \d\d\]\s> Hello World/s, 'Hello World' );
 
 $obj->debug('Hello ', "Badger\n");
-like( $dbgmsg, qr/\[main \(Badger::Base\) line \d\d\]\n> Hello Badger/, 'Hello Badger' );
+like( $dbgmsg, qr/\[main \(Badger::Base\) line \d\d\]\s> Hello Badger/s, 'Hello Badger' );
 
 
 #-----------------------------------------------------------------------
@@ -89,7 +89,7 @@ $obj = Badger::Test::Debug1->new;
 pass('there');
 $obj->hello('Ferret');
 pass('there');
-like( $dbgmsg, qr/\[Badger::Test::Debug1 line \d\d\] Hello Ferret/, 'Hello Ferret' );
+like( $dbgmsg, qr/\[Badger::Test::Debug1::hello\(\) line \d\d\]\s> Hello Ferret/s, 'Hello Ferret' );
 
 pass('there');
 

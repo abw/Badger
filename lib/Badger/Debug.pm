@@ -50,7 +50,7 @@ our $FORMAT    = "[<where> line <line>]\n<msg>"
     unless defined $FORMAT;
 our $PROMPT    = '> ' 
     unless defined $PROMPT;
-our $MESSAGE   = "$PROMPT %s";
+our $MESSAGE   = "$PROMPT%s";
 our $CALLER_UP = 0;      # hackola to allow debug() to use a different caller
 our $CALLER_AT = { };    # ditto
 our $DUMPING   = { };
@@ -161,7 +161,7 @@ sub debug {
     $sub =~ s/.*?([^:]+)$/::$1()/;
     my $where  = ($class eq $pkg) 
         ? $class . $sub
-        : $class . $sub . " ($class)";
+        : $pkg   . $sub . " ($class)";
 
     $msg = join("\n", map { sprintf($MESSAGE, $_) } split("\n", $msg));
 #    $msg =~ s/^/$PROMPT/gm;
