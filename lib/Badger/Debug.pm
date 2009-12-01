@@ -158,7 +158,12 @@ sub debug {
     my $format = $CALLER_AT->{ format } || $FORMAT;
     my ($pkg, $file, $line) = caller($CALLER_UP);
     my (undef, undef, undef, $sub) = caller($CALLER_UP + 1);
-    $sub =~ s/.*?([^:]+)$/::$1()/;
+    if (defined $sub) {
+        $sub =~ s/.*?([^:]+)$/::$1()/;
+    }
+    else {
+        $sub = '';
+    }
     my $where  = ($class eq $pkg) 
         ? $class . $sub
         : $pkg   . $sub . " ($class)";
