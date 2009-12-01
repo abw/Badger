@@ -19,7 +19,7 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Exporter Badger::Base',
     import    => 'class CLASS',
-    words     => 'CONFIG',
+    words     => 'CONFIG_SCHEMA',
     constants => 'HASH ARRAY DELIMITER',
     constant  => {
         CONFIG_METHOD => 'configure',
@@ -41,7 +41,7 @@ sub export {
     
     $class->export_symbol(
         $target,
-        CONFIG,
+        CONFIG_SCHEMA,
         \$schema
     );
     
@@ -152,7 +152,7 @@ sub schema {
 sub configure {
     my ($self, $config, $target) = @_;
     my $class  = class($self);
-    my $schema = $class->list_vars(CONFIG);
+    my $schema = $class->list_vars(CONFIG_SCHEMA);
     my ($element, $name, $alias, $code, @args, $ok, $value);
     
     # if a specific $target isn't defined then we default to updating $self
@@ -356,15 +356,15 @@ delimited string.
 More complex configurations can be specified using list and hash references,
 but we'll keep things simple for now.
 
-Using the module as shown here has two immediate effects.  The first is that
-the C<$CONFIG> package variable will be defined in C<Your::Module> containing
-a reference to the configuration schema for your module.  This schema contains
-information about the configuration items which in this example are C<foo>
-and C<bar>.  The second effect is to define a L<configure()> method which 
-uses this schema to configure your object using the configuration options 
-passed to the constructor method.  You can call this method from your 
-L<init()|Badger::Base/init()> method (if you're using L<Badger::Base>)
-or from your own construction or initialisation methods.
+Using the module as shown here has two immediate effects. The first is that
+the C<$CONFIG_SCHEMA> package variable will be defined in C<Your::Module>
+containing a reference to the configuration schema for your module. This
+schema contains information about the configuration items which in this
+example are C<foo> and C<bar>. The second effect is to define a L<configure()>
+method which uses this schema to configure your object using the configuration
+options passed to the constructor method. You can call this method from your
+L<init()|Badger::Base/init()> method (if you're using L<Badger::Base>) or from
+your own construction or initialisation methods.
 
     sub init {
         my ($self, $config) = @_;
@@ -478,13 +478,13 @@ configuration items.
 =head2 schema()
 
 This method is used internally to define a configuration schema.  It exports
-it as the C<$CONFIG> package variable into the calling module.
+it as the C<$CONFIG_SCHEMA> package variable into the calling module.
 
 =head2 configure($config,$target)
 
 This method is exported the calling module to perform the configuration
-process. It used the configuration schema stored in the C<$CONFIG> package
-variable by the L<schema()> method.  It is typically called from a
+process. It used the configuration schema stored in the C<$CONFIG_SCHEMA>
+package variable by the L<schema()> method. It is typically called from a
 construction or initialisation method.
 
 The first argument should be a reference to a hash array of configuration

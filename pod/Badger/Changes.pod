@@ -82,6 +82,9 @@ L<Badger::Class>.
 Added the L<auto_can()|Badger::Class::Methods/auto_can()> method to 
 L<Badger::Class::Methods>.
 
+Changed the L<Badger::Class::Config> module to store the configuration scheme
+in C<$CONFIG_SCHEMA> instead of C<$CONFIG>.
+
 Added the L<Badger::Codec::HTML> module which defines the C<html> codec. 
 
 Changed the L<throw()|Badger::Base/throw()> method in L<Badger::Base> to
