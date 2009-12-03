@@ -75,12 +75,13 @@ sub init_factory {
     
     my @path  = @$config{ path  => $ipath  };
     my @names = @$config{ names => $inames };
-    $self->{ path   } = $class->list_vars(uc $ipath, @path);
-    $self->{ names  } = $class->hash_vars(uc $inames, @names);
-    $self->{ $items } = $class->hash_vars(uc $items, $config->{ $items });
-    $self->{ items  } = $items;
-    $self->{ item   } = $item;
-    $self->{ loaded } = { };
+    $self->{ path     } = $class->list_vars(uc $ipath, @path);
+    $self->{ names    } = $class->hash_vars(uc $inames, @names);
+    $self->{ $items   } = $class->hash_vars(uc $items, $config->{ $items });
+    $self->{ items    } = $items;
+    $self->{ item     } = $item;
+    $self->{ loaded   } = { };
+    $self->{ no_cache } = $config->{ no_cache };  # quick hack - need refactoring
 
     # see if a 'xxxx_default' or 'default' configuration option is specified
     # or look for the first XXXX_DEFAULT or DEFAULT package variable.
@@ -169,7 +170,8 @@ sub item {
 #            ||  $self->default($type, \@args)
             ||  return $self->not_found($type, \@args);
 
-    $items->{ $type } = $item;
+    $items->{ $type } = $item
+        unless $self->{ no_cache };
 
     return $self->found($type, $item, \@args);
 }

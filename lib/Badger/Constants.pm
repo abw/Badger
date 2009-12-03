@@ -51,7 +51,6 @@ use constant {
     SPACE           => ' ',                 # and the answer is none, none more blank
     DELIMITER       => qr/(?:,\s*)|\s+/,    # match a comma or whitespace
     WILDCARD        => qr/[\*\?]/,          # wildcards: *.html foo??.txt
-
 };
 
 CONSTANTS->export_any(qw( 
