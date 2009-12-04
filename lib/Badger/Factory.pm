@@ -5,6 +5,17 @@
 # DESCRIPTION
 #   Factory module for loading and instantiating other modules.
 #
+# NOTE
+#   This module has grown organically to fit a number of (possibly 
+#   conflicting) needs.  It needs to be completely refactored, and 
+#   probably split into a number of different factory modules.  The 
+#   TT3 code on which this was originally based had separate base class
+#   factory modules for modules (that just got loaded), objects (that 
+#   got loaded and instantiated) and single objects (that got loaded,
+#   created and cached).  With hindsight, it was a mistake to try and 
+#   cram all that functionality into one module.  It should be separated
+#   into a base class module/API and a number of specialised subclasses.
+#
 # AUTHOR
 #   Andy Wardley   <abw@wardley.org>
 #
@@ -81,7 +92,9 @@ sub init_factory {
     $self->{ items    } = $items;
     $self->{ item     } = $item;
     $self->{ loaded   } = { };
-    $self->{ no_cache } = $config->{ no_cache };  # quick hack - need refactoring
+    $self->{ no_cache } = defined $config->{ no_cache }     # quick hack
+        ? $config->{ no_cache }
+        : $class->any_var('NO_CACHE') || 0;
 
     # see if a 'xxxx_default' or 'default' configuration option is specified
     # or look for the first XXXX_DEFAULT or DEFAULT package variable.
@@ -231,9 +244,11 @@ sub load {
         # loading something that has no ISA.  Need to cross-check with 
         # what's going on in Badger::Class _autoload()
 
-        if ( ( $loaded->{ $module } = class($module)->maybe_load )
+        my $loadname;
+        if ( ( $loadname = class($module)->maybe_load )
         &&   ( ${ $module.PKG.VERSION } || @{ $module.PKG.ISA }  ) ) {
             $self->debug("loaded $module") if DEBUG;
+            $loaded->{ $module } = $loadname;
             return $module 
         }
 
