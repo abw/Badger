@@ -28,7 +28,7 @@ use Badger::Class
     exports   => {
         tags  => {
             debug => 'debugging debug debugf debug_up debug_at debug_caller 
-                      debug_args',
+                      debug_callers debug_args',
             dump  => 'dump dump_data dump_data_inline
                       dump_ref dump_hash dump_list dump_text'
         },
@@ -221,6 +221,24 @@ sub debug_caller {
     my $msg = "$sub called from ";
     ($pkg, undef, undef, $sub) = caller(2);
     $msg .= "$sub in $file at line $line\n";
+    $self->debug($msg);
+}
+
+
+sub debug_callers {
+    my $self = shift;
+    my $msg  = '';
+    my $i    = 1;
+    
+    while (1) {
+        my @info = caller($i);
+        last unless @info;
+        my ($pkg, $file, $line, $sub) = @info;
+        $msg .= sprintf(
+            "%4s: Called from %s in %s at line %s\n",
+            '#' . $i++, $sub, $file, $line
+        );
+    }
     $self->debug($msg);
 }
 
@@ -800,7 +818,7 @@ of this in use.
 =head2 :debug
 
 Imports all of the L<debug()>, L<debugging()>, L<debug_up()>, 
-L<debug_caller()> and L<debug_args()> methods.
+L<debug_caller()>, L<debug_callers> and L<debug_args()> methods.
 
 =head2 :dump
 
@@ -908,6 +926,15 @@ Prints debugging information about the current caller.
     sub wibble {
         my $self = shift;
         $self->debug_caller;
+    }
+
+=head2 debug_callers()
+
+Prints debugging information about the complete call stack.
+
+    sub wibble {
+        my $self = shift;
+        $self->debug_callers;
     }
 
 =head2 debug_args()
