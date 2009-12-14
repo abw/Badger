@@ -5,7 +5,7 @@ use Badger::Class
     version    => 0.01,
     debug      => 0,
     uber       => 'Badger::Class',
-    words      => 'FACETS',
+#    words      => 'FACETS',
     constants  => 'ARRAY DELIMITER',
     hooks      => {
         type   => \&type,
@@ -30,7 +30,7 @@ sub size {
 
 sub facets {
     my ($self, $facets) = @_;
-    my $current = $self->var(FACETS) || [ ];
+    my $current = $self->var_default( FACETS => [ ] );
 
     foreach ($facets, $current) {
         $_ = [ split DELIMITER ]
@@ -41,7 +41,7 @@ sub facets {
     
     $self->debug("merged facets are ", $self->dump_data($facets)) if DEBUG;
     
-    $self->var(FACETS, $current);
+    $self->var( FACETS => $current );
 }
 
 

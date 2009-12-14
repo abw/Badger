@@ -20,3 +20,6 @@ use Badger::Test
 
 use Badger::Data::Type::Simple;
 pass('loaded Badger::Data::Type::Simple');
+
+use constant SIMPLE => 'Badger::Data::Type::Simple';
+

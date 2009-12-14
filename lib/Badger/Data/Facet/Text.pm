@@ -3,6 +3,7 @@ package Badger::Data::Facet::Text;
 use Badger::Class
     version   => 0.01,
     base      => 'Badger::Data::Facet',
+    utils     => 'textlike',
     messages  => {
         not_text        => '%s is not text (got %s)',
         wrong_length    => '%s should be %d characters long (got %d)',

@@ -23,7 +23,7 @@ use Badger::Class
     as_text   => 'name',
     is_true   => 1,
     constant  => {
-        type    => 'type',
+        type    => '',
         simple  => 0,
         complex => 0,
 #       CLAUSES => 'Badger::Data::Clauses',
@@ -33,6 +33,7 @@ use Badger::Class
         init  => \&init_type,
     };
 
+use Badger::Debug ':dump';
 
 
 our @PARAMS = qw( base name namespace );
@@ -70,8 +71,11 @@ sub constrain {
     my $type   = $self->type;
     my ($name, $value);
 
+    $self->debug("preparing facets: ", $self->dump_data($facets)) if DEBUG;
+
     while (@args) {
         $name = shift(@args);
+        $self->debug("preparing facet: $name") if DEBUG;
         push(
             @$facets, 
             ref $name eq CODE 
@@ -79,7 +83,7 @@ sub constrain {
                 : $FACETS->facet(
                       # prepend the basic type (e.g. length => text.length)
                       # unless type and facet are the same (e.g. text => text)
-                      ($type eq $name) ? $type : $type.DOT.$name, 
+                      ($type eq $name) ? $type : ($type ? $type.DOT.$name : $name),
                       shift(@args)
                   )
         );
@@ -94,8 +98,9 @@ sub validate {
     my ($self, $value) = @_;
 
     foreach my $facet (@{ $self->{ facets } }) {
-        $value = ref $facet eq CODE 
-            ? $facet->($value, $self)
+        $self->debug("validating facet: $facet with value: $value") if DEBUG;
+        ref $facet eq CODE 
+            ? $facet->($value, $self)               # TODO: this should be passed as refs...
             : $facet->validate($value, $self);
     }
     return $value;
