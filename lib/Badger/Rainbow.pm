@@ -19,7 +19,7 @@ use Badger::Class
     base      => 'Badger::Exporter',
     constants => 'DELIMITER ARRAY REFS PKG',
     exports   => {
-        any   => 'ANSI_escape ANSI_colours',
+        any   => 'ANSI_escape ANSI_colours strip_ANSI_escapes',
         hooks => {
             ANSI => \&_export_ANSI_colours,
         },
@@ -86,6 +86,13 @@ sub ANSI_escape {
 }
 
 
+sub strip_ANSI_escapes {
+    my $text = join('', grep { defined $_ } @_);
+    $text =~ s/ \e .*? m//gx;
+    return $text;
+}
+
+
 
 
 1;
@@ -114,10 +121,14 @@ only used for debugging purposes but may be extended in the future.
 =head2 ANSI_escape($code, $line1, $line2, ...)
 
 This function applies an ANSI escape code to each line of text, with the 
-effect of colourising output on compatible terminals.
+effect of colouring output on compatible terminals.
 
     use Badger::Rainbow 'ANSI_escape';
     print ANSI_escape(31, 'Hello World');     # 31 is red
+
+=head2 strip_ANSI_escapes($text)
+
+This function removes any ANSI escapes from the text passed as an argument.
 
 =head2 ANSI
 
