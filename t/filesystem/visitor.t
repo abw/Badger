@@ -17,7 +17,7 @@ use warnings;
 use File::Spec;
 use Badger::Filesystem 'FS';
 use Badger::Test 
-    tests => 24,
+    tests => 25,
     debug => 'Badger::Filesystem::Visitor',
     args  => \@ARGV;
 
@@ -205,6 +205,18 @@ is( scalar @files, 6, 'got  default files' );
 is( join(' ', sort map { $_->name } @files), 
     'large medium one small tmp two',
     'got all default files' );
+
+
+
+#-----------------------------------------------------------------------
+# visitor callbacks
+#-----------------------------------------------------------------------
+
+my $n = 0;
+@files = $vdir->visit(
+    at_file => sub { $n++ }
+);
+is( $n, 3, 'visited three files via a callback' );
 
 
 
