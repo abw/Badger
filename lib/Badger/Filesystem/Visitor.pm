@@ -67,13 +67,25 @@ sub init {
     $self->{ collect  } = [ ];
     $self->{ identify } = { };
         
-    # TODO: at_file/at_dir handlers
-    $self->{ at_file } = $config->{ at_file } 
-        || $self->class->any_var('AT_FILE');
-    $self->{ at_dir  } = $config->{ at_directory } 
-        || $config->{ at_dir } 
-        || $self->class->any_var('AT_DIRECTORY')
-        || $self->class->any_var('AT_DIR');
+    # TODO: This is a bit of a mess
+    # Look for any handlers defined
+    $self->{ accept_file } = $config->{ accept_file } 
+        || $self->class->any_var('ACCEPT_FILE');
+
+    $self->{ accept_dir  } = $config->{ accept_directory } 
+        || $config->{ accept_dir } 
+        || $self->class->any_var('ACCEPT_DIRECTORY')
+        || $self->class->any_var('ACCEPT_DIR');
+
+    $self->{ enter_dir   } = $config->{ enter_directory } 
+        || $config->{ enter_dir } 
+        || $self->class->any_var('ENTER_DIRECTORY')
+        || $self->class->any_var('ENTER_DIR');
+
+    $self->{ leave_dir   } = $config->{ leave_directory } 
+        || $config->{ leave_dir } 
+        || $self->class->any_var('LEAVE_DIRECTORY')
+        || $self->class->any_var('LEAVE_DIR');
 
     $self->init_filters;
 
@@ -139,10 +151,10 @@ sub visit_path {
 
 sub visit_file {
     my ($self, $file) = @_;
-    $self->debug("visiting file: $file\n") if $DEBUG;
 
-    $self->collect_file($file)
-        if $self->accept_file($file);
+    return $self->filter_file($file)
+         ? $self->accept_file($file)
+         : $self->reject_file($file);
 }
 
 
@@ -150,19 +162,13 @@ sub visit_directory {
     my ($self, $dir) = @_;
     $self->debug("visiting directory: $dir\n") if $DEBUG;
 
-    $self->collect_directory($dir) || return
-        if $self->accept_directory($dir);
+    $self->filter_directory($dir)
+         ? $self->accept_directory($dir) || return
+         : $self->reject_directory($dir) || return;
 
-    $self->visit_directory_children($dir)
-        if $self->enter_directory($dir);
-}
-
-
-sub visit_directory_children {
-    my ($self, $dir) = @_;
-    $self->debug("visiting directory children: $dir\n") if $DEBUG;
-    map { $_->accept($self) }
-    $dir->children($self->{ all });
+    return $self->filter_entry($dir)
+         ? $self->enter_directory($dir)
+         : $self->leave_directory($dir);
 }
 
 
@@ -198,40 +204,82 @@ sub filter {
 }
 
 
+sub filter_file {
+    my ($self, $file) = @_;
+    return $self->filter( files    => name => $file )
+      && ! $self->filter( no_files => name => $file );
+}
+
+
+sub filter_directory {
+    my ($self, $dir) = @_;
+    return $self->filter( dirs    => name => $dir )
+      && ! $self->filter( no_dirs => name => $dir );
+}
+
+
+sub filter_entry {
+    my ($self, $dir) = @_;
+    return $self->filter( in_dirs     => name => $dir )
+      && ! $self->filter( not_in_dirs => name => $dir );
+}
+
+
 sub accept_file {
-    my $self = shift;
-    return $self->filter( files    => name => @_ )
-      && ! $self->filter( no_files => name => @_ );
+    my ($self, $file) = @_;
+    $self->debug("accept_file($file)") if DEBUG;
+    $self->{ accept_file }->($self, $file) || return
+        if $self->{ accept_file };
+    return $self->collect($file);
+
+#    return $self->filter( files    => name => @_ )
+#      && ! $self->filter( no_files => name => @_ );
+}
+
+
+sub reject_file {
+    my ($self, $file) = @_;
+    $self->debug("reject_file($file)") if DEBUG;
+    return $self->{ reject_file }
+         ? $self->{ reject_file }->($self, $file)
+         : 1;
 }
 
 
 sub accept_directory {
-    my $self = shift;
-    return $self->filter( dirs    => name => @_ )
-      && ! $self->filter( no_dirs => name => @_ );
+    my ($self, $dir) = @_;
+    $self->debug("accept_dir($dir)") if DEBUG;
+    $self->{ accept_dir }->($self, $dir) || return
+        if $self->{ accept_dir };
+    return $self->collect($dir);
 }
 
+
+sub reject_directory {
+    my ($self, $dir) = @_;
+    $self->debug("reject_directory($dir)") if DEBUG;
+    return $self->{ reject_dir }
+         ? $self->{ reject_dir }->($self, $dir)
+         : 1;
+}
 
 sub enter_directory {
-    my $self = shift;
-    return $self->filter( in_dirs     => name => @_ )
-      && ! $self->filter( not_in_dirs => name => @_ );
-}
-
-
-sub collect_file {
-    my ($self, $file) = @_;
-    $self->{ at_file }->($self, $file) || return
-        if $self->{ at_file };
-    return $self->collect($file);
-}
-
-
-sub collect_directory {
     my ($self, $dir) = @_;
-    $self->{ at_dir }->($self, $dir) || return
-        if $self->{ at_dir };
-    return $self->collect($dir);
+    $self->debug("visiting directory children: $dir\n") if $DEBUG;
+    $self->{ enter_dir }->($self, $dir) || return
+        if $self->{ enter_dir };
+    return 
+        map { $_->accept($self) }
+        $dir->children($self->{ all });
+}
+
+
+sub leave_directory {
+    my ($self, $dir) = @_;
+    $self->debug("leave_directory($dir)") if DEBUG;
+    return $self->{ leave_dir }
+         ? $self->{ leave_dir }->($self, $dir)
+         : 1;
 }
 
 

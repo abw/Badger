@@ -31,6 +31,7 @@ use Badger::Class
         UPDIR       =>  File::Spec->updir,
         FS          => 'Badger::Filesystem',
         VFS         => 'Badger::Filesystem::Virtual',
+        UFS         => 'Badger::Filesystem::Universal',
         PATH        => 'Badger::Filesystem::Path',
         FILE        => 'Badger::Filesystem::File',
         DIRECTORY   => 'Badger::Filesystem::Directory',
@@ -46,6 +47,10 @@ use Badger::Class
             VFS     => sub {
                 # load VFS module and call its export() method
                 class(shift->VFS)->load->pkg->export(shift, shift)
+            },
+            UFS     => sub {
+                # load UFS module and call its export() method
+                class(shift->UFS)->load->pkg->export(shift, shift)
             },
             '$Bin'  => \&_export_findbin_hook,
         },
@@ -173,9 +178,14 @@ class->methods(
 sub init {
     my ($self, $config) = @_;
 
-    # TODO: have filsystem "styles", e.g. URI/URL style provides defaults
-    # for rootdir, updir, curdir, separator.  But this requires us to bypass
-    # File::Spec, so we'll leave it for now.  KISS.
+    # NEW CODE: trying to abstract out the file specification so that I 
+    # can slot in a Universal file spec decoy which always generates URIs
+    my $spec = $self->{ spec } 
+             = $config->{ spec } 
+            || $config->{ filespec } 
+            || $self->FILESPEC;
+        
+    $self->debug("spec is $spec") if DEBUG;
     
     # The tokens used to represent the root directory ('/'), the 
     # parent directory ('..') and current directory ('.') default to
@@ -183,9 +193,9 @@ sub init {
     # we have to resort to an ugly hack.  The File::Spec module hard-codes 
     # the path separator in the catdir() method so we have to make a round-
     # trip through catdir() to grok the separator in a cross-platform manner
-    $self->{ rootdir   } = $config->{ rootdir   } || ROOTDIR;
-    $self->{ updir     } = $config->{ updir     } || UPDIR;
-    $self->{ curdir    } = $config->{ curdir    } || CURDIR;
+    $self->{ rootdir   } = $config->{ rootdir   } || $spec->rootdir;
+    $self->{ updir     } = $config->{ updir     } || $spec->updir;
+    $self->{ curdir    } = $config->{ curdir    } || $spec->curdir;
     $self->{ separator } = $config->{ separator } || do {
         my $sep = FILESPEC->catdir(('badger') x 2);
         $sep =~ s/badger//g;
@@ -198,11 +208,17 @@ sub init {
     # current working can be specified explicitly, otherwise we leave it
     # undefined and let cwd() call getcwd() determine it dynamically
     $self->{ cwd } = $config->{ cwd };
-
+    
     # additional options, e.g. codec, encoding
     $self->init_options($config);
     
     return $self;
+}
+
+sub spec {
+    return ref $_[0] eq HASH
+        ? $_[0]->{ spec }
+        : FILESPEC;
 }
 
 sub path {
@@ -255,8 +271,9 @@ sub cwd {
 
 sub merge_paths {
     my ($self, $base, $path) = @_;
-    my @p1 = FILESPEC->splitpath($base);
-    my @p2 = FILESPEC->splitpath($path);
+    my $spec = $self->spec;
+    my @p1   = $spec->splitpath($base);
+    my @p2   = $spec->splitpath($path);
 
     # check volumes match
     if (defined $p2[0]) {
@@ -268,28 +285,30 @@ sub merge_paths {
     my $vol = shift(@p1) || '';
     my $file = pop @p2;
     
-    FILESPEC->catpath($vol, FILESPEC->catdir(@p1, @p2), $file);
+    $spec->catpath($vol, $spec->catdir(@p1, @p2), $file);
 }
     
 sub join_path {
     my $self = shift;
     my @args = map { defined($_) ? $_ : '' } @_[0..2];
-    FILESPEC->canonpath( FILESPEC->catpath(@args) );
+    my $spec = $self->spec;
+    $spec->canonpath( $spec->catpath(@args) );
 }
 
 sub join_directory {
     my $self = shift;
     my $dir  = @_ == 1 ? shift : [ @_ ];
+    my $spec = $self->spec;
     $self->debug("join_dir(", ref $dir eq ARRAY ? '[' . join(', ', @$dir) . ']' : $dir, ")\n") if $DEBUG;
     ref $dir eq ARRAY
-        ? FILESPEC->catdir(@$dir)
-        : FILESPEC->canonpath($dir);
+        ? $spec->catdir(@$dir)
+        : $spec->canonpath($dir);
 }
 
 sub split_path {
     my $self  = shift;
     my $path  = $self->join_directory(@_);
-    my @split = map { defined($_) ? $_ : '' } FILESPEC->splitpath($path);
+    my @split = map { defined($_) ? $_ : '' } $self->spec->splitpath($path);
     $self->debug("split_path($path) => ", join(', ', @split), "\n") if $DEBUG;
     return wantarray ? @split : \@split;
 }
@@ -297,7 +316,7 @@ sub split_path {
 sub split_directory {
     my $self  = shift;
     my $path  = $self->join_directory(@_);
-    my @split = FILESPEC->splitdir($path);
+    my @split = $self->spec->splitdir($path);
     return wantarray ? @split : \@split;
 }
 
@@ -339,7 +358,10 @@ sub slash_directory {
 
 sub is_absolute {
     my $self = shift;
-    FILESPEC->file_name_is_absolute($self->join_directory(@_)) ? 1 : 0;
+#    $self->debug("args: ", $self->dump_data(\@_));
+    $self->spec->file_name_is_absolute(
+        $self->join_directory(@_)
+    ) ? 1 : 0;
 }
 
 sub is_relative {
@@ -349,13 +371,14 @@ sub is_relative {
 sub absolute {
     my $self = shift;
     my $path = $self->join_directory(shift);
-    return $path if FILESPEC->file_name_is_absolute($path);
-    FILESPEC->catdir(shift || $self->cwd, $path);
+    my $spec = $self->spec;
+    return $path if $spec->file_name_is_absolute($path);
+    $spec->catdir(shift || $self->cwd, $path);
 }
 
 sub relative {
     my $self = shift;
-    FILESPEC->abs2rel($self->join_directory(shift), shift || $self->cwd);
+    $self->spec->abs2rel($self->join_directory(shift), shift || $self->cwd);
 }
 
 
@@ -579,7 +602,7 @@ sub read_directory {
     while (defined ($path = $dirh->read)) {
         push(@paths, $path);
     }
-    @paths = FILESPEC->no_upwards(@paths)
+    @paths = $self->spec->no_upwards(@paths)
         unless $all || ref $self && $self->{ all_entries };
 
     $dirh->close;

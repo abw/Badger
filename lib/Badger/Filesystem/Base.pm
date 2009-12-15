@@ -32,6 +32,8 @@ sub init_path {
     my ($path, $vol, $dir, $name);
     my $fs = $self->filesystem;
 
+    $self->debug("init_path() ", $self->dump_data($config)) if DEBUG;
+
     if ($config->{ path }) {
         # split path into volume, directory, name
         # set colume, 

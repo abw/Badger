@@ -214,7 +214,7 @@ is( join(' ', sort map { $_->name } @files),
 
 my $n = 0;
 @files = $vdir->visit(
-    at_file => sub { $n++ }
+    accept_file => sub { $n++ }
 );
 is( $n, 3, 'visited three files via a callback' );
 

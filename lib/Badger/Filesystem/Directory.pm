@@ -126,7 +126,7 @@ sub accept {
 # of the directory rather than making a callback for the root directory.
 
 sub enter {
-    $_[1]->visit_directory_children($_[0]);
+    $_[1]->enter_directory($_[0]);
 }
 
 
