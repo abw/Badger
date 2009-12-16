@@ -19,7 +19,6 @@ use Badger::Test
 
 my $obj;
 
-
 #-----------------------------------------------------------------------
 # My::Config2 uses Badger::Class::Config directly and defines the config
 # using a single string:
@@ -32,7 +31,7 @@ my $obj;
 use My::Config1;
 $obj = eval { My::Config1->new( username => 'fred' ) };
 ok( ! $obj, 'no object' );
-is( My::Config1->reason, 'No password specified', 'no password error' );
+is( $@->info, 'No password specified', 'no password error' );
 
 $obj = My::Config1->new( username => 'fred', password => 'secret' );
 ok( $obj, 'created object with long names' );
@@ -67,7 +66,6 @@ is( $obj->username, 'fred', 'got username from second object' );
 is( $obj->password, 'secret', 'got password from second object' );
 
 
-
 #-----------------------------------------------------------------------
 # My::Config3 does it via Badger::Class
 #-----------------------------------------------------------------------
@@ -75,6 +73,7 @@ is( $obj->password, 'secret', 'got password from second object' );
 use My::Config3;
 $ENV{ MY_DRIVER } = 'wibble';
 $obj = My::Config3->new( username => 'fred' );
+
 ok( $obj, 'created third object with mixed names' );
 is( $obj->username, 'fred', 'got username from third object' );
 is( $obj->password, 'top_secret', 'got password from third object' );

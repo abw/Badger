@@ -14,14 +14,16 @@ package Badger::Class::Config;
 
 use Carp;
 use Badger::Debug ':dump';
+use Badger::Config::Schema;
 use Badger::Class
     version   => 0.01,
     debug     => 0,
     base      => 'Badger::Exporter Badger::Base',
     import    => 'class CLASS',
-    words     => 'CONFIG_SCHEMA',
+    words     => 'CONFIG_SCHEMA CONFIG_ITEMS',
     constants => 'HASH ARRAY DELIMITER',
     constant  => {
+        SCHEMA        => 'Badger::Config::Schema',
         CONFIG_METHOD => 'configure',
         VALUE         => 1,
         NOTHING       => 0,
@@ -37,12 +39,28 @@ sub export {
     my $target = shift;
     $class->debug("export to $target: ", join(', ', @_)) if DEBUG;
     my $params = @_ == 1 ? shift : { @_ };
-    my $schema = $class->schema($params);
+    my $schema = $class->schema($target, $params);
+    my $items  = $schema->items;
+    
+    $class->debug(
+        "exporting CONFIG_SCHEMA to $target: $schema"
+    ) if DEBUG;
     
     $class->export_symbol(
         $target,
         CONFIG_SCHEMA,
         \$schema
+    );
+
+    $class->debug(
+        "export CONFIG_ITEMS to $target: ", 
+        $class->dump_data($items)
+    ) if DEBUG;
+    
+    $class->export_symbol(
+        $target,
+        CONFIG_ITEMS,
+        \$items,
     );
     
     $class->export_symbol(
@@ -54,94 +72,30 @@ sub export {
 
 sub schema {
     my $class  = shift;
+    my $target = shift;
     my $config = @_ == 1 ? (ref $_[0] eq ARRAY ? [@{$_[0]}] : shift) : [ @_ ];
-    my ($name, $info, @aka, $fallback, $test, @schema);
 
     $class->debug("Generating schema from config: ", $class->dump_data($config))
         if DEBUG;
     
     $config = [ split(DELIMITER, $config) ]
         unless ref $config;
+
+    # inherit any other items define in base classes
+    my $items = class($target)->list_vars(CONFIG_ITEMS);
     
-    $config = [ 
-        map { 
-            my $k = $_;
-            my $v = $config->{ $k };
-            ref $v eq HASH
-                ? { name => $k, %$v } 
-                : { name => $k, default => $v }
-        } keys %$config
-    ] if ref $config eq HASH;
+    $class->SCHEMA->new(
+        class    => $target,
+        schema   => $config,
+        fallback => $class,
+        extend   => $items,
+    );
+}
 
-#    $config = { 
-#        map { 
-#            ref($_) eq HASH 
-#                ? ($_->{ name } => $_)
-#                : ($_           => { })
-#        } @$config 
-#    } if ref $config eq ARRAY;
-
-    $class->debug("Canonical config: ", $class->dump_data($config))
-        if DEBUG;
-        
-#    while (($name, $info) = each %$config) {
-    while (@$config) {
-        $name = shift @$config;
-        $class->debug("config item: $name\n") if DEBUG;
-        if (ref $name eq HASH) {
-            $info = $name;
-            $name = $info->{ name };
-        }
-        else {
-            $info = { };
-        }
-        $class->debug("name: $name   info: $info") if DEBUG;
-#        if (ref $info eq HASH) {
-#            # ok
-#        }
-#        else {
-#            $info = { default => $info };
-#        }
-        
-        $info->{ required } = 1 
-            if $name =~ s/!$//;
-            
-        $info->{ default } = $1
-            if $name =~ s/=(\S+)$//;
-
-        # name can be 'name|alias1|alias2|...'
-        ($name, @aka) = split(/\|/, $name);
-        
-        # $info is now a hash ref
-        $info->{ name } = $name
-            unless defined $info->{ name };
-
-        # aliases can be specified as a list ref or string which we split
-        $fallback = $info->{ fallback } || [];
-        $fallback = [ split(DELIMITER, $fallback) ]
-            unless ref $fallback eq ARRAY;
-        push(@$fallback, @aka);
-
-        foreach my $item (@$fallback) {
-            next unless $item =~ /:/;
-            my ($type, $data) = split(/:/, $item, 2);
-            my $code = $class->can('configure_' . $type)
-                || return $class->error_msg( bad_type => $name, $type );
-            $item = [ $code, $data ];
-        }
-        
-        # add any aliases specified as part of the name and bind them 
-        # back into the field info hash
-        $info->{ fallback } = $fallback;
-
-        $class->debug("Adding config schema element for $name: ", $class->dump_data($info)) if DEBUG;
-
-        push(@schema, $info);
-    }
-
-#    $class->debug('schema: ', $class->dump_data_inline(\@schema)) if DEBUG;
-    
-    return \@schema;
+sub fallback {
+    my ($self, $name, $type, $data) = @_;
+    my $code = $self->can('configure_' . $type) || return;
+    return [ $code, $data ];
 }
 
 
@@ -152,71 +106,33 @@ sub schema {
 sub configure {
     my ($self, $config, $target) = @_;
     my $class  = class($self);
-    my $schema = $class->list_vars(CONFIG_SCHEMA);
-    my ($element, $name, $alias, $code, @args, $ok, $value);
-    
-    # if a specific $target isn't defined then we default to updating $self
-    $target ||= $self;
+    my $schema = $class->any_var(CONFIG_SCHEMA);
 
-    $self->debug("configure(", CLASS->dump_data_inline($config), ')') if DEBUG;
-    $self->debug("schema: ", CLASS->dump_data($schema)) if DEBUG;
-    
-    ELEMENT: foreach $element (@$schema) {
-        $name = $element->{ name };
-        
-        FALLBACK: foreach $alias ($name, @{ $element->{ fallback } || [ ] }) {
-            next unless defined $alias;
-            if (ref $alias eq ARRAY) {
-                ($code, @args) = @$alias;
-                ($ok, $value) = $code->($self, $class, $name, $config, $target, @args);
-                if ($ok) {
-                    $target->{ $name } = $value;
-                    next ELEMENT;
-                }
-            }
-            elsif (defined $config->{ $alias }) {
-                $self->debug("Looking for $alias in config to set $name\n") if DEBUG;
-                $target->{ $name } = $config->{ $alias };
-                next ELEMENT;
-            }
-            else {
-                $self->debug("Nothing found for $alias to set $name\n") if DEBUG;
-            }
-        }
-        
-        if (exists $element->{ default }) {
-            $self->debug("setting to default value: $element->{ default }\n") if DEBUG;
-            $target->{ $name } = $element->{ default };
-            next ELEMENT;
-        }
-        
-        if ($element->{ required }) {
-            $self->debug("$name is required, throwing error\n") if DEBUG;
-            return $self->error_msg( $element->{ error } || missing => $name );
-        }
-        $self->debug("$name is not required, continuing\n") if DEBUG;
-    }
+    # if a specific $target isn't defined then we default to updating $self
+    $schema->configure($config, $target || $self, $self);
     
     return $self;
 }
-
+    
 
 #-----------------------------------------------------------------------
 # These handlers implement the various fallback types for providing 
 # configuration data.  The schema() method maps fallacks specified as
 # 'pkg:FOO' and 'class:BAR', for example, to the configure_pkg() and 
 # configure_class() handlers, passing the token following the colon as 
-# an argument.  They are called as code refs, but the object they're 
-# configuring is passed as the first argument, $self. So they look
-# like object methods, but they're not exported into the object's 
-# namespace.
+# an argument.  They are called as code refs, but the class of the 
+# object that they're configuring is passed as the first argument, $class. 
+# So they look like class methods, but they're not exported into the 
+# object's namespace.  The $target is usually the object that's being
+# configured, e.g. when $self->configure($config) is called, but it might
+# also be a bare hash, e.g. $target = { }; $self->configure($config, $target)
 #-----------------------------------------------------------------------
-    
-sub configure_pkg {
-    my ($self, $class, $name, $config, $target, $var) = @_;
-    my $value = $class->var($var);
 
-    $self->debug(
+sub configure_pkg {
+    my ($class, $name, $config, $target, $var) = @_;
+    my $value = class($class)->var($var);
+
+    $class->debug(
         "Looking for \$$var package variable in $class to set $name: ", 
         defined $value ? $value : '<undef>'
     ) if DEBUG;
@@ -227,10 +143,10 @@ sub configure_pkg {
 }
 
 sub configure_class {
-    my ($self, $class, $name, $config, $target, $var) = @_;
-    my $value = $class->any_var_in( split(':', $var) );
+    my ($class, $name, $config, $target, $var) = @_;
+    my $value = class($class)->any_var_in( split(':', $var) );
 
-    $self->debug(
+    $class->debug(
         "Looking for \$$var class variable in $class to set $name: ", 
         defined $value ? $value : '<undef>'
     ) if DEBUG;
@@ -241,10 +157,10 @@ sub configure_class {
 }
 
 sub configure_env {
-    my ($self, $class, $name, $config, $target, $var) = @_;
+    my ($class, $name, $config, $target, $var) = @_;
     my $value = $ENV{ $var };
 
-    $self->debug(
+    $class->debug(
         "Looking for $var environment variable to set $name: ",
         defined $value ? $value : '<undef>'
     ) if DEBUG;
@@ -255,18 +171,18 @@ sub configure_env {
 }
 
 sub configure_method {
-    my ($self, $class, $name, $config, $target, $method) = @_;
+    my ($class, $name, $config, $target, $method) = @_;
 
     # see if the object has the required method - note we must call 
     # error_msg against CLASS (Badger::Class::Config) to use the 'bad_method'
     # message defined above.
-    my $code = $self->can($method)
-        || return CLASS->error_msg( bad_method => $class, $name, $method );
+    my $code = $class->can($method)
+        || return CLASS->error_msg( bad_method => class($class), $name, $method );
 
     # call the code and do the usual shuffle
-    my $value = $code->($self);
+    my $value = $code->($class);
 
-    $self->debug(
+    $class->debug(
         "Called $method() method to set $name: ",
         defined $value ? $value : '<undef>'
     ) if DEBUG;
@@ -277,11 +193,11 @@ sub configure_method {
 }
 
 sub configure_target {
-    my ($self, $class, $name, $config, $target, $var) = @_;
+    my ($class, $name, $config, $target, $var) = @_;
 
     my $value = $target->{ $var };
     
-    $self->debug(
+    $class->debug(
         "Looking for $var in $class target $target to set $name: ", 
         defined $value ? $value : '<undef>'
     ) if DEBUG;
