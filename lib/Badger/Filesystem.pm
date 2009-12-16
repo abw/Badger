@@ -61,6 +61,7 @@ use Badger::Class
         bad_volume    => 'Volume mismatch: %s vs %s',
         bad_stat      => 'Nothing known about %s',
         copy_failed   => 'Failed to %s file from %s to %s: %s',
+        no_path       => 'Unable to determine location of %s',
     };
 
 use Badger::Filesystem::File;
@@ -462,6 +463,8 @@ sub open_file {
     my $path = $mode eq 'r' 
         ? $self->definitive_read($name)
         : $self->definitive_write($name);
+    return $self->error_msg( no_path => $name )
+        unless defined $path && length $path;
 
     require IO::File;
     $self->debug("about to open file $path (", join(', ', @_), ")\n") if $DEBUG;
@@ -666,7 +669,7 @@ sub collect {
 }
 
 sub accept {
-    $_[0]->root->accept($_[1]);
+    shift->root->accept(@_);
 }
 
 #-----------------------------------------------------------------------

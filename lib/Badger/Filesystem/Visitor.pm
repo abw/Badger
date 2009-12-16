@@ -19,15 +19,30 @@ use Badger::Class
     import    => 'class',
     utils     => 'params',
     constants => 'ARRAY CODE REGEX ON WILDCARD',
+    config    => [
+        'files|accept|class:FILES',
+        'no_files|ignore|class:NO_FILES',
+        'dirs|directories|class:DIRS',
+        'no_dirs|no_directories|class:NO_DIRS',
+        'in_dirs|in_directories|enter|class:IN_DIRS',
+        'not_in_dirs|not_in_directories|leave|class:NOT_IN_DIRS',
+        'accept_file',
+        'reject_file',
+        'accept_dir|accept_directory',
+        'reject_dir|reject_directory',
+        'enter_dir|enter_directory',
+        'leave_dir|leave_directory',
+    ],
     messages  => {
         no_node    => 'No node specified to %s',
         bad_filter => 'Invalid test in %s specification: %s',
     },
     alias     => {
-        collect_dir         => \&collect_dir,
-        enter_dir           => \&enter_directory,
-        visit_dir           => \&visit_directory,
-        visit_dir_kids      => \&visit_directory_children,
+        init            => \&init_visitor,
+        collect_dir     => \&collect_dir,
+        enter_dir       => \&enter_directory,
+        visit_dir       => \&visit_directory,
+        visit_dir_kids  => \&visit_directory_children,
     };
 
 use Badger::Debug ':dump';
@@ -41,53 +56,22 @@ our $NO_DIRS     = 0;
 our $NOT_IN_DIRS = 0;
 
 
-sub init {
+sub init_visitor {
     my ($self, $config) = @_;
     my $class = $self->class;
     my ($item, $long);
 
-    $config->{ in_dirs } = 1
+    $self->configure($config);
+    
+    $self->{ in_dirs } = 1
         if $config->{ recurse };
-
-    foreach $item ('all', @FILTERS) {
-        # allow 'directories' as alias for 'dirs'
-        $long = $item;
-        $long =~ s/dirs/directories/;
-        # for those entries that don't contains 'dirs', the $item and $long
-        # will be the same, so we've got an unneccessary test or two, but 
-        # it keeps the code simple
-        $self->{ $item } 
-            = defined $config->{ $long }
-                    ? $config->{ $long }
-            : defined $config->{ $item }
-                    ? $config->{ $item }
-            : $class->any_var(uc $item);
-    }
     
     $self->{ collect  } = [ ];
     $self->{ identify } = { };
-        
-    # TODO: This is a bit of a mess
-    # Look for any handlers defined
-    $self->{ accept_file } = $config->{ accept_file } 
-        || $self->class->any_var('ACCEPT_FILE');
-
-    $self->{ accept_dir  } = $config->{ accept_directory } 
-        || $config->{ accept_dir } 
-        || $self->class->any_var('ACCEPT_DIRECTORY')
-        || $self->class->any_var('ACCEPT_DIR');
-
-    $self->{ enter_dir   } = $config->{ enter_directory } 
-        || $config->{ enter_dir } 
-        || $self->class->any_var('ENTER_DIRECTORY')
-        || $self->class->any_var('ENTER_DIR');
-
-    $self->{ leave_dir   } = $config->{ leave_directory } 
-        || $config->{ leave_dir } 
-        || $self->class->any_var('LEAVE_DIRECTORY')
-        || $self->class->any_var('LEAVE_DIR');
 
     $self->init_filters;
+
+    $self->debug("init_visitor() => ", $self->dump) if DEBUG;
 
     return $self;
 }
@@ -99,6 +83,7 @@ sub init_filters {
     
     foreach $filter (@FILTERS) {
         $tests = $self->{ $filter } || next;        # skip over false values
+        $self->debug("filter: $filter => $tests\n") if DEBUG;
         $tests = $self->{ $filter } = [$tests] 
             unless ref $tests eq ARRAY;
         
@@ -174,7 +159,10 @@ sub visit_directory {
 
 sub filter {
     my ($self, $filter, $method, $item) = @_;
-    my $tests = $self->{ $filter } || return 0;
+    my $tests = $self->{ $filter } || do {
+        $self->debug("No filter defined for $filter") if DEBUG;
+        return 0;
+    };
     my ($test, $type);
 
     $self->debug("filter($filter, $method, $item)  tests: $tests\n") if $DEBUG;
@@ -186,6 +174,7 @@ sub filter {
         }
         elsif ($type = ref $test) {
             if ($type eq CODE) {
+#                $self->debug("calling code: ". $test->($item, $self));
                 return 1 if $test->($item, $self);
             }
             elsif ($type eq REGEX) {
@@ -228,7 +217,7 @@ sub filter_entry {
 sub accept_file {
     my ($self, $file) = @_;
     $self->debug("accept_file($file)") if DEBUG;
-    $self->{ accept_file }->($self, $file) || return
+    $self->{ accept_file }->($self, $file)
         if $self->{ accept_file };
     return $self->collect($file);
 
@@ -265,12 +254,14 @@ sub reject_directory {
 
 sub enter_directory {
     my ($self, $dir) = @_;
-    $self->debug("visiting directory children: $dir\n") if $DEBUG;
+    $self->debug("visiting directory children: $dir") if $DEBUG;
     $self->{ enter_dir }->($self, $dir) || return
         if $self->{ enter_dir };
-    return 
-        map { $_->accept($self) }
-        $dir->children($self->{ all });
+    
+    $_->accept($self)
+        for $dir->children;
+#        for $dir->children($self->{ all });
+    return 1;
 }
 
 
