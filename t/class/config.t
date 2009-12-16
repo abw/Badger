@@ -31,6 +31,7 @@ my $obj;
 use My::Config1;
 $obj = eval { My::Config1->new( username => 'fred' ) };
 ok( ! $obj, 'no object' );
+#is( $@, 'No password specified', 'no password error' );
 is( $@->info, 'No password specified', 'no password error' );
 
 $obj = My::Config1->new( username => 'fred', password => 'secret' );
