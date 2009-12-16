@@ -98,8 +98,10 @@ sub init_schema {
         ($name, @aka) = split(/\|/, $name);
         
         # $info is now a hash ref
-        $info->{ name } = $name
-            unless defined $info->{ name };
+        $info->{ name } = $name;
+
+        # always do this because we may have stripped stuff off the name
+#            unless defined $info->{ name };
 
         # aliases can be specified as a list ref or string which we split
         $fallback = $info->{ fallback } || [];
@@ -126,7 +128,7 @@ sub init_schema {
         foreach my $alias ($name, keys %{ $info->{ alias } || { } }) {
 #            return $self->error_msg( dup_item => $name )
 #                if $hash->{ $name };
-            $hash->{ $name } = $info;
+            $hash->{ $alias } = $info;
         }
         push(@$list, $info);
     }
