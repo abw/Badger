@@ -53,11 +53,13 @@ our $HELPERS  = {       # keep this compact in case we don't need to use it
 };
 our $DELEGATES;         # fill this from $HELPERS on demand
 our $RANDOM_NAME_LENGTH = 32;
+our $TEXT_WRAP_WIDTH    = 78;
 
 
 __PACKAGE__->export_any(qw(
     UTILS blessed is_object numlike textlike params self_params plural 
-    odd_params xprintf dotid random_name camel_case CamelCase permute_fragments
+    odd_params xprintf dotid random_name camel_case CamelCase wrap
+    permute_fragments
 ));
 
 __PACKAGE__->export_fail(\&_export_fail);
@@ -168,8 +170,31 @@ sub module_file {
 
 sub xprintf {
     my $format = shift;
-    $format =~ s/<(\d+)(?::([#\-\+ ]?[\w\.]+))?>/'%' . $1 . '$' . ($2 || 's')/eg;
+    my @args   = @_;
+    $format =~ 
+        s{ < (\d+) 
+             (?: :( [#\-\+ ]? [\w\.]+ ) )?
+             (?: \| (.*?) )?
+           > 
+         }
+         {   defined $3
+                ? _xprintf_ifdef(\@args, $1, $2, $3)
+                : '%' . $1 . '$' . ($2 || 's') 
+        }egx;
     sprintf($format, @_);
+}
+
+sub _xprintf_ifdef {
+    my ($args, $n, $format, $text) = @_;
+    if (defined $args->[$n-1]) {
+        $format = 's' unless defined $format;
+        $format = '%' . $n . '$' . $format;
+        $text =~ s/\?/$format/g;
+        return $text;
+    }
+    else {
+        return '';
+    }
 }
 
 sub dotid {
@@ -210,6 +235,35 @@ sub alternates {
             : ('', $text)               # optional (foo) as (|foo) as ['', 'foo']
     ];
 }
+
+sub wrap {
+    my $text   = shift;
+    my $width  = shift || $TEXT_WRAP_WIDTH;
+    my $indent = shift || 0;
+    my @words = split(/\s+/, $text);
+    my (@lines, @line, $length);
+    my $total = 0;
+    
+    while (@words) {
+        $length = length $words[0] || (shift(@words), next);
+        if ($total + $length > 74 || $words[0] eq '\n') {
+            shift @words if $words[0] eq '\n';
+            push(@lines, join(" ", @line));
+            @line = ();
+            $total = 0;
+        }
+        else {
+            $total += $length + 1;      # account for spaces joining words
+            push(@line, shift @words);
+        }
+    }
+    push(@lines, join(" ", @line)) if @line;
+    return join(
+        "\n" . (' ' x $indent), 
+        @lines
+    );
+}
+
 
 sub permute_fragments {
     my $input = shift;
@@ -500,6 +554,19 @@ are joined together (e.g. C<LikeThisExample>).
 According to Perl convention (and personal preference), we use the lower case
 form wherever possible. However, Perl's convention also dictates that module
 names should be in CamelCase.  This function performs that conversion.
+
+=head2 wrap($text, $width, $indent)
+
+Simple subroutine to wrap C<$text> to a fixed C<$width>, applying an optional
+indent of C<$indent> spaces.  It uses a trivial algorithm which splits the 
+text into words, then rejoins them as lines.  It has an additional hack to 
+recognise the literal sequence '\n' as a magical word indicating a forced 
+newline break.  It must be specified as a separate whitespace delimited word.
+
+    print wrap('Foo \n Bar');
+
+If anyone knows how to make L<Text::Wrap> handle this, or knows of a better
+solution then please let me know.
 
 =head2 dotid($text)
 

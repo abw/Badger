@@ -29,6 +29,7 @@ our $COLOURS = {
     cyan      => \&cyan,
     magenta   => \&magenta,
     yellow    => \&yellow,
+    white     => \&white,
 };
 
 
@@ -126,8 +127,9 @@ sub init_output {
             if ($colname = $event->{ colour } || $event->{ color }) {
                 $col = $cols->{ $colname }
                     || return $self->error_msg( bad_colour => $event->{ name } => $colname );
-                $event->{ message } = $col->($event->{ message });
-                $event->{ summary } = $col->($event->{ summary });
+                for (qw( message summary )) {
+                    $event->{ $_ } = $col->($event->{ $_ }) if $event->{ $_ };
+                }
             }
         }
     }

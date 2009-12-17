@@ -6,6 +6,7 @@ use Badger::Class
     debug     => 0,
     base      => 'Badger::Base',
     import    => 'class CLASS',
+    utils     => 'blessed',
     accessors => 'name',
     constants => 'DELIMITER ARRAY HASH',
     alias     => {
@@ -16,6 +17,7 @@ use Badger::Class
         bad_method   => 'Missing method for the %s %s configuration item: %s',
         dup_item     => 'Duplicate specification for scheme item: %s',
         bad_fallback => 'Invalid fallback item specified for %s: %s',
+        no_value     => 'No value specified for the %s configuration item',
     };
 
 
@@ -73,9 +75,15 @@ sub init_item {
     # back into the field info hash
     $self->{ fallback } = $fallback;
 
+    # this is getting way too large... but I just want to get things working
+    # before I start paring things down
     $self->{ name    } = $name;
     $self->{ alias   } = $alias;
     $self->{ message } = $config->{ message } || $config->{ error };
+    $self->{ action  } = $config->{ action  };
+    $self->{ method  } = $config->{ method  };
+    $self->{ about   } = $config->{ about   };
+    $self->{ args    } = $config->{ args    };
 
     $self->debug(
         "Configured configuration item: ", $self->dump
@@ -110,6 +118,8 @@ sub configure {
     
     $name = $self->{ name };
         
+    # TODO: abstract out action calls.
+    
     FALLBACK: foreach $alias ($name, @{ $self->{ fallback } || [ ] }) {
         next unless defined $alias;
         
@@ -118,14 +128,12 @@ sub configure {
             #$self->todo('calling code');
             ($ok, $value) = $code->($class, $name, $config, $target, @args);
             if ($ok) {
-                $target->{ $name } = $value;
-                return $self;
+                return $self->set($target, $name, $value, $class);
             }
         }
         elsif (defined $config->{ $alias }) {
             $self->debug("Found value for $name ($alias): $config->{ $alias }\n") if DEBUG;
-            $target->{ $name } = $config->{ $alias };
-            return $self;
+            return $self->set($target, $name, $config->{ $alias }, $class);
         }
         else {
             $self->debug("Nothing found for $alias to set $name\n") if DEBUG;
@@ -134,8 +142,7 @@ sub configure {
         
     if (defined $self->{ default }) {
         $self->debug("setting to default value: $self->{ default }\n") if DEBUG;
-        $target->{ $name } = $self->{ default };
-        return $self;
+        return $self->set($target, $name, $self->{ default }, $class);
     }
         
     if ($self->{ required }) {
@@ -147,5 +154,54 @@ sub configure {
 }
 
 
+sub set {
+    my ($self, $target, $name, $value, $object) = @_;
+    my $method;
+    
+    $object ||= $target;
+
+    $self->debug("set($target, $name, $value)") if DEBUG;
+    
+    $target->{ $name } = $value;
+    $self->{ action }->($self, $name, $value) if $self->{ action };
+
+    if (blessed($object) && ($method = $self->{ method })) {
+        $self->debug("calling method $method on object $object\n") if DEBUG;
+        $object->$method($name, $value);
+    }
+        
+    return $self;
+}
+
+     
+sub args {
+    my $self = shift;
+    my $args = shift;
+    my $value;
+    
+    if ($self->{ args }) {
+        $self->debug("looking for $self->{ name } arg in ", $self->dump_data($args)) if DEBUG;
+        return $self->error_msg( no_value => $self->{ name } )
+            unless @$args && defined $args->[0] && $args->[0] !~ /^-/;
+        $value = shift @$args;
+    }
+    else {
+        $value = 1;
+    }
+    # this is all the wrong way around - quick hack
+    return $self->configure({ $self->{ name } => $value }, @_);
+}
+
+sub summary {
+    my ($self, $reporter) = @_;
+    my $name  = $self->{ name };
+    my $args  = $self->{ args }  || '';
+    my $about = $self->{ about } || '';
+    $args = " <$args>" if length $args;
+    return $reporter
+        ? $reporter->option( $name.$args, $about )
+        : sprintf('--%-20s %s', $name.$args, $about);
+}
+    
 
 1;

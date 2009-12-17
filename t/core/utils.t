@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Debug modules => 'Badger::Utils';
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural permute_fragments';
 use Badger::Test 
-    tests => 61,
+    tests => 64,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -163,6 +163,14 @@ is( xprintf('<1> is <2:4.3f>', pi => 3.1415926),
 is( xprintf('<1> is <2:4.3f>', e => 2.71828),
     'e is 2.718', 'pi is 2.718' );
 
+is( xprintf("<1><2| by ?>", 'one'),
+    'one', 'one' );
+
+is( xprintf("<1><2| by ?>", 'one', 'two'),
+    'one by two', 'one by two' );
+
+is( xprintf("<1><2| by ? by ?>", 'one', 'two'),
+    'one by two by two', 'one by two by two' );
 
 
 #-----------------------------------------------------------------------

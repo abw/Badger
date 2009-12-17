@@ -128,6 +128,8 @@ sub configure {
 # also be a bare hash, e.g. $target = { }; $self->configure($config, $target)
 #-----------------------------------------------------------------------
 
+# TODO: move these into Badger::Config::Item or somewhere else
+
 sub configure_pkg {
     my ($class, $name, $config, $target, $var) = @_;
     my $value = class($class)->var($var);
