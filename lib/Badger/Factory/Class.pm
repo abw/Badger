@@ -24,7 +24,7 @@ use Badger::Class
     constants => 'DELIMITER ARRAY HASH',
     constant  => {
         PATH_SUFFIX  => '_PATH',
-        NAMES_SUFFIX => '_MAP',
+        NAMES_SUFFIX => '_NAMES',
         FACTORY      => 'Badger::Factory',
     };
 # chicken and egg
@@ -123,7 +123,7 @@ sub names {
         || croak "\$ITEM is not defined for $self.  Please add an 'item' option";
     my $var = uc($type) . NAMES_SUFFIX;
 
-    $self->debug("adding $var => {", join(', ', %$map), "}") if DEBUG;
+    $self->debug("$self adding names $var => {", join(', ', %$map), "}") if DEBUG;
 
     # we use import_symbol() rather than var() so that it gets declared 
     # properly, thus avoiding undefined symbol warnings

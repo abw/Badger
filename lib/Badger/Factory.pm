@@ -85,7 +85,7 @@ sub init_factory {
     # items.  Ditto for XXXX_NAME / 'xxxx_name' / 'aka' and  XXXXS/ 'xxxxs'
     
     my @path  = @$config{ path  => $ipath  };
-    my @names = @$config{ names => $inames };
+    my @names = @$config{ names => lc $inames };
     $self->{ path     } = $class->list_vars(uc $ipath, @path);
     $self->{ names    } = $class->hash_vars(uc $inames, @names);
     $self->{ $items   } = $class->hash_vars(uc $items, $config->{ $items });

@@ -699,13 +699,14 @@ sub alias {
     my $pkg  = $self->{ name };
     no strict REFS;
     
-    while (my ($name, $code) = each %$args) {
-        _debug("defining alias: $self\::$name => $code\n") if DEBUG;
-        *{ $pkg.PKG.$name } 
-            = ref $code eq CODE 
-                ? $code 
-                : $self->method($code)
-               || croak "Invalid method specified for '$name' alias: $code";
+    while (my ($names, $code) = each %$args) {
+        _debug("defining alias: $self\::$names => $code\n") if DEBUG;
+        $code = $self->method($code)
+            || croak "Invalid method specified for '$names' alias: $code"
+                unless ref $code eq CODE;
+        foreach my $name (split(DELIMITER, $names)) {
+            *{ $pkg.PKG.$name } = $code;
+        }
     }
     return $self;
 }
