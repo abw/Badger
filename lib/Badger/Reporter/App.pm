@@ -1,6 +1,6 @@
 package Badger::Reporter::App;
 
-use Template::TT3::Class
+use Badger::Class
     version   => 2.71,
     debug     => 0,
     base      => 'Badger::Reporter';
