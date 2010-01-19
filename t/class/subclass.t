@@ -18,18 +18,21 @@ use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
 use Badger::Test
     debug => 'My::Class',           # run with -d option for debugging
     args  => \@ARGV,
-    tests => 4;
+    tests => 7;
 
 package Badger::Test::SubClass1;
 
 use My::Class
-    base   => 'Badger::Base',
     fields => 'x y z';
 
 package main;
 
-my $obj = Badger::Test::SubClass1->new;
+my $obj = Badger::Test::SubClass1->new( x => 1, y => 2, z => 3 );
 ok( $obj, 'created new object' );
+
+is( $obj->x, 1, 'x is 1' );
+is( $obj->y, 2, 'x is 2' );
+is( $obj->z, 3, 'x is 3' );
 
 $obj->x(10);
 $obj->y(20);
