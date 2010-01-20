@@ -13,7 +13,7 @@
 #
 #========================================================================
 
-use lib qw( t/core/lib ../t/core/lib ./lib ../lib ../../lib );
+use lib qw( t/class/lib ../t/class/lib ./lib ../lib ../../lib );
 
 use Badger::Test
     debug => 'My::Class',           # run with -d option for debugging
