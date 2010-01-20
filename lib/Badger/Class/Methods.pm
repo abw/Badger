@@ -160,13 +160,20 @@ sub auto_can {
         
     # avoid runaways
     my $seen = { };
+    
+    $class->debug("installing AUTOLOAD and can() in $target") if DEBUG;
 
     $target->import_symbol( 
         can => sub {
             my ($this, $name, @args) = @_;
-            my $target;
+            $class->debug("looking to see if $this can $name()") if DEBUG;
+
+            # This avoids runaways where can() calls itself repeatedly, but 
+            # doesn't prevent can() from being called several times for the
+            # same item. 
             return if $seen->{ $name };
-            $seen->{ $name } = 1;
+            local $seen->{ $name } = 1;
+
             return $this->SUPER::can($name)
                 || $this->$method($name, @args);
         }
@@ -182,10 +189,13 @@ sub auto_can {
                 $target->method( $name => $method );
                 return $method->($this, @args);
             }
-            # Hmmm... what if $this isn't a subclass of Badger::Base
+
+            # Hmmm... what if $this isn't a subclass of Badger::Base?
             return $this->error_msg( bad_method => $name, ref $this, (caller())[1,2] );
         }
     );
+
+    $class->debug("installed AUTOLOAD and can() in $target") if DEBUG;
 }
 
 sub args {
