@@ -23,6 +23,7 @@
 
 package Badger::Factory;
 
+use Badger::Debug ':dump';
 use Badger::Class
     version   => 0.01,
     debug     => 0,

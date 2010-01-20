@@ -119,11 +119,17 @@ sub auto_can {
     my $target;
 
     if ($target = $self->component($name)) {
+        $self->debug("creating component method for $name")  if DEBUG;
         return $self->auto_component( $name => $target );
     }
     elsif ($target = $self->delegate($name)) {
+        $self->debug("creating delegate method for $name") if DEBUG;
         return $self->auto_delegate( $name => $target );
     }
+    elsif (DEBUG) {
+        $self->debug("no component or delegate found for $name");
+    }
+        
     return undef;
 }   
 
