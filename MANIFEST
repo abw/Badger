@@ -1,5 +1,7 @@
 Changes
 lib/Badger.pm
+lib/Badger/App.pm
+lib/Badger/Apps.pm
 lib/Badger/Base.pm
 lib/Badger/Class.pm
 lib/Badger/Class/Config.pm
@@ -20,6 +22,8 @@ lib/Badger/Codec/URL.pm
 lib/Badger/Codec/YAML.pm
 lib/Badger/Codecs.pm
 lib/Badger/Config.pm
+lib/Badger/Config/Item.pm
+lib/Badger/Config/Schema.pm
 lib/Badger/Constants.pm
 lib/Badger/Debug.pm
 lib/Badger/Exception.pm
@@ -34,15 +38,20 @@ lib/Badger/Filesystem/Path.pm
 lib/Badger/Filesystem/Virtual.pm
 lib/Badger/Filesystem/Visitor.pm
 lib/Badger/Hub.pm
+lib/Badger/Hub/Badger.pm
 lib/Badger/Log.pm
 lib/Badger/Log/File.pm
 lib/Badger/Logic.pm
 lib/Badger/Mixin.pm
+lib/Badger/Modules.pm
 lib/Badger/Prototype.pm
 lib/Badger/Rainbow.pm
+lib/Badger/Reporter.pm
+lib/Badger/Reporter/App.pm
 lib/Badger/Test.pm
 lib/Badger/Test/Manager.pm
 lib/Badger/Timestamp.pm
+lib/Badger/URL.pm
 lib/Badger/Utils.pm
 Makefile.PL
 MANIFEST			This list of files
@@ -50,7 +59,9 @@ pod/Badger/Changes.pod
 pod/Badger/FAQ.pod
 pod/Badger/Intro.pod
 README
+t/app/app.t
 t/class/config.t
+t/class/lib/My/Class.pm
 t/class/lib/My/Config1.pm
 t/class/lib/My/Config2.pm
 t/class/lib/My/Config3.pm
@@ -64,6 +75,7 @@ t/class/lib/My/Vars5.pm
 t/class/lib/My/Vars6.pm
 t/class/lib/My/Vars7.pm
 t/class/methods.t
+t/class/subclass.t
 t/class/vars.t
 t/codec/base64.t
 t/codec/codec.t
@@ -125,6 +137,7 @@ t/core/rainbow.t
 t/core/test.t
 t/core/timestamp.t
 t/core/trace.t
+t/core/url.t
 t/core/utils.t
 t/filesystem/codec.t
 t/filesystem/directory.t
@@ -162,6 +175,7 @@ t/filesystem/virtual.t
 t/filesystem/visitor.t
 t/log/log.t
 t/log/logfile.t
+t/log/reporter.t
 t/misc/badger.t
 t/misc/moose.t
 t/pod/coverage.t
