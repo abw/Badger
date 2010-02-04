@@ -15,7 +15,7 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
-    tests  => 165, 
+    tests  => 168, 
     debug  => 'Badger::Timestamp',
     args   => \@ARGV;
     
@@ -60,7 +60,7 @@ ok( $now, 'got Now() timestamp' );
 foreach my $timestamp (
     '2006/08/04 21:22:23',
     '2006-08-04 21:22:23',
-    '2006-08-04T21:22:23'
+    '2006-08-04T21:22:23',
     ) {
     my $stamp = Timestamp->new($timestamp);
     ok( $stamp, "created timestamp $n" );
@@ -76,6 +76,14 @@ foreach my $timestamp (
     is( $stamp->seconds(), '23', "minutes() $n" );
     $n++;
 }    
+
+#-----------------------------------------------------------------------
+# check short numbers work
+#-----------------------------------------------------------------------
+my $short = Timestamp->new('2010/2/5 4:20:42');
+ok( $short, 'created timestamp with short numbers');
+is( $short->time, '04:20:42', 'got time' );
+is( $short->date, '2010-02-05', 'got date' );
 
 
 #-----------------------------------------------------------------------
