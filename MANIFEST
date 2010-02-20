@@ -43,7 +43,7 @@ lib/Badger/Log.pm
 lib/Badger/Log/File.pm
 lib/Badger/Logic.pm
 lib/Badger/Mixin.pm
-lib/Badger/Modules.pm
+#lib/Badger/Modules.pm
 lib/Badger/Prototype.pm
 lib/Badger/Rainbow.pm
 lib/Badger/Reporter.pm
