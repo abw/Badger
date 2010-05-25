@@ -21,6 +21,7 @@ use Badger::Class
     import    => 'class',
     auto_can  => 'auto_can',
     constants => 'HASH ARRAY REFS PKG',
+    utils     => 'blessed',
     words     => 'COMPONENTS DELEGATES COMP_CACHE DELG_CACHE',
     messages => {
         no_module  => 'No %s module defined.',
