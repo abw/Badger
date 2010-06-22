@@ -20,7 +20,7 @@ use Badger::Base;
 use Badger::Test 
     debug => 'Badger::Debug',
     args  => \@ARGV,
-    tests => 34;
+    tests => 35;
     
 
 #-----------------------------------------------------------------------
@@ -62,13 +62,12 @@ like( $dbgmsg, qr/\[main \(Badger::Base\) line \d\d\]\s> Hello World/s, 'Hello W
 $obj->debug('Hello ', "Badger\n");
 like( $dbgmsg, qr/\[main \(Badger::Base\) line \d\d\]\s> Hello Badger/s, 'Hello Badger' );
 
-
 #-----------------------------------------------------------------------
 # subclass
 #-----------------------------------------------------------------------
 
 package Badger::Test::Debug1;
-use Badger::Debug 'debugging debug';
+use Badger::Debug 'debugging debug debugf';
 our $DEBUG = 1;
 
 sub new {
@@ -95,6 +94,10 @@ pass('there');
 
 $dbgmsg = '';
 
+$obj->debugf('foo(%s)', 'bar');
+like( $dbgmsg, qr/foo\(bar\)/, 'debugf()' );
+
+$dbgmsg = '';
 is( $obj->debugging(0), 0, 'turned debugging off' );
 is( $obj->debugging, 0, 'debugging is now turned off' );
 $obj->hello('Stoat');
@@ -279,3 +282,5 @@ my $format = Badger::Test::Debug::Format->new;
         'message format with date and time'
     );
 }
+
+

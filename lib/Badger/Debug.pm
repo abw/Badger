@@ -196,7 +196,7 @@ sub debug {
 
 sub debugf {
     local $CALLER_UP = 1;
-    shift->debug( sprintf(@_) );
+    shift->debug( sprintf(shift, @_) );
 }
 
 
