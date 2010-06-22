@@ -47,6 +47,9 @@ CHANGES
 
     Added the Badger::Codec::HTML module which defines the "html" codec.
 
+    Added the Badger::Modules module as a simpler verion of Badger::Factory.
+    The latter will be reimplmented as a specialised subclass of the former.
+
   Version 0.06
     Added copy_file() and move_file() to Badger::Filesystem and copy() and
     move() methods to Badger::Filesystem::File.
