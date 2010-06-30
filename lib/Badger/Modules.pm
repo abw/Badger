@@ -89,7 +89,7 @@ sub init_modules {
     # Merge all XXXX_PATH package vars with any 'xxxx_path' or 'path' config 
     # items.  Ditto for XXXX_NAME / 'xxxx_name' / 'aka' and  XXXXS/ 'xxxxs'
     
-    my @path  = @$config{ path  => $ipath  };
+    my @path  = @$config{ path  => lc $ipath  };
     my @names = @$config{ names => lc $inames };
     $self->{ path     } = $class->list_vars(uc $ipath, @path);
     $self->{ names    } = $class->hash_vars(uc $inames, @names);
@@ -102,8 +102,8 @@ sub init_modules {
     $self->debug(
         " Item: $self->{ item }\n",
         "Items: $self->{ items }\n",
-        " Path: ", $self->dump_data($self->{ path }), "\n",
-        "Names: ", $self->dump_data($self->{ names })
+        " Path: ", $ipath, ": ", $self->dump_data($self->{ path }), "\n",
+        "Names: ", $inames, ": ", $self->dump_data($self->{ names })
     ) if DEBUG;
 
     return $self;
