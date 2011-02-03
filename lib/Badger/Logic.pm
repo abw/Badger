@@ -63,11 +63,15 @@ sub evaluate {
     my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
     $self->tree->evaluate($args);
 }
-    
+
 sub tree {
     my $self = shift;
     return $self->{ tree } 
        ||= $self->parse($self->{ text });
+}
+
+sub text {
+    shift->tree->text;
 }
 
 sub parse {
@@ -163,12 +167,21 @@ sub evaluate {
     return $args->{ $self->[0] };
 }
 
+sub text {
+    $_[0]->[0];
+}
+
 package Badger::Logic::Not;
 use base 'Badger::Logic::Expr';
 
 sub evaluate {
     my $self = shift;
     return $self->[0]->evaluate(@_) ? 0 : 1;
+}
+
+sub text {
+    my $self = shift;
+    '(not ' . $self->[0]->text . ')';
 }
 
 package Badger::Logic::And;
@@ -180,16 +193,25 @@ sub evaluate {
         && $self->[1]->evaluate(@_);
 }
 
+sub text {
+    my $self = shift;
+    '(' . $self->[0]->text . ' and ' . $self->[1]->text . ')';
+}
+
 package Badger::Logic::Or;
 use base 'Badger::Logic::Expr';
 
+use Badger::Debug ':all';
 sub evaluate {
     my $self = shift;
     return $self->[0]->evaluate(@_) 
         || $self->[1]->evaluate(@_);
 }
 
-1;
+sub text {
+    my $self = shift;
+    '(' . $self->[0]->text . ' or ' . $self->[1]->text . ')';
+}
 
 1;
 __END__
