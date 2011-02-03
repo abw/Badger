@@ -15,7 +15,7 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
-    tests  => 24, 
+    tests  => 25, 
     debug  => 'Badger::Logic',
     args   => \@ARGV;
     
@@ -69,6 +69,7 @@ test_logic('(not a) and (b or c)', $data1, 0);
 
 my $logic2 = LOGIC->new('a and b or c and not d');
 is( $logic2->text, '(a and (b or (c and (not d))))', 'text output' );
+is( $logic2, '(a and (b or (c and (not d))))', 'auto-stringification' );
 
 
 __END__

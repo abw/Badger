@@ -17,6 +17,7 @@ use Badger::Class
     version   => 0.01,
     debug     => 0,
     base      => 'Badger::Base',
+    as_text   => 'text',
     constants => 'HASH',
     constant  => {
         LOGIC => 'Badger::Logic',
