@@ -342,7 +342,7 @@ sub absolute {
 
 sub dump {
     my $self = shift;
-    return '[URL:' . join('|', @$self) . ']';
+    return '[URL:' . join('|', map { defined($_) ? $_ : '' } @$self) . ']';
 }
 
     
