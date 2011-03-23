@@ -22,6 +22,17 @@ BEGIN {
         || CLASS->error("You don't have YAML installed");
 }
 
+eval "require YAML::XS";
+our $HAS_YAML_XS = $@ ? 0 : 1;
+
+eval "require YAML";
+our $HAS_YAML = $@ ? 0 : 1;
+our $MODULE =
+    $HAS_YAML    ? 'YAML::XS' :
+    $HAS_YAML    ? 'YAML'     :
+    die "No YAML implementation installed\n";
+
+
 sub encode {
     my $self = shift;
     YAML::Dump(shift);
