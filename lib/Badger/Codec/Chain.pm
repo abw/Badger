@@ -1,6 +1,6 @@
 #========================================================================
 #
-# Badger::Codec::Storable
+# Badger::Codec::Chain
 #
 # DESCRIPTION
 #   Codec for encoding/decoding data via a chain of other codecs.
