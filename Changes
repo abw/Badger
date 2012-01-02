@@ -14,15 +14,25 @@ CHANGES
     I've built and I wouldn't be doing that if I wasn't 99.9% certain of its
     suitability and fitness for purpose. There are no guarantees of course,
     but it may help you to sleep at night knowing that I have a heavily
-    vested interest in keeping the Badger fit and healthy.
+    vested interest in keeping the Badger fit and healthy. But remember that
+    you use it at your own risk and it's not my fault if it doesn't make
+    unicorns dance across the sky for you.
 
-  Version 0.07
-    Added Badger::Storage and Badger::Storage::Filesystem.
+    As of version 0.07, Badger is being used as the foundation for the new
+    version of the Template Toolkit, TT3. It's not on CPAN yet (although it
+    might be by the time you read this), but you can access the git
+    repository at <http://github.com/abw/Template-TT3>.
+
+  Version 0.07 - 2nd January 2012
+    Added Badger::Storage, Badger::Storage::Memory. and
+    Badger::Storage::Filesystem.
 
     Added Badger::Codec::TT.
 
     Added the permissions() method to Badger::Filesystem::Path. Added
-    temp_directory() and temp_file() methods to Badger::Filesystem.
+    temp_directory() and temp_file() methods to Badger::Filesystem. Also
+    changed the Path(), File() and Dir() functions to short-circuit and
+    return if passed a single object that is already of the expected type.
 
     Added some extra comparison methods to Badger::Timestamp (not_equal(),
     (not_before() and not_after()) and overloaded these and other methods
@@ -37,18 +47,36 @@ CHANGES
     tests that you only want to run if either of the "RELEASE_TESTING" or
     "AUTOMATED_TESTING" environment variables is set).
 
-    Added the random_name() and camel_case() functions to Badger::Utils.
-    Also add some extra debugging code to params() and self_params() to
-    catch any attempt to pass an odd number of arguments.
+    Added the random_name(), camel_case() and permute_fragments() functions
+    to Badger::Utils. Also add some extra debugging code to params() and
+    self_params() to catch any attempt to pass an odd number of arguments.
 
-    Added the debugf() and debug_at() methods to Badger::Debug.
+    Changed the Badger::Factory module to use permute_fragments() on the
+    module path when specified as a single string. Also added the default()
+    and names() methods along with their corresponding package variable
+    magic.
+
+    Added the debug_callers(), debugf() and debug_at() methods to
+    Badger::Debug.
+
+    Added the alias() method to Badger::Class.
 
     Added the auto_can() method to Badger::Class::Methods.
 
+    Changed the Badger::Class::Config module to store the configuration
+    scheme in $CONFIG_SCHEMA instead of $CONFIG.
+
     Added the Badger::Codec::HTML module which defines the "html" codec.
 
-    Added the Badger::Modules module as a simpler verion of Badger::Factory.
-    The latter will be reimplmented as a specialised subclass of the former.
+    Changed the throw() method in Badger::Base to pass the exception type to
+    exception().
+
+    Changed the try() method in Badger::Base to preserve the list/scalar
+    calling context and to handle false but defined values.
+
+    Cleaned up and generalised the Badger::Hub module. The Badger-specific
+    data has now been moved into Badger::Hub::Badger. The "configure()"
+    method is now called construct().
 
   Version 0.06
     Added copy_file() and move_file() to Badger::Filesystem and copy() and
@@ -218,7 +246,7 @@ AUTHOR
     Andy Wardley <abw@wardley.org>
 
 COPYRIGHT
-    Copyright (C) 2008-2009 Andy Wardley. All Rights Reserved.
+    Copyright (C) 2008-2012 Andy Wardley. All Rights Reserved.
 
     This module is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.

@@ -117,7 +117,7 @@ This is equivalent to:
     use Badger::Utils      'numlike textlike',
     use Badger::Constants  'ARRAY HASH',
     use Badger::Codecs      codec => 'base64';
-	
+
 =head1 DESCRIPTION
 
 The Badger toolkit is a collection of Perl modules designed to simplify the
@@ -237,7 +237,7 @@ Andy Wardley  L<http://wardley.org/>
 
 =head1 COPYRIGHT
 
-Copyright (C) 1996-2009 Andy Wardley.  All Rights Reserved.
+Copyright (C) 1996-2012 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

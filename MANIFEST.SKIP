@@ -2,6 +2,7 @@
 \.svn
 \.DS_Store
 ^MANIFEST\.
+^MAINTAINER\.
 ^Makefile$
 ^Makefile.old$
 ^Badger-\d\.\d+\.tar\.gz$

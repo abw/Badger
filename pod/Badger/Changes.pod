@@ -25,7 +25,7 @@ version of the Template Toolkit, TT3.  It's not on CPAN yet (although it
 might be by the time you read this), but you can access the git repository
 at L<http://github.com/abw/Template-TT3>.
 
-=head2 Version 0.07
+=head2 Version 0.07 - 2nd January 2012
 
 Added L<Badger::Storage>, L<Badger::Storage::Memory>.
 and L<Badger::Storage::Filesystem>.
@@ -297,7 +297,7 @@ Andy Wardley  E<lt>abw@wardley.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2008-2009 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2008-2012 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
