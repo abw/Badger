@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 my %opts = (
     'NAME'         => 'Badger',
-    'VERSION_FROM' => 'lib/Badger.pm',
+    'VERSION'      => 0.07,
     'PMLIBDIRS'    => [ 'lib' ], 
     'dist'         => {
         'COMPRESS' => 'gzip',

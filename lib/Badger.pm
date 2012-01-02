@@ -6,7 +6,7 @@ use lib;
 use Badger::Hub;
 use Badger::Class
     debug      => 0,
-    version    => '0.06_02',
+    version    => '0.07',
     base       => 'Badger::Base',
     import     => 'class',
     words      => 'HUB',
@@ -19,8 +19,7 @@ use Badger::Class
         fail   => \&_export_handler,
     };
 
-our $VERSION = '0.06_02';              # Just for ExtUtils::MakeMaker.  Ick
-our $HUB     = 'Badger::Hub::Badger';
+our $HUB = 'Badger::Hub::Badger';
 our $AUTOLOAD;
 
 
