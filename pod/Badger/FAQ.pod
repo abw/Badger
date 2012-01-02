@@ -9,6 +9,35 @@ Badger::FAQ - Frequently asked questions about Badger
 
 =head1 GENERAL QUESTIONS
 
+=head2 What is Badger?
+
+It's a collection of Perl modules designed to take away some of the tedium
+involved in writing Perl modules, libraries and applications.  
+
+Badger started off as being all the generic bits of the Template Toolkit that
+weren't directly related to template processing. Things like a common base
+class, file handling modules, error handling, logging, and so on. 
+
+Now there are plenty of other fine modules on CPAN that do these kinds of
+things, including some that were my own earlier attempts at extracting useful
+functionality out of TT into generic modules (e.g. Class::Base,
+Class::Singleton, App::Config, etc). So in that sense, there's nothing
+particularly new or revolutionary about Badger - I've just taken a bunch of
+modules I've written a dozen times before for various different projects,
+cleaned then up, moved them into a new namespace of my own (that hopefully
+no-one will ever accuse me of name-squatting in), made them work with each
+other in a consistent way (i.e. without the mish-mash of different API styles
+you get whenever you plug a random selection of CPAN modules together) and 
+released them for other people to use if they want to.
+
+=head2 Why Should I Use Badger?
+
+There is no Badger world order. I wrote Badger because it makes my life
+easier. If it makes your life easier too then I'm happy for you, but it makes
+no difference to me if you use it or not. I'm tired of having to justify the
+existence of the software that I chose to give away for free. In other words,
+what you see is what you get. Take it or leave it.
+
 =head2 How is Badger similar to / different from Moose?
 
 Badgers are smaller and can easily be recognised by their black fur and
@@ -16,7 +45,12 @@ distinctive white stripe running down their snout. Moose are larger and have
 an impressive set of antlers. Both enjoy foraging in the forest for nuts and
 berries.
 
-Joking aside, I'll try and list some of the similarities and differences that
+Joking aside, they're completely different animals. Badger is in no way
+intended to be a replacement or substitute for Moose or vice-versa. They were
+developed entirely separately with different motivations and goals. That said,
+they do have a lot in common.
+
+I'll try and list some of the similarities and differences that
 I'm aware of. Please bear in mind that I know Badger much better than I do
 Moose so my knowledge may be incomplete or incorrect in places.
 
@@ -183,7 +217,7 @@ Andy Wardley  E<lt>abw@wardley.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2008 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2008-2012 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

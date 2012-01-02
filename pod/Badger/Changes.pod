@@ -10,13 +10,15 @@ successive version of the Badger toolkit.
 Mr T is our badger mascot.  He no longer pities the fool that uses Badger
 in a production system.  Which is a roundabout way of saying that Badger
 is now stable, reliable, and unlikely to change significantly in future
-versions.  
+versions.
 
 Badger is already being deployed in commercial production systems that I've
 built and I wouldn't be doing that if I wasn't 99.9% certain of its
 suitability and fitness for purpose. There are no guarantees of course, but it
 may help you to sleep at night knowing that I have a heavily vested interest
-in keeping the Badger fit and healthy.
+in keeping the Badger fit and healthy.  But remember that you use it at your
+own risk and it's not my fault if it doesn't make unicorns dance across the
+sky for you.
 
 As of version 0.07, Badger is being used as the foundation for the new
 version of the Template Toolkit, TT3.  It's not on CPAN yet (although it 
