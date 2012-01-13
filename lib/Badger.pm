@@ -230,9 +230,17 @@ return a L<Badger::Config> object.  This is still experimental.
 Other methods like L<codec()> to access different C<Badger> modules.
 These should be generated dynamically on demand.
 
+=head1 BUGS
+
+Please report bugs or (preferably) send pull requests to merge bug fixes
+via the github repository: L<https://github.com/abw/Badger>.
+
 =head1 AUTHOR
 
-Andy Wardley  L<http://wardley.org/>
+Andy Wardley  L<http://wardley.org/>.
+
+With contributions from Brad Bowman and Michael Grubb, and code, inspiration
+and insight borrowed from many other module authors.
 
 =head1 COPYRIGHT
 
@@ -244,6 +252,8 @@ modify it under the same terms as Perl itself.
 =head1 SEE ALSO
 
 L<http://badgerpower.com/>
+
+L<https://github.com/abw/Badger>
 
 =cut
 

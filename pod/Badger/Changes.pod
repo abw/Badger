@@ -25,6 +25,18 @@ version of the Template Toolkit, TT3.  It's not on CPAN yet (although it
 might be by the time you read this), but you can access the git repository
 at L<http://github.com/abw/Template-TT3>.
 
+=head2 Version 0.08 - 13th January 2012
+
+Restored the C<$VERSION> variable to L<Badger.pm|Badger> rather than using 
+the C<version> import hook in L<Badger::Class> which confused PAUSE.
+
+Changed L<Badger::Test::Manager> to detect undefined results.
+
+Merged Michael Grubb's bug fix for L<Badger::Base>:
+L<https://github.com/abw/Badger/pull/1>
+
+Fixed some minor documentation issues.
+
 =head2 Version 0.07 - 2nd January 2012
 
 Added L<Badger::Storage>, L<Badger::Storage::Memory>.
