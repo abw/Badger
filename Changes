@@ -23,11 +23,14 @@ CHANGES
     might be by the time you read this), but you can access the git
     repository at <http://github.com/abw/Template-TT3>.
 
-  Version 0.08 - Not Yet Released
-    Restored the $VERSION variable to Badger.pm (instead of using the version
-    import hook in Badger::Class) because CPAN depends on it.
+  Version 0.08 - 13th January 2012
+    Restored the $VERSION variable to Badger.pm rather than using the
+    "version" import hook in Badger::Class which confused PAUSE.
 
     Changed Badger::Test::Manager to detect undefined results.
+
+    Merged Michael Grubb's bug fix for Badger::Base:
+    <https://github.com/abw/Badger/pull/1>
 
     Fixed some minor documentation issues.
 
