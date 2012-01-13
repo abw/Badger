@@ -1963,7 +1963,7 @@ This can be used to define aliases to existing methods.
             baz => 'bam',
         };
 
-See the L<methods> method for further details.
+See the L<alias()> method for further details.
 
 =head2 slots
 
@@ -1972,7 +1972,7 @@ This can be used to define methods for list-based objects.
     use Badger::Class
         slots => 'size colour object';
     
-See the L<slots> method for further details.
+See the L<slots()> method for further details.
 
 =head2 accessors / get_methods
 
