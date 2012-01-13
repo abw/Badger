@@ -6,7 +6,6 @@ use lib;
 use Badger::Hub;
 use Badger::Class
     debug      => 0,
-    version    => '0.07',
     base       => 'Badger::Base',
     import     => 'class',
     words      => 'HUB',
@@ -19,7 +18,8 @@ use Badger::Class
         fail   => \&_export_handler,
     };
 
-our $HUB = 'Badger::Hub::Badger';
+our $VERSION = 0.08;
+our $HUB     = 'Badger::Hub::Badger';
 our $AUTOLOAD;
 
 

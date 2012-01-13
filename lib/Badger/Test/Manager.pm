@@ -28,6 +28,7 @@ our $MESSAGES   = {
     not_unlike  => "# expect: ! /%s/\n# result: [%s]\n",
     too_few     => "# Looks like you planned %s tests but only ran %s.\n",
     too_many    => "# Looks like you planned only %s tests but ran %s.\n",
+    no_result   => "# result is undefined\n",
     pass        => "# PASS: All %d tests passed\n",
     fail        => "# FAIL: %d tests failed\n",
     mess        => "# FAIL: Inconsistent test results\n",
@@ -140,6 +141,10 @@ sub is ($$$;$) {
     my ($result, $expect, $msg) = @_;
     $msg ||= $self->test_name();
 
+    if (! defined $result) {
+        return $self->fail($msg, $self->message('no_result'));
+    }
+    
     # force stringification of $result to avoid 'no eq method' overload errors
     $result = "$result" if ref $result;	   
 
