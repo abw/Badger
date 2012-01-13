@@ -26,7 +26,7 @@ use Badger::Class
     };
 
 use Badger::Exception;              # TODO: autoload
-use Badger::Debug 'debug debug_up';
+use Badger::Debug 'debug debug_up dump_data_inline dump_data dump_list dump_hash';
 
 our $EXCEPTION = 'Badger::Exception' unless defined $EXCEPTION;
 our $ON_WARN   = WARN;
