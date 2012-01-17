@@ -211,7 +211,7 @@ is( ref $ts, 'Badger::Timestamp', 'Now is a Badger::Timestamp' );
 $ts = Timestamp('2009/05/25 11:31:00');
 is( ref $ts, 'Badger::Timestamp', 'Timestamp returned a Badger::Timestamp' );
 is( $ts->year, 2009, 'got timestamp year' );
-is( $ts->month, '05', 'got timestamp month' );
+is( $ts->month, 5, 'got timestamp month' );
 is( $ts->day, 25, 'got timestamp day' );
 
 

@@ -68,8 +68,8 @@ foreach my $timestamp (
     is( $stamp->timestamp(), '2006-08-04 21:22:23', "timestamp() $n" );
     is( $stamp->date(), '2006-08-04', "date() $n" );
     is( $stamp->year(), '2006', "year() $n" );
-    is( $stamp->month(), '08', "month() $n" );
-    is( $stamp->day(), '04', "day() $n" );
+    is( $stamp->month(), '8', "month() $n" );
+    is( $stamp->day(), '4', "day() $n" );
     is( $stamp->time(), '21:22:23', "time() $n" );
     is( $stamp->hours(), '21', "hours() $n" );
     is( $stamp->minutes(), '22', "hours() $n" );
@@ -316,8 +316,8 @@ isnt( refaddr($stamp), refaddr($other), 'new is new object' );
 my $substamp = Timestamp('2009/01/10 19:11:12');
 ok( $substamp, 'created timestamp via Timestamp() subroutine' );
 is( $substamp->date, '2009-01-10', "Timestamp() date" );
-is( $substamp->year, '2009', "Timestamp() year" );
-is( $substamp->month, '01', "Timestamp() month" );
+is( $substamp->year, 2009, "Timestamp() year" );
+is( $substamp->month, 1, "Timestamp() month" );
 
 
 #-----------------------------------------------------------------------
@@ -327,8 +327,8 @@ is( $substamp->month, '01', "Timestamp() month" );
 my $tstamp = TS->new('2009/01/10 19:14:12');
 ok( $tstamp, 'created timestamp via Timestamp() subroutine' );
 is( $tstamp->date, '2009-01-10', "TS stamp date" );
-is( $tstamp->year, '2009', "TS stamp year" );
-is( $tstamp->minutes, '14', "TS stamp month" );
+is( $tstamp->year, 2009, "TS stamp year" );
+is( $tstamp->minutes, 14, "TS stamp month" );
 
 __END__
 
