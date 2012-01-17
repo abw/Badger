@@ -23,6 +23,11 @@ CHANGES
     might be by the time you read this), but you can access the git
     repository at <http://github.com/abw/Template-TT3>.
 
+  Version 0.09 - Not yet released
+    Added Badger::Codec::Timestamp. Changed Badger::Timestamp to numify
+    values to remove leading zeroes (e.g. 2012/04/20 now yields a month of 4
+    instead of 04).
+
   Version 0.08 - 13th January 2012
     Restored the $VERSION variable to Badger.pm rather than using the
     "version" import hook in Badger::Class which confused PAUSE.

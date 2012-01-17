@@ -25,6 +25,11 @@ version of the Template Toolkit, TT3.  It's not on CPAN yet (although it
 might be by the time you read this), but you can access the git repository
 at L<http://github.com/abw/Template-TT3>.
 
+=head2 Version 0.09 - Not yet released
+
+Added Badger::Codec::Timestamp. Changed Badger::Timestamp to numify values to
+remove leading zeroes (e.g. 2012/04/20 now yields a month of 4 instead of 04).
+
 =head2 Version 0.08 - 13th January 2012
 
 Restored the C<$VERSION> variable to L<Badger.pm|Badger> rather than using 
