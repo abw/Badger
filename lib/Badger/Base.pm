@@ -168,7 +168,7 @@ sub throw {
     my $type = shift;
     my $emod = $self->exception;
     my $e;
-    
+
     # TODO: grok file/line/sub from caller and add to exceptions
     
     if (! @_) {
@@ -243,7 +243,7 @@ sub catch {
 sub throws {
     my $self  = shift;
     my $type  = reftype $self || BLANK;
-    my $class = class($self);
+    my $class = $self->class;
     my $throws;
     
     if (@_) {
@@ -260,7 +260,7 @@ sub throws {
               ||= $self->{ config } 
               &&  $self->{ config }->{ throws };
     }
-    
+
     # fall back on looking for any package variable in class / base classes
     return $throws 
         || $class->any_var(THROWS)
