@@ -31,7 +31,7 @@ use Badger::Class
     import    => 'class',
     utils     => 'plural blessed textlike dotid camel_case',
     words     => 'ITEM ITEMS ISA',
-    constants => 'PKG ARRAY HASH REFS ONCE DEFAULT',
+    constants => 'PKG ARRAY HASH REFS ONCE DEFAULT LOADED',
     constant  => {
         OBJECT         => 'object',
         FOUND          => 'found',
@@ -246,8 +246,7 @@ sub load {
         # what's going on in Badger::Class _autoload()
 
         my $loadname;
-        if ( ( $loadname = class($module)->maybe_load )
-        &&   ( ${ $module.PKG.VERSION } || @{ $module.PKG.ISA }  ) ) {
+        if ( ($loadname = class($module)->maybe_load) ) {
             $self->debug("loaded $module") if DEBUG;
             $loaded->{ $module } = $loadname;
             return $module 

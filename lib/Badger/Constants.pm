@@ -51,11 +51,13 @@ use constant {
     SPACE           => ' ',                 # and the answer is none, none more blank
     DELIMITER       => qr/(?:,\s*)|\s+/,    # match a comma or whitespace
     WILDCARD        => qr/[\*\?]/,          # wildcards: *.html foo??.txt
+    LOADED          => 'BADGER_LOADED',     # set by Badger::Class on autoload
+
 };
 
 CONSTANTS->export_any(qw( 
     CONSTANTS FIRST LAST CRLF PKG DOT REFS ONCE WARN BLANK SPACE 
-    DELIMITER WILDCARD 
+    DELIMITER WILDCARD LOADED
 ));
 
 CONSTANTS->export_tags({

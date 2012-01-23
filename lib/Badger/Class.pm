@@ -30,7 +30,6 @@ use constant {
     CONFIG     => 'Badger::Class::Config',
     METHODS    => 'Badger::Class::Methods',
     VARS       => 'Badger::Class::Vars',
-    LOADED     => 'BADGER_LOADED',
     MESSAGES   => 'MESSAGES',
     VERSION    => 'VERSION',
     MIXINS     => 'MIXINS',
@@ -39,7 +38,7 @@ use constant {
     NO_VALUE   => "You didn't specify a value for the '%s' option",
 };
 use Badger::Constants 
-    'DELIMITER SCALAR ARRAY HASH CODE PKG REFS ONCE TRUE FALSE';
+    'DELIMITER SCALAR ARRAY HASH CODE PKG REFS ONCE TRUE FALSE LOADED';
 use overload 
     '""'     => 'name',
     fallback => 1;
@@ -745,12 +744,14 @@ sub instance {
 
 sub loaded {
     # "loaded" is defined as "has an entry in the symbol table"
+    # NOTE: this is incorrect - see comment in _autoload() wrt 
+    # case-insensitive filesystems
     keys %{ $_[0]->{ symbols } } ? 1 : 0;
 }
 
 sub load {
     my $self = shift;
-    _autoload($self->{ name });
+    _autoload($self->{ name }) || return;
     return $self;
 }
 
@@ -818,20 +819,29 @@ sub hooks {
 
 sub _autoload {
     my $class = shift;
-    my $v;
     no strict   REFS;
     no warnings ONCE;
 
-    unless ( defined ${ $class.PKG.LOADED  } 
-          || defined ${ $class.PKG.VERSION }            # TODO: ??
-          || @{ $class.PKG.ISA }) {
+    unless ( defined ${ $class.PKG.LOADED  }
+          || defined ${ $class.PKG.VERSION } ) {
+#         || @{ $class.PKG.ISA }       # no - this auto-vivifies it
         _debug("autoloading $class\n") if DEBUG;
-        $v = ${ $class.PKG.VERSION } ||= 0;             # TODO: ??
         local $SIG{__DIE__};
         eval "use $class";
         croak $@ if $@;
+
+        # Problem here is that case-insensitive filesystems could load the 
+        # wrong module.  We could check the symbol table, but it will always
+        # have an 'import' entry because 'use' attempts to call import().
+        # So we assume a successful module load requires there to be a symbol 
+        # table with entries other than a single 'import'
+        my $symbols = \%{"${class}::"};
+        if (scalar(keys %$symbols) == 1 && exists $symbols->{ import }) {
+            return 0;
+        }
         ${ $class.PKG.LOADED } ||= 1;
     }
+
     return $class;
 }
 
