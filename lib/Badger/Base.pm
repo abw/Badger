@@ -386,7 +386,7 @@ class->methods(
             my $self  = shift;
             my $class = class($self);
             my $list;
-    
+
             if (ref $self && reftype $self eq HASH) {
                 # look in $self->{ config }->{ on_xxx } or in $ON_XXX pkg
                 # var for one or more event handlers
@@ -396,7 +396,7 @@ class->methods(
                 # careful!  the config value might be a single handler
                 $list = $self->{ $ON_EVENT } = [$list]
                     unless ref $list eq ARRAY;
-                $self->debug("got $on_event handlers: ", $self->dump_data_inline($list), "\n") if DEBUG
+                $self->debug("got $on_event handlers: ", $self->dump_data_inline($list), "\n") if DEBUG;
             }
             else {
                 # class method or non-hash objects use pkg vars only

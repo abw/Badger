@@ -138,6 +138,7 @@ $SIG{__WARN__} = sub { $goodness = 'this is bad' };
 $wpkg = 'Badger::Test::Warning2';
 $obj = $wpkg->new;
 $obj->warn("I believe our adventure through time has taken a most serious turn.");
+
 is( $obj->{ excellent }, "I believe our adventure through time has taken a most serious turn.", 'adventure through time');
 
 is( $goodness, 'this is good', 'warning chain was broken by the most excellent handler' );

@@ -390,8 +390,9 @@ sub all_vars {
             if defined ($value = ${ $pkg.PKG.$name });
         _debug("got: $value\n") if DEBUG && $value;
     }
-    
+
     return wantarray ? @values : \@values;
+
 }
 
 sub list_vars {
@@ -818,13 +819,15 @@ sub hooks {
 #-----------------------------------------------------------------------
 
 sub _autoload {
-    my $class = shift;
+    my $class   = shift;
     no strict   REFS;
     no warnings ONCE;
+    my $symbols = \%{"${class}::"};
 
-    unless ( defined ${ $class.PKG.LOADED  }
-          || defined ${ $class.PKG.VERSION } ) {
-#         || @{ $class.PKG.ISA }       # no - this auto-vivifies it
+    unless ( 
+            defined ${ $class.PKG.LOADED  }
+        ||  scalar(grep { ! /::$/ } keys %$symbols) > 1     # any symbols defined other than import / sub-namespaces
+    ) {
         _debug("autoloading $class\n") if DEBUG;
         local $SIG{__DIE__};
         eval "use $class";
@@ -835,10 +838,12 @@ sub _autoload {
         # have an 'import' entry because 'use' attempts to call import().
         # So we assume a successful module load requires there to be a symbol 
         # table with entries other than a single 'import'
-        my $symbols = \%{"${class}::"};
-        if (scalar(keys %$symbols) == 1 && exists $symbols->{ import }) {
-            return 0;
-        }
+        # [later] Oh blimey, it's worse than that.  There may be other
+        # sub-namespaces.
+        return 0
+            if  scalar(grep { ! /::$/ } keys %$symbols) == 1
+            &&  exists $symbols->{ import };
+
         ${ $class.PKG.LOADED } ||= 1;
     }
 
