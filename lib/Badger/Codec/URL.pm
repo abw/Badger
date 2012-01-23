@@ -21,8 +21,10 @@ our $URI_ESCAPES = $Badger::Codec::URI::URI_ESCAPES;
 
 sub encode_url {
     my $url = shift;
-    utf8::encode($url) if $] >= 5.008;
-    
+
+    utf8::encode($url)
+        if $] >= 5.008 && utf8::is_utf8($url);
+
     $URI_ESCAPES ||= {
         map { ( chr($_), sprintf("%%%02X", $_) ) } 
         (0..255)

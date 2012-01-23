@@ -21,8 +21,10 @@ our $URI_ESCAPES;
 
 sub encode_uri {
     my $uri = shift;
-    utf8::encode($uri) if $] >= 5.008;
-    
+
+    utf8::encode($uri)
+        if $] >= 5.008 && utf8::is_utf8($uri);
+
     $URI_ESCAPES ||= {
         map { ( chr($_), sprintf("%%%02X", $_) ) } 
         (0..255)
