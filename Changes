@@ -28,6 +28,16 @@ CHANGES
     values to remove leading zeroes (e.g. 2012/04/20 now yields a month of 4
     instead of 04).
 
+    Fixed some obscure bugs in the module loading code in Badger::Class and
+    related modules that could potentially cause unpredictable results on
+    case insensitive file systems (e.g. Apple's HFS with default settings).
+
+    Added the restat() method to Badger::Filesystem::Path.
+
+    Added documentation for various methods that was missing. Temporary
+    disabled the Pod::Coverage tests on AUTOMATED_TESTING systems. We know
+    there's still stuff to do.
+
   Version 0.08 - 13th January 2012
     Restored the $VERSION variable to Badger.pm rather than using the
     "version" import hook in Badger::Class which confused PAUSE.
