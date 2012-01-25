@@ -1619,6 +1619,12 @@ for your filesystem.
 
     print $fs->separator;           # e.g. '/' on Unix-based file systems
 
+=head2 spec
+
+Returns a text string containing the class name of C<File::Spec> or some 
+other user-definable module that implements the same functionality.  This
+is used internally for splitting and joining file paths.
+
 =head1 EXPORTABLE CONSTANTS
 
 =head2 FS

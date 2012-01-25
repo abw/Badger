@@ -33,8 +33,15 @@ contains.
 
 =head1 METHODS
 
-This module inherits all methods from the L<Badger::Data::Facet::List>,
-L<Badger::Data::Facet> and L<Badger::Base> base classes.
+This module implement the following method in addition to those inherited from
+the L<Badger::Data::Facet::List>, L<Badger::Data::Facet> and L<Badger::Base>
+base classes.
+
+=head2 validate($list_ref, $type)
+
+This method validates that the size of the list (i.e. number of elements)
+passed by reference as the first  argument is less than or equal to the pre-
+defined maximum limit.
 
 =head1 AUTHOR
 
@@ -42,7 +49,7 @@ Andy Wardley L<http://wardley.org/>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2008-2009 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2008-2012 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

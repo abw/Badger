@@ -442,6 +442,11 @@ configuration values.
 This method is used internally to look inside the target object or hash array
 to return default configuration values.
 
+=head2 fallback()
+
+This method is used internally to generate fallbacks for configuration 
+values.
+
 =head1 AUTHOR
 
 Andy Wardley L<http://wardley.org/>

@@ -36,9 +36,9 @@ This module implements a base class for numerical validation facets.
 This module implements the following methods in addition to those inherited
 from the L<Badger::Data::Facet> and L<Badger::Base> base classes.
 
-=head2 validate($value)
+=head2 validate($value_ref)
 
-Asserts that the C<$value> passed as an argument is a number.
+Asserts that the C<$value> passed by reference as an argument is a number.
 
 =head1 AUTHOR
 
@@ -46,7 +46,7 @@ Andy Wardley L<http://wardley.org/>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2008-2009 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2008-2012 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

@@ -64,8 +64,24 @@ values.
 
 =head1 METHODS
 
-This module inherits all methods from the L<Badger::Data::Facet::Text>,
-L<Badger::Data::Facet> and L<Badger::Base> base classes.
+This module implement the following methods in addition to those inherited
+from the L<Badger::Data::Facet::Text>, L<Badger::Data::Facet> and
+L<Badger::Base> base classes.
+
+=head2 validate($text_ref, $type)
+
+This method performs whitespace handling on the text passed by reference as
+the first argument.
+
+If the pre-defined C<action> is C<preserve> then the text will be unmodified.
+
+If the C<action> is C<fold> then all whitespace characters in the text
+(carriage returns, newlines, tabs) will be converted to spaces.
+
+If the C<action> is C<collapse> then all whitespace characters will first be
+converted to spaces as per C<fold>.  Any leading and trailing whitespace is
+then removed and any sequences of multiple spaces are collapsed to a single
+space.
 
 =head1 AUTHOR
 
@@ -73,7 +89,7 @@ Andy Wardley L<http://wardley.org/>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2001-2009 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2001-2012 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

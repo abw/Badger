@@ -1,8 +1,7 @@
 package Badger::Data::Facet::Number::Max;
 
 use Badger::Class
-    base  => 'Badger::Data::Facet',
-    utils => 'numlike';
+    base  => 'Badger::Data::Facet';
 
 
 sub validate {
@@ -24,13 +23,19 @@ Badger::Data::Facet::Number::Min - validation facet for a minimum numerical valu
 
 =head1 DESCRIPTION
 
-This module implements a validation facets that assert that a numeric value
-is equal to or larger than a pre-defined value.
+This module implements a validation facet that assert that a numeric value
+is less than or equal to a pre-defined value.
 
 =head1 METHODS
 
-This module inherits all methods from the L<Badger::Data::Facet::Number>,
-L<Badger::Data::Facet> and L<Badger::Base> base classes.
+This module implement the following method in addition to those inherited from
+the L<Badger::Data::Facet::Number>, L<Badger::Data::Facet> and L<Badger::Base>
+base classes.
+
+=head2 validate($value_ref, $type)
+
+This method validates that the number passed by reference as the first 
+argument is less than or equal to the pre-defined maximum limit.
 
 =head1 AUTHOR
 
@@ -38,7 +43,7 @@ Andy Wardley L<http://wardley.org/>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2008-2009 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2008-2012 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

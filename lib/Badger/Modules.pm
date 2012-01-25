@@ -864,6 +864,10 @@ L<Badger::Base>.
 
 Subclasses may redefine this method to perform some other functionality.
 
+=head2 failed($message)
+
+This method is used internally to report a failure to load a module.
+
 =head1 AUTHOR
 
 Andy Wardley L<http://wardley.org/>

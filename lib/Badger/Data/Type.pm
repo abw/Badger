@@ -35,8 +35,8 @@ use Badger::Class
 
 use Badger::Debug ':dump';
 
-
 our @PARAMS = qw( base name namespace );
+
 
 sub init_type {
     my ($self, $config) = @_;
@@ -107,7 +107,7 @@ sub validate {
 }
 
 
-sub JUST_TESTING_clause {
+sub _JUST_TESTING_clause {
     my $self    = shift;
     my $type    = shift;
     my $clauses = $self->CLAUSES;
@@ -126,23 +126,83 @@ __END__
 
 =head1 NAME
 
-Badger::Data::Type - base class data type
-
-=head1 SYNOPSIS
-
-TODO
+Badger::Data::Type - base class for data types
 
 =head1 DESCRIPTION
 
-TODO
+This module implements a base class for data types.
+
+=head1 CONFIGURATION OPTIONS
+
+=head2 name
+
+An optional name for the data type. 
+
+=head2 namespace
+
+An optional namespace for the data type.
+
+=head2 base
+
+An optional base data type.
+
+=head2 facets
+
+An optional list of validation facets.
 
 =head1 METHODS
 
-TODO
+The following methods are defined in addition to those inherited from the 
+L<Badger::Base> base class.
 
-=head1 PACKAGE VARIABLES
+=head2 init()
 
-TODO
+This is aliased to the L<init_type()> method.
+
+=head2 init_type($config)
+
+This is the initialisation method for a data type.  It is called automatically
+when a data type object is created via the L<new()|Badger::Base/new()> method
+inherited from the L<Badger::Base> base class.
+
+=head2 name()
+
+Returns the name of the data type as specified via the L<name> configuration
+option.  If no name was specified then an automatically generated name is
+returned based on the class name with the C<Badger::Data::Type> prefix
+removed and all C<::> sequences replaced with periods, e.g. a data type 
+C<Badger::Data::Type::Foo::Bar> would yield a name of C<Foo.Bar>.
+
+=head2 namespace()
+
+Returns the namespace for the data type, or C<undef> is none is defined.
+
+=head2 base()
+
+Returns the base data type, or C<undef> is none is defined.
+
+=head2 facets()
+
+Returns a reference to a list of validation facets defined for the data type.
+
+=head2 simple()
+
+This constant method always returns the value C<0>.  Subclasses representing
+simple data types should re-define this to return the value C<1>.
+
+=head2 complex()
+
+This constant method always returns the value C<0>.  Subclasses representing
+complex data types should re-define this to return the value C<1>.
+
+=head2 constrain($facet, @args)
+
+Applies a new validation facet to the data type.
+
+=head2 validate($value_ref)
+
+Validates the value passed by reference as the first argument.  It calls
+the C<validate()> method of each of the validation facets in turn. 
 
 =head1 AUTHOR
 
@@ -150,10 +210,14 @@ Andy Wardley L<http://wardley.org/>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2001-2009 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2008-2012 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+L<Badger::Base>
 
 =cut
 

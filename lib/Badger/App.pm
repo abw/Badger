@@ -245,3 +245,55 @@ sub usage {
 
 
 1;
+
+
+
+=head1 NAME
+
+Badger::App - base class application module
+
+=head1 DESCRIPTION
+
+This module implements a base class for simple, self-contained applications.
+
+=head1 METHODS
+
+The following methods are defined in addition to those inherited from the 
+L<Badger::Prototype> and L<Badger::Base> base classes.
+
+=head2 about()
+
+This method should be re-defined in subclasses to return information about
+the application.
+
+=head2 usage()
+
+This method should be re-defined in subclasses to return a summary of usage
+options for the application.
+
+=head1 AUTHOR
+
+Andy Wardley L<http://wardley.org/>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2008-2012 Andy Wardley.  All Rights Reserved.
+
+This module is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+L<Badger::Factory>,
+L<Badger::Base>.
+
+=cut
+
+# Local Variables:
+# mode: perl
+# perl-indent-level: 4
+# indent-tabs-mode: nil
+# End:
+#
+# vim: expandtab shiftwidth=4:
+

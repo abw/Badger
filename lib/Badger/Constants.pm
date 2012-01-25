@@ -249,6 +249,11 @@ wildcard characters.
         # do someting...
     } 
 
+=head2 LOADED
+
+Contains the literal string C<BADGER_LOADED>.  The L<Badger::Class> module
+uses it to define the C<$BADGER_LOADED> variable in any modules that it loads.
+
 =head1 EXPORTABLE TAG SETS
 
 The following tag sets and associated constants are defined: 

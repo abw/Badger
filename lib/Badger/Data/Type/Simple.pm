@@ -5,7 +5,6 @@ use Badger::Class
     base        => 'Badger::Data::Type',
     constant    => {
         simple  => 1,
-        complex => 0,
     };
 
 1;
@@ -25,7 +24,7 @@ This module implements a base class for simple (single value) data types.
 The following methods are defined in addition to those inherited from the 
 L<Badger::Data::Type> and L<Badger::Base> base classes.
 
-=head1 simple()
+=head2 simple()
 
 This constant method always returns the value C<1>.
 

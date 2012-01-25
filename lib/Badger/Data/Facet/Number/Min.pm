@@ -1,8 +1,7 @@
 package Badger::Data::Facet::Number::Min;
 
 use Badger::Class
-    base  => 'Badger::Data::Facet',
-    utils => 'numlike';
+    base  => 'Badger::Data::Facet';
 
 
 sub validate {
@@ -29,8 +28,14 @@ is equal to or larger than a pre-defined value.
 
 =head1 METHODS
 
-This module inherits all methods from the L<Badger::Data::Facet::Number>,
-L<Badger::Data::Facet> and L<Badger::Base> base classes.
+This module implement the following method in addition to those inherited from
+the L<Badger::Data::Facet::Number>, L<Badger::Data::Facet> and L<Badger::Base>
+base classes.
+
+=head2 validate($value_ref, $type)
+
+This method validates that the number passed by reference as the first 
+argument is greater than or equal to the pre-defined minimum limit.
 
 =head1 AUTHOR
 

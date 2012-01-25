@@ -504,6 +504,13 @@ You can also specify the individual parts of the URL using named paramters.
         fragment    => 'stripe',
     );
 
+=head2 copy()
+
+This method creates and returns a new C<Badger::URL> object as a copy of 
+the current one.
+
+    my $copy = $url->copy;
+
 =head2 url()
 
 Method to return the complete URL.
@@ -515,6 +522,10 @@ This method is called automatically whenever the URL object is
 stringified.  
 
     print $url;                 # same as above
+
+=head2 text()
+
+An alias for the L<url()> method.
 
 =head2 scheme()
 
@@ -577,6 +588,18 @@ setting a new query.
     $url->query('animal=ferret');
     print $url->query();        # animal=ferret
 
+=head2 params()
+
+Get or set the query parameters.
+
+    # get params
+    my $params = $url->params;
+
+    # set params
+    $url->params(
+        x => 10
+    );
+
 =head2 fragment()
 
 Get or set the fragment part of the URL.  The leading '#' is not
@@ -608,6 +631,70 @@ query (in other words, everything except the fragment).
 
     print $url->request();       
         # http://fred@example.org:1234/right/here?animal=badger
+
+=head2 relative($path)
+
+Returns a new URL with the relative path specified.
+
+    my $base = Badger::URL->new('http://badgerpower.com/example');
+    my $rel  = $base->relative('foo/bar');
+
+    print $rel;     # http://badgerpower.com/example/foo/bar
+
+=head2 absolute($path)
+
+Returns a new URL with the absolute path specified.  The leading C</> on 
+the path provided as an argument is option.  It will be assumed if not 
+present.
+
+    my $base = Badger::URL->new('http://badgerpower.com/example');
+    my $rel  = $base->absolute('foo/bar');
+
+    print $rel;     # http://badgerpower.com/foo/bar
+
+=head1 INTERNAL METHODS
+
+=head2 set($items)
+
+This method is used to set internal values.
+
+=head2 join_authority()
+
+This method reconstructs the C<authority> from the C<host>, C<port> and
+C<user>.
+
+=head2 join_query()
+
+This method reconstructs the C<query> from the query parameters.
+
+=head2 join_url()
+
+This method reconstructs the complete URL from its constituent parts.
+
+=head2 split_authority()
+
+This method splits the C<authority> into C<host>, C<port> and C<user>.
+
+=head2 split_query()
+
+This method splits the C<query> string into query parameters.
+
+=head2 dump()
+
+Return a text representation of the structure of the URL object, for 
+debugging purposes.
+
+=head1 EXPORTABLE SUBROUTINES
+
+=head2 URL($url)
+
+This constructor function can be used to create a new URL.  If the argument
+is already a C<Badger::URL> object then it is copied to create a new object.
+Otherwise a new C<Badger::URL> object is created from scratch.
+
+    use Badger::URL 'URL';
+    my $url1 = URL('http://example.com/foo');
+    my $url2 = URL($url1);
 
 =head1 AUTHOR
 

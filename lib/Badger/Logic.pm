@@ -292,6 +292,10 @@ passed containing the values that the expression can test.
 Returns a reference to the root of a tree of C<Badger::Logic::Node> objects
 that represent the parsed expression.
 
+=head2 text()
+
+Returns a text representation of the logic expression.
+
 =head1 INTERNAL METHODS
 
 =head2 parse($text)
