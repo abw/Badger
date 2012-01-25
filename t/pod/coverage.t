@@ -17,7 +17,8 @@
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
     args   => \@ARGV,
-    if_env => 'RELEASE_TESTING AUTOMATED_TESTING';
+#   if_env => 'RELEASE_TESTING AUTOMATED_TESTING'
+    if_env => 'RELEASE_TESTING';                    # 
 
 eval "use Test::Pod::Coverage 1.00";
 skip_all "Test::Pod::Coverage 1.00 required for testing POD coverage" if $@;
