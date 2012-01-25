@@ -286,9 +286,8 @@ sub create {
 
 sub stat {
     my $self  = shift->must_exist;
-    my $stats = $self->{ stats } 
-              = $self->filesystem->stat_path($self->{ path })
-             || return $self->decline_msg( not_found => file => $self->{ path } );
+    my $stats = $self->filesystem->stat_path($self->{ path })
+            ||  return $self->decline_msg( not_found => file => $self->{ path } );
 
     # the definitive path can be tagged on the end
 #    $self->{ definitive } = $stats->[STAT_PATH]
@@ -300,10 +299,17 @@ sub stat {
 }
 
 sub stats {
-    my $stats = $_[0]->{ stats } || $_[0]->stat;
+    my $stats = $_[0]->{ stats } ||= $_[0]->stat;
     return wantarray 
         ? @$stats
         :  $stats;
+}
+
+sub restat {
+    my $self = shift;
+    delete $self->{ stats };
+    delete @$self{ keys %$TS_FIELD }; # timestamps for created, modified, etc.
+    return $self->stats;
 }
 
 sub permissions {
@@ -771,6 +777,16 @@ making repeated filesystem calls.
 
     @list = $path->stats;                   # list context
     $list = $path->stats;                   # scalar context
+
+Note that the L<accessed()>, L<created()> and L<modified()> methods also 
+cache the L<Badger::Timestamp> objects they create to represent the 
+access, creation and modification times respectively.
+
+=head2 restat()
+
+Clears any cached values stored by the L<stats()>, L<accessed()>, 
+L<created()> and L<modified()> methods and calls L<stats()> to reload
+(and re-cache) the data from a L<stat()> call. 
 
 =head2 device()
 
