@@ -131,7 +131,7 @@ Badger::Log
 Badger::Storage
 ---------------
 
-* This is available in subversion but not yet included in the released
+* This is available in the git repository but not yet included in the released
   distribution.
 
 * unify parameter parsing and identity definition between filesystem and
@@ -149,6 +149,10 @@ Badger::Test
 
 * Could do with some proper testing.  Although all the other test scripts
   do tend to thrash it quite well...
+
+* Change if_env to use Badger::Logic so we can specify things like:
+      if_env => 'RELEASE_TESTING or AUTOMATED_TESTING'
+ 
 
 
 Badger::Utils

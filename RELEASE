@@ -1,0 +1,21 @@
+To release a new version:
+
+* Update $VERSION in lib/Badger.pm
+
+* Update pod/Badger/Changes.pod
+
+* Regenerate Changes:
+
+  $ pod2text pod/Badger/Changes.pod > Changes
+
+* Make distribution
+
+  $ perl Makefile.PL
+  $ make
+  $ make test
+  $ make dist
+
+* Upload to PAUSE
+
+* Do the happy badger dance
+
