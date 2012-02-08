@@ -79,6 +79,17 @@ NOTE: subject to change
 This method implements the C<facets> import hook for specifying validation
 facets for a data type.
 
+=head1 IMPORT HOOKS
+
+The following hooks can be specified when the module is imported via C<use>.
+They correspond directly to the methods documented above.
+
+=head2 type
+
+=head2 size
+
+=head2 facets
+
 =head1 AUTHOR
 
 Andy Wardley L<http://wardley.org/>
