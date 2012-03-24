@@ -243,7 +243,7 @@ sub catch {
 sub throws {
     my $self  = shift;
     my $type  = reftype $self || BLANK;
-    my $class = $self->class;
+    my $class = class($self);
     my $throws;
     
     if (@_) {
