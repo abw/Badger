@@ -4,4 +4,6 @@
 /t/filesystem/testfiles/encoded.str
 /t/log/logs/
 t/codec/data/testrun.ts
+*.tar.gz
+
 
