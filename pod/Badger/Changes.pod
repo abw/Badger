@@ -44,6 +44,10 @@ Added documentation for various methods that was missing.  Temporary
 disabled the Pod::Coverage tests on AUTOMATED_TESTING systems.  We know 
 there's still stuff to do.
 
+=head2 Version 0.09 - Not Yet Released
+
+Added SLASH to Badger::Constants
+
 =head2 Version 0.08 - 13th January 2012
 
 Restored the C<$VERSION> variable to L<Badger.pm|Badger> rather than using 

@@ -49,6 +49,7 @@ use constant {
     WARN            => 'warn',              # default warning handler
     BLANK           => '',                  # how much more blank could this be?
     SPACE           => ' ',                 # and the answer is none, none more blank
+    SLASH           => '/',                 # URI path delimiter
     DELIMITER       => qr/(?:,\s*)|\s+/,    # match a comma or whitespace
     WILDCARD        => qr/[\*\?]/,          # wildcards: *.html foo??.txt
     LOADED          => 'BADGER_LOADED',     # set by Badger::Class on autoload
@@ -56,7 +57,7 @@ use constant {
 };
 
 CONSTANTS->export_any(qw( 
-    CONSTANTS FIRST LAST CRLF PKG DOT REFS ONCE WARN BLANK SPACE 
+    CONSTANTS FIRST LAST CRLF PKG DOT REFS ONCE WARN BLANK SPACE SLASH
     DELIMITER WILDCARD LOADED
 ));
 
@@ -231,6 +232,11 @@ none.  None more blank.
 
 A single space character. Not to be confused with the three dimensional fabric
 of reality that it happens to share a name with.
+
+=head2 SLASH
+
+A forward slash as used to separate path segments in URIs and filesystem paths
+on sane operating systems.
 
 =head2 DELIMITER
 
