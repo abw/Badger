@@ -111,6 +111,8 @@ sub can_configure {
 
     $self = $self->prototype unless ref $self;
 
+    $self->debug("can_configure($name)") if DEBUG;
+
     return 
         unless $name && $self->{ item }->{ $name };
 

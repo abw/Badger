@@ -185,8 +185,9 @@ sub auto_can {
             my ($name) = ($AUTOLOAD =~ /([^:]+)$/ );
             return if $name eq 'DESTROY';
             if (my $method = $this->can($name, @args)) {
-                $class->debug("installing $name method in $target ($class)") if DEBUG;
-                $target->method( $name => $method );
+                my $that = class($this);
+                $class->debug("$class installing $name method in $that") if DEBUG;
+                $that->method( $name => $method );
                 return $method->($this, @args);
             }
 
