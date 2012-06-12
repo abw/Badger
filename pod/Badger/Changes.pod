@@ -27,6 +27,11 @@ not on CPAN at the time of writing (although they might be by the time
 you read this), but the source code is avaiable via github at
 L<http://github.com/abw/Template-TT2> and L<http://github.com/abw/Template-TT3>.
 
+=head2 Version 0.10 - Not Yet released
+
+Fixed a bug in the L<auto_can|Badger::Class::Methods/auto_can()> feature
+of L<Badger::Class::Methods> which prevented it from working with subclasses.
+
 =head2 Version 0.09 - 8th February 2012
 
 Added L<Badger::Codec::Timestamp>. Changed L<Badger::Timestamp> to numify
