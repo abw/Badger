@@ -18,19 +18,9 @@ use Badger::Class
     import  => 'class',
     codecs  => 'utf8';
 
-eval "require JSON::XS";
-our $HAS_JSON_XS = $@ ? 0 : 1;
+use JSON qw();
 
-eval "require JSON";
-our $HAS_JSON = $@ ? 0 : 1;
-our $MODULE = 
-    $HAS_JSON_XS ? 'JSON::XS' :
-    $HAS_JSON    ? 'JSON'     :
-    die "No JSON implementation installed\n";
-
-# TODO: figure out if it's really safe to always enable utf8 or if it should
-# be a configurable item.
-our $JSON = $MODULE->new->utf8;
+our $JSON = JSON->new;
 
 sub encode_json {
     $JSON->encode(shift);
