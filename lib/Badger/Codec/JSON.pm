@@ -28,7 +28,7 @@ sub encode_json {
 
 sub decode_json {
     my $json = shift;
-    $json = encode_utf8($json);
+#   $json = encode_utf8($json);
     $JSON->decode($json);
 }
     
