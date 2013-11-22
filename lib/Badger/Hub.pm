@@ -232,7 +232,7 @@ sub no_config {
 
     # TODO: option to make this a failure
     return  $self->pkgvar_config($name, $params)
-        ||  { %$params };
+        ||  ($params ? { %$params } : { });
 }
 
 sub pkgvar_config {

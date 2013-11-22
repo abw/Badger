@@ -70,7 +70,7 @@ sub init_config {
 
 
 sub get {
-    my $self  = shift;
+    my $self  = shift->prototype;
     my @names = map { ref $_ eq ARRAY ? @$_ : split /\W+/ } @_;
     my $name  = shift @names;
     my $data  = $self->{ data }->{ $name };
@@ -102,7 +102,7 @@ sub get {
 
 
 sub set {
-    my $self = shift;
+    my $self = shift->prototype;
     my $name = shift;
     my $data = @_ == 1 ? shift : { @_ };
     $self->{ data }->{ $name } = $data;
@@ -129,7 +129,8 @@ sub can_configure {
 }
 
 sub has_item {
-    my ($self, $name) = @_;
+    my $self = shift->prototype;
+    my $name = shift;
     $self = $self->prototype unless ref $self;
     return $self->{ item }->{ $name };
 }
