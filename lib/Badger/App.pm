@@ -2,7 +2,7 @@ package Badger::App;
 
 use Badger::Config::Schema;
 use Badger::Reporter::App;
-use Badger::Debug ':dump';
+use Badger::Debug ':dump debugf';
 use Badger::Apps;
 use Badger::Class
     version     => 0.01,
@@ -39,6 +39,11 @@ use Badger::Class
 
 sub init_app {
     my ($self, $config) = @_;
+
+    $self->debugf(
+        "init_app(%s)", 
+        $self->dump_data($config),
+    ) if DEBUG;
 
     $self->configure($config)
          ->init_options($config);
