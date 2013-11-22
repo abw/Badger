@@ -21,14 +21,17 @@ use Badger::Class
     utils     => 'blessed numlike',
     constants => 'HASH ARRAY CODE DELIMITER',
     auto_can  => 'can_configure',
+    alias     => {
+        init  => \&init_config,
+    },
     messages  => {
         get => 'Cannot fetch configuration item <1>.<2> (<1> is <3>)',
     };
 
 
-sub init {
+sub init_config {
     my ($self, $config) = @_;
-    my $data  = $self->{ data } = $config->{ data } || $config;
+    my $data  = $self->{ data } = $config->{ data } || { %$config };
     my $class = $self->class;
     
     # merge all $ITEMS in package variables with those listed in 
@@ -40,6 +43,7 @@ sub init {
     # store hash lookup table marking valid items
     $items = $self->{ item } = {
         map { $_ => 1 } 
+        keys %$data,
         map { split DELIMITER } 
         @$items 
     };
@@ -50,13 +54,14 @@ sub init {
     # be merged in with the code in Badger::Class::Config, or rather B:C:C
     # should define a config schema.
     foreach my $item (keys %$items) {
+        next if exists $data->{ $item };
         $data->{ $item } = $config->{ $item }
             || $class->any_var( uc $item );
         $self->debug("config set $item => ", $data->{ $item }, "\n") if DEBUG;
     }
     
     if (DEBUG) {
-        $self->debug("config items: ", $self->dump_data($self->{ items }));
+        $self->debug("config items: ", $self->dump_data($self->{ item }));
         $self->debug("config data: ", $self->dump_data($self->{ data }));
     }
 
@@ -114,14 +119,21 @@ sub can_configure {
     $self->debug("can_configure($name)") if DEBUG;
 
     return 
-        unless $name && $self->{ item }->{ $name };
+        unless $name && $self->has_item($name);
 
     return sub {
         return @_ > 1
             ? shift->set( $name => @_ )     # set
-            : $self->{ data }->{ $name };   # get
+            : shift->get( $name );
     };
 }
+
+sub has_item {
+    my ($self, $name) = @_;
+    $self = $self->prototype unless ref $self;
+    return $self->{ item }->{ $name };
+}
+
 
 1;
 
