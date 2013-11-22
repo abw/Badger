@@ -6,5 +6,5 @@
 t/codec/data/testrun.ts
 *.tar.gz
 *.old
-
-
+MYMETA.yml
+MYMETA.json
