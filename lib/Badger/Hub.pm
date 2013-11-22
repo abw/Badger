@@ -21,7 +21,7 @@ use Badger::Class
     import    => 'class',
     auto_can  => 'auto_can',
     constants => 'HASH ARRAY REFS PKG',
-    utils     => 'blessed',
+    utils     => 'blessed params',
     words     => 'COMPONENTS DELEGATES COMP_CACHE DELG_CACHE',
     messages => {
         no_module  => 'No %s module defined.',
@@ -60,13 +60,6 @@ sub init {
 }
 
 
-sub config {
-    my $self = shift;
-    $self = $self->prototype(@_) unless ref $self;
-    return $self->{ config };
-}
-
-
 sub components {
     my $self  = shift;
     my $class = $self->class;
@@ -85,6 +78,7 @@ sub components {
 sub component {
     my $self  = shift;
     my $comps = $self->components;
+    $self->debug("components: ", $self->dump_data($comps)) if DEBUG;
     return @_
         ? $comps->{ $_[0] }
         : $comps;
@@ -109,6 +103,7 @@ sub delegates {
 sub delegate {
     my $self   = shift;
     my $delegs = $self->delegates;
+    $self->debug("delegates: ", $self->dump_data($delegs)) if DEBUG;
     return @_
         ? $delegs->{ $_[0] }
         : $delegs;
@@ -189,56 +184,79 @@ sub auto_delegate {
 # $class->name()).  This is merged with $params.
 
 sub construct {
-    my $self = shift;
-    my $name = shift;
-    my $args = @_ && ref($_[0]) eq HASH ? shift : { @_ };
-
-    $self->debug("construct($name)") if DEBUG;
-    
-    # $NAME pkg var can be a module name or hash ref with 'module' item
-    my $pkgvar = $self->class->any_var(uc $name);
-    my $pkgmod = ref $pkgvar eq HASH ? $pkgvar->{ module } : $pkgvar;
-    my $config = $self->{ config };
-    my $params;
-    my $method;
-
-    if ($config && ref $config eq HASH) {
-        # $self->{ config } can be a hash ref with a $name item
-        $params = $config->{ $name };
-    }
-    elsif (blessed $config && ($method = $self->{ config }->can($name))) {
-        # $self->{ config } can be an object with a $name method which we call
-        $params = $method->($config);
-    }
-    else {
-        # no local config data so we'll fall back on a package variable
-        $params = $pkgvar;
-    }
-    
-    # if $params isn't defined then we default to the entire $config hash
-    $params ||= $config;
-
-    # if $config isn't a hash then it's the name of the module to use
-    $params = { module => $params } unless ref $params eq HASH;
+    my $self   = shift;
+    my $name   = shift;
+    my $config = $self->config($name, @_);
 
     $self->debug("$name module config: ", $self->dump_data($config)) if DEBUG;
     
     # see if a module name is specified in $args, config hash or use $pkgmod
-    my $module = $args->{ module } ||= $params->{ module } ||= $pkgmod
+    my $module = $config->{ module }
         || return $self->error_msg( no_module => $name );
-
-    $self->debug("$name module: $module") if DEBUG;
 
     # load the module
     class($module)->load;
 
-    # add any extra arguments to the config hash
-    $params = { %$params, %$args } if %$args;
-
-    $self->debug("$name merged config: ", $self->dump_data($params)) if DEBUG;
-
-    return $module->new($params);
+    return $module->new($config);
 }
+
+sub config {
+    my $self   = shift->prototype;
+    my $config = $self->{ config };     return $config unless @_;
+    my $name   = shift;
+    my $params = params(@_);
+    my $defaults;
+    my $method;
+
+    if ($config && ref $config eq HASH) {
+        # $self->{ config } can be a hash ref with a $name item
+        $defaults = $config->{ $name };
+    }
+    elsif (blessed $config && ($method = $config->can($name))) {
+        # $self->{ config } can be an object with a $name method which we call
+        $defaults = $method->($config);
+    }
+    else {
+        # no defaults
+        return $self->no_config($name, $params);
+    }
+
+    return {
+        %$defaults,
+        %$params
+    };
+}
+
+sub no_config {
+    my ($self, $name, $params) = @_;
+
+    # TODO: option to make this a failure
+    return  $self->pkgvar_config($name, $params)
+        ||  { %$params };
+}
+
+sub pkgvar_config {
+    my ($self, $name, $params) = @_;
+    my $pkgvar = $self->class->any_var(uc $name) || return;
+    my $config;
+
+    if (ref $pkgvar eq HASH) {
+        # package variable can be a hash ref of config options
+        $config = $pkgvar;
+    }
+    else {
+        # or the name of a module
+        $config = { 
+            module => $pkgvar 
+        };
+    };
+
+    return {
+        %$config,
+        %$params
+    };
+}
+
 
 
 #------------------------------------------------------------------------

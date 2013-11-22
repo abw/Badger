@@ -57,7 +57,7 @@ our $COMPONENTS = {
 };
 
 package main;
-my $hub = My::Hub->new;
+my $hub    = My::Hub->new;
 my $widget = $hub->widget;
 ok( $widget, 'got widget' );
 is( ref $widget, 'My::Widget', 'got My::Widget' );
