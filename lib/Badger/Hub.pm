@@ -208,6 +208,7 @@ sub config {
     my $defaults;
     my $method;
 
+
     if ($config && ref $config eq HASH) {
         # $self->{ config } can be a hash ref with a $name item
         $defaults = $config->{ $name };
@@ -221,6 +222,12 @@ sub config {
         return $self->no_config($name, $params);
     }
 
+    $self->debug(
+        "config for $name: DEFAULTS: ", 
+        $self->dump_data($defaults),
+        "\nPARAMS: ", $self->dump_data($params)
+    ) if DEBUG;
+
     return {
         %$defaults,
         %$params
@@ -230,6 +237,11 @@ sub config {
 sub no_config {
     my ($self, $name, $params) = @_;
 
+    $self->debug(
+        "no_config for $name: ", 
+        "PARAMS: ", $self->dump_data($params)
+    ) if DEBUG;
+
     # TODO: option to make this a failure
     return  $self->pkgvar_config($name, $params)
         ||  ($params ? { %$params } : { });
@@ -237,7 +249,7 @@ sub no_config {
 
 sub pkgvar_config {
     my ($self, $name, $params) = @_;
-    my $pkgvar = $self->class->any_var(uc $name) || return;
+    my $pkgvar = $self->class->any_var(uc $name) || return $params;
     my $config;
 
     if (ref $pkgvar eq HASH) {
