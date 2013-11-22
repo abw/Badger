@@ -26,6 +26,12 @@ CHANGES
     <http://github.com/abw/Template-TT2> and
     <http://github.com/abw/Template-TT3>.
 
+  Version 0.10 - Not Yet released
+    Fixed a bug in the auto_can feature of Badger::Class::Methods which
+    prevented it from working with subclasses.
+
+    Added no_config() method to Badger::Hub.
+
   Version 0.09 - 8th February 2012
     Added Badger::Codec::Timestamp. Changed Badger::Timestamp to numify
     values to remove leading zeroes (e.g. 2012/04/20 now yields a month of 4
@@ -40,6 +46,8 @@ CHANGES
     Added documentation for various methods that was missing. Temporary
     disabled the Pod::Coverage tests on AUTOMATED_TESTING systems. We know
     there's still stuff to do.
+
+    Added SLASH to Badger::Constants
 
   Version 0.08 - 13th January 2012
     Restored the $VERSION variable to Badger.pm rather than using the
@@ -170,11 +178,11 @@ CHANGES
                     },
                 }
             };
-        
-    package main;
+    
+        package main;
         use Badger::Example ':math';
-        
-    print e;            # 2.718
+    
+        print e;            # 2.718
         print pi;           # 3.142
         print phi;          # 1.618
 

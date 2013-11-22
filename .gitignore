@@ -5,5 +5,6 @@
 /t/log/logs/
 t/codec/data/testrun.ts
 *.tar.gz
+*.old
 
 
