@@ -7,8 +7,13 @@ use Badger::Class
     base      => 'Badger::Base',
     import    => 'class CLASS',
     utils     => 'blessed',
-    accessors => 'name',
+    accessors => 'name arity',
     constants => 'DELIMITER ARRAY HASH',
+    constant  => {
+        ARITY_ITEM => 1,
+        ARITY_LIST => 2,
+        ARITY_HASH => 3,
+    },
     alias     => {
         init  => \&init_item,
     },
@@ -18,8 +23,14 @@ use Badger::Class
         dup_item     => 'Duplicate specification for scheme item: %s',
         bad_fallback => 'Invalid fallback item specified for %s: %s',
         no_value     => 'No value specified for the %s configuration item',
+        no_key_value => 'No value specified for the <2> key of the <1> configuration item',
     };
 
+our $ARITY = {
+    '$' => ARITY_ITEM,
+    '@' => ARITY_LIST,
+    '%' => ARITY_HASH,
+};
 
 sub init_item {
     my ($self, $config) = @_;
@@ -36,7 +47,17 @@ sub init_item {
     # A '!' at the end of the name indicates it's mandatory.
     # A '=value' at the end indicates a default value.
     $self->{ required } = ($name =~ s/!$//)      ?  1 : $config->{ required };
-    $self->{ default  } = ($name =~ s/=(\S+)$//) ? $1 : $config->{ default  };
+    $self->{ default  } = ($name =~ s/=(\w+)$//) ? $1 : $config->{ default  };
+
+    # Alternately, '=$XXX', '=@XXX' or '=%XXX' can be used to indicate that
+    # the options takes one 'XXX' argument, multiple 'XXX' arguments or key
+    # values/pairs where the values are 'XXX' arguments
+    if ($name =~ s/=([\$\@\%])(.+)$//) {
+        $self->debug("config item: $name [$1] [$2]") if DEBUG;
+        $config->{ arity } = $ARITY->{ $1 };
+        $config->{ args  } = $2;
+    }
+
 
     # name can be 'name|alias1|alias2|...'
     ($name, @aka) = split(/\|/, $name);
@@ -84,6 +105,7 @@ sub init_item {
     $self->{ method  } = $config->{ method  };
     $self->{ about   } = $config->{ about   };
     $self->{ args    } = $config->{ args    };
+    $self->{ arity   } = $config->{ arity   } || 0;
 
     $self->debug(
         "Configured configuration item: ", $self->dump
@@ -161,8 +183,22 @@ sub set {
     $object ||= $target;
 
     $self->debug("set($target, $name, $value)") if DEBUG;
-    
-    $target->{ $name } = $value;
+
+    if ($self->{ arity } == ARITY_LIST) {
+        my $list = $target->{ $name } ||= [ ];
+        push(@$list, $value);
+    }
+    elsif ($self->{ arity } == ARITY_HASH) {
+        return $self->error_msg( invalid => 'key/value pair' => $value)
+            unless ref $value eq ARRAY;
+
+        my $hash = $target->{ $name } ||= { };
+        $hash->{ $value->[0] } = $value->[1];
+    }
+    else {
+        $target->{ $name } = $value;
+    }
+
     $self->{ action }->($self, $name, $value) if $self->{ action };
 
     if (blessed($object) && ($method = $self->{ method })) {
@@ -173,7 +209,9 @@ sub set {
     return $self;
 }
 
-     
+
+# this is being replaced by Badger::Config::Reader::Args
+
 sub args {
     my $self = shift;
     my $args = shift;
@@ -181,9 +219,19 @@ sub args {
     
     if ($self->{ args }) {
         $self->debug("looking for $self->{ name } arg in ", $self->dump_data($args)) if DEBUG;
+
         return $self->error_msg( no_value => $self->{ name } )
             unless @$args && defined $args->[0] && $args->[0] !~ /^-/;
+
         $value = shift @$args;
+
+        if ($self->{ arity } == ARITY_HASH) {
+            my $key = $value;
+            return $self->error_msg( no_key_value => $self->{ name }, $key )
+                unless @$args && defined $args->[0] && $args->[0] !~ /^-/;
+            $value = shift @$args;
+            $value = [ $key, $value ];
+        }
     }
     else {
         $value = 1;
@@ -192,12 +240,28 @@ sub args {
     return $self->configure({ $self->{ name } => $value }, @_);
 }
 
+# temporary method providing access to args value
+sub has_args {
+    shift->{ args };
+}
+
+sub hash_arity {
+    shift->{ arity } == ARITY_HASH;
+}
+
+sub list_arity {
+    shift->{ arity } == ARITY_LIST;
+}
+
 sub summary {
     my ($self, $reporter) = @_;
     my $name  = $self->{ name };
     my $args  = $self->{ args }  || '';
     my $about = $self->{ about } || '';
-    $args = " <$args>" if length $args;
+    if (length $args) {
+        $args =~ s/\s+/> </g;
+        $args = " <$args>";
+    }
     return $reporter
         ? $reporter->option( $name.$args, $about )
         : sprintf('--%-20s %s', $name.$args, $about);
