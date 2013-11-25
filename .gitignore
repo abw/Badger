@@ -5,5 +5,7 @@
 /t/log/logs/
 t/codec/data/testrun.ts
 *.tar.gz
-
+MYMETA.json
+MYMETA.yml
+Makefile.old
 
