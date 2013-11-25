@@ -32,6 +32,11 @@ L<http://github.com/abw/Template-TT2> and L<http://github.com/abw/Template-TT3>.
 Fixed a bug in the L<auto_can|Badger::Class::Methods/auto_can()> feature
 of L<Badger::Class::Methods> which prevented it from working with subclasses.
 
+Added L<Badger::Comparable> and L<Badger::Duration>.
+
+Added L<plurality()|Badger::Utils/plurality()> and 
+L<inflect()|Badger::Utils/inflect()> to L<Badger::Utils>.
+
 =head2 Version 0.09 - 8th February 2012
 
 Added L<Badger::Codec::Timestamp>. Changed L<Badger::Timestamp> to numify
@@ -48,8 +53,6 @@ L<Badger::Filesystem::Path>.
 Added documentation for various methods that was missing.  Temporary 
 disabled the Pod::Coverage tests on AUTOMATED_TESTING systems.  We know 
 there's still stuff to do.
-
-=head2 Version 0.09 - Not Yet Released
 
 Added SLASH to Badger::Constants
 
