@@ -34,6 +34,11 @@ of L<Badger::Class::Methods> which prevented it from working with subclasses.
 
 Added no_config() method to L<Badger::Hub>.
 
+Added L<Badger::Comparable> and L<Badger::Duration>.
+
+Added L<plurality()|Badger::Utils/plurality()> and 
+L<inflect()|Badger::Utils/inflect()> to L<Badger::Utils>.
+
 =head2 Version 0.09 - 8th February 2012
 
 Added L<Badger::Codec::Timestamp>. Changed L<Badger::Timestamp> to numify

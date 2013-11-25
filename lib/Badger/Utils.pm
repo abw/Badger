@@ -17,7 +17,7 @@ use warnings;
 use base 'Badger::Exporter';
 use File::Path;
 use Scalar::Util qw( blessed );
-use Badger::Constants 'HASH PKG DELIMITER BLANK';
+use Badger::Constants 'HASH ARRAY PKG DELIMITER BLANK';
 use Badger::Debug 
     import  => ':dump',
     default => 0;
@@ -50,6 +50,7 @@ our $HELPERS  = {       # keep this compact in case we don't need to use it
                             lock_hash unlock_hash hash_seed',
     'Badger::Timestamp' => 'TS Timestamp Now',
     'Badger::Logic'     => 'LOGIC Logic',
+    'Badger::Duration'  => 'DURATION Duration',
 };
 our $DELEGATES;         # fill this from $HELPERS on demand
 our $RANDOM_NAME_LENGTH = 32;
@@ -59,7 +60,7 @@ our $TEXT_WRAP_WIDTH    = 78;
 __PACKAGE__->export_any(qw(
     UTILS blessed is_object numlike textlike params self_params plural 
     odd_params xprintf dotid random_name camel_case CamelCase wrap
-    permute_fragments
+    permute_fragments plurality inflect
 ));
 
 __PACKAGE__->export_fail(\&_export_fail);
@@ -146,21 +147,6 @@ sub odd_params {
     }
 }
     
-
-sub plural {
-    my $name = shift;
-
-    if ($name =~ /(ss|sh|ch|x)$/) {
-        $name .= 'es';
-    }
-    elsif ($name =~ s/([^aeiou])y$//) {
-        $name .= $1.'ies';
-    }
-    elsif ($name =~ /([^s\d\W])$/) {
-        $name .= 's';
-    }
-    return $name;
-}
 
 sub module_file {
     my $file = shift;
@@ -319,9 +305,62 @@ sub permute_fragments {
         : \@outputs;
 }
 
+#-----------------------------------------------------------------------------
+# pluralisation and inflection
+#-----------------------------------------------------------------------------
+
+sub plural {
+    my $name = shift;
+
+    if ($name =~ /(ss|sh|ch|x)$/) {
+        $name .= 'es';
+    }
+    elsif ($name =~ s/([^aeiou])y$//) {
+        $name .= $1.'ies';
+    }
+    elsif ($name =~ /([^s\d\W])$/) {
+        $name .= 's';
+    }
+    return $name;
+}
+
+sub plurality {
+    my $n     = shift || 0;
+    my @items = map { permute_fragments($_) } 
+                (@_ == 1 && ref $_[0] eq ARRAY)
+                ? @{ $_[0] }
+                : @_;
+
+    # if the user specifies a single word then we pluralise it for them,
+    # assuming that 0 items are plural, 1 is singular, and > 1 is plural
+    if (@items == 1) {
+        my $plural = plural($items[0]);
+        unshift(@items, $plural);       # 0 whatevers
+        push(@items, $plural);          # n whatevers (where n > 1)
+    }
+
+    die "$n is not a number\n" unless numlike($n);
+    my $i = $n > $#items ? $#items : $n;
+    $i    = 0 if $i < 0;
+
+    return $items[$i];
+}
+
+sub inflect {
+    my $n = shift || 0;
+    my $i = shift;
+    my $f = shift || '%s %s';
+    my $z = @_ ? shift : 'no';
+    return xprintf(
+        $f, ($n or $z), plurality($n, $i)
+    );
+}
+
+
 sub _debug {
     print STDERR @_;
 }
+
 
 1;
 
@@ -370,8 +409,10 @@ L<Digest::MD5> Perl modules.
 It also does the same for functions and constants defined in the Badger 
 modules L<Badger::Timestamp> (L<TS|Badger::Timestamp/TS>,
 L<Timestamp()|Badger::Timestamp/Timestamp()> and
-L<Now()|Badger::Timestamp/Now()>) and L<Badger::Logic>
-(L<LOGIC|Badger::Logic/LOGIC> and L<Logic()|Badger::Logic/Logic()>).
+L<Now()|Badger::Timestamp/Now()>), L<Badger::Logic>
+(L<LOGIC|Badger::Logic/LOGIC> and L<Logic()|Badger::Logic/Logic()>) and
+L<Badger::Duration> (L<DURATION|Badger::Duration/DURATION> and 
+L<Duration()|Badger::Duration/Duration()>).
 
 For example:
 
@@ -537,6 +578,57 @@ difficulties of correctly pluralising English, and details of the
 implementation of L<Lingua::EN::Inflect>, see Damian's paper "An Algorithmic
 Approach to English Pluralization" at
 L<http://www.csse.monash.edu.au/~damian/papers/HTML/Plurals.html>
+
+=head2 plurality($n, $noun)
+
+This function can be used to construct the correct singular or plural form
+for a given number, C<$n>, of a noun, C<$noun> in the English language.
+For nouns that pluralise regularly (i.e. via the quick-and-dirty L<plural()> 
+function), the following is sufficient:
+
+    plurality(0, 'package');      # packages
+    plurality(1, 'package');      # package
+    plurality(2, 'package');      # packages
+
+For nouns that don't pluralise regularly, or where more complicated phrases
+should be constructed, the alternates for 0, 1 and 2 or more items can be
+specified in the format expected by L<permute_fragments()>.
+
+    plurality($n, 'women|woman|women');     # 0 women, 1 woman, 2 women
+    plurality($n, 'wo(men|man|men');        # optimised form
+
+=head2 inflect($n, $noun, $format, $none_word)
+
+This uses the C<plurality()> function to construct an 
+appropriate string listing the number C<$n> of C<$noun> items.
+
+    inflect(0, 'package');      # no packages
+    inflect(1, 'package');      # 1 package
+    inflect(2, 'package');      # 2 packages
+
+Or:
+
+    inflect($n, 'wo(men|man|men');
+
+The third optional argument can be used to specify a format string for 
+L<xprintf> to generate the string.  The default value is C<%s %s>, expecting
+the number (or word 'no') as the first parameter, followed by the relevant
+noun as the second.
+
+    inflect($n, 'item', 'There are <b>%s</b> %s in your basket');
+
+The fourth optional argument can be used to provide a word other than 'no'
+to be used when C<$n> is zero.
+
+    inflect(
+        $n, 'item', 
+        'You have %s %s in your basket', 
+        'none, none more'
+    );
+
+Please note that this function is intentionally limited.  It's sufficient to 
+generate simple headings, summary lines, etc., but isn't intended to be
+comprehensive or work in languages other than English.
 
 =head2 module_file($name)
 
