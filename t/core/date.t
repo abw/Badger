@@ -15,6 +15,7 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test 
+    skip   => 'Still in development',
     tests  => 16, 
     debug  => 'Badger::Date',
     args   => \@ARGV;
