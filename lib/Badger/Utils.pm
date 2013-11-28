@@ -29,28 +29,29 @@ use constant {
     LOADED => 2,
 };
 
-our $VERSION  = 0.01;
-#our $DEBUG    = 0 unless defined $DEBUG;
+our $VERSION  = 0.02;
 our $ERROR    = '';
 our $WARN     = sub { warn @_ };  # for testing - see t/core/utils.t
 our $MESSAGES = { };
 our $HELPERS  = {       # keep this compact in case we don't need to use it
-    'Digest::MD5'       => 'md5 md5_hex md5_base64',
-    'Scalar::Util'      => 'blessed dualvar isweak readonly refaddr reftype 
-                            tainted weaken isvstring looks_like_number 
-                            set_prototype',
-    'List::Util'        => 'first max maxstr min minstr reduce shuffle sum',
-    'List::MoreUtils'   => 'any all none notall true false firstidx 
-                            first_index lastidx last_index insert_after 
-                            insert_after_string apply after after_incl before 
-                            before_incl indexes firstval first_value lastval 
-                            last_value each_array each_arrayref pairwise 
-                            natatime mesh zip uniq minmax',
-    'Hash::Util'        => 'lock_keys unlock_keys lock_value unlock_value
-                            lock_hash unlock_hash hash_seed',
-    'Badger::Timestamp' => 'TS Timestamp Now',
-    'Badger::Logic'     => 'LOGIC Logic',
-    'Badger::Duration'  => 'DURATION Duration',
+    'Digest::MD5'        => 'md5 md5_hex md5_base64',
+    'Scalar::Util'       => 'blessed dualvar isweak readonly refaddr reftype 
+                             tainted weaken isvstring looks_like_number 
+                             set_prototype',
+    'List::Util'         => 'first max maxstr min minstr reduce shuffle sum',
+    'List::MoreUtils'    => 'any all none notall true false firstidx 
+                             first_index lastidx last_index insert_after 
+                             insert_after_string apply after after_incl before 
+                             before_incl indexes firstval first_value lastval 
+                             last_value each_array each_arrayref pairwise 
+                             natatime mesh zip uniq minmax',
+    'Hash::Util'         => 'lock_keys unlock_keys lock_value unlock_value
+                             lock_hash unlock_hash hash_seed',
+    'Badger::Filesystem' => 'FS File Dir VFS',
+    'Badger::Timestamp'  => 'TIMESTAMP TS Timestamp Now',
+    'Badger::Logic'      => 'LOGIC Logic',
+    'Badger::Duration'   => 'DURATION Duration',
+    'Badger::URL'        => 'URL',
 };
 our $DELEGATES;         # fill this from $HELPERS on demand
 our $RANDOM_NAME_LENGTH = 32;

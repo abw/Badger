@@ -185,7 +185,7 @@ sub split_timestamp {
     $self->{ timestamp } = '' unless defined $self->{ timestamp };
 
     # TODO: this regex should be tweaked to make time (and/or date parts) optional
-    (@$self{ @YMDHMS } = map { 0+$_ } $self->{ timestamp } =~ m/$STAMP_REGEX/o)
+    (@$self{ @YMDHMS } = map { 0+($_||0) } $self->{ timestamp } =~ m/$STAMP_REGEX/o)
         || return $self->error_msg( bad_timestamp => $self->{ timestamp } );
 }
 

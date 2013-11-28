@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Debug modules => 'Badger::Utils';
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural permute_fragments';
 use Badger::Test 
-    tests => 64,
+    tests => 65,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -223,6 +223,16 @@ use Badger::Utils 'Logic';
 
 my $logic = Logic('cheese and biscuits');
 ok( blessed $logic && $logic->isa('Badger::Logic'), 'Logic returned a Badger::Logic object' );
+
+
+#-----------------------------------------------------------------------
+# Import from Badger::Filesystem
+#-----------------------------------------------------------------------
+
+use Badger::Utils 'Bin';
+
+my $bin = Bin;
+ok( blessed $bin && $bin->isa('Badger::Filesystem::Directory'), "Bin is $bin" );
 
 
 
