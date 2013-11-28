@@ -39,6 +39,12 @@ Added L<Badger::Comparable> and L<Badger::Duration>.
 Added L<plurality()|Badger::Utils/plurality()> and 
 L<inflect()|Badger::Utils/inflect()> to L<Badger::Utils>.
 
+Added additional delegate hooks to L<Badger::Utils> to load utility functions
+in L<Badger::Filesystem>, L<Badger::Timestamp>, L<Badger::Duration>,
+L<Badger::Logic> and L<Badger::URL>.
+
+Squashed a non-numerical warning in Badger::Timestamp.
+
 =head2 Version 0.09 - 8th February 2012
 
 Added L<Badger::Codec::Timestamp>. Changed L<Badger::Timestamp> to numify
@@ -342,7 +348,7 @@ Andy Wardley  E<lt>abw@wardley.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2008-2012 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2008-2013 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

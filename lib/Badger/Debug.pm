@@ -359,7 +359,10 @@ sub dump_hash {
     return "\{\n" 
         . join( ",\n", 
                 map { "$pad$PAD$_ => " . _dump_data($self, $hash->{$_}, $indent + 1) }
-                sort grep { $keys ? $keys->{ $_ } : 1 } keys %$hash 
+                sort 
+                grep { $keys ? $keys->{ $_ } : 1 } 
+                grep { ! /^_/ }
+                keys %$hash 
            ) 
         . "\n$pad}";
 }
