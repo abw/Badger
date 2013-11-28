@@ -36,6 +36,12 @@ CHANGES
 
     Added plurality() and inflect() to Badger::Utils.
 
+    Added additional delegate hooks to Badger::Utils to load utility
+    functions in Badger::Filesystem, Badger::Timestamp, Badger::Duration,
+    Badger::Logic and Badger::URL.
+
+    Squashed a non-numerical warning in Badger::Timestamp.
+
   Version 0.09 - 8th February 2012
     Added Badger::Codec::Timestamp. Changed Badger::Timestamp to numify
     values to remove leading zeroes (e.g. 2012/04/20 now yields a month of 4
@@ -287,7 +293,7 @@ AUTHOR
     Andy Wardley <abw@wardley.org>
 
 COPYRIGHT
-    Copyright (C) 2008-2012 Andy Wardley. All Rights Reserved.
+    Copyright (C) 2008-2013 Andy Wardley. All Rights Reserved.
 
     This module is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.
