@@ -47,7 +47,7 @@ our $HELPERS  = {       # keep this compact in case we don't need to use it
                              natatime mesh zip uniq minmax',
     'Hash::Util'         => 'lock_keys unlock_keys lock_value unlock_value
                              lock_hash unlock_hash hash_seed',
-    'Badger::Filesystem' => 'FS File Dir VFS',
+    'Badger::Filesystem' => 'FS VFS File Dir Bin',
     'Badger::Timestamp'  => 'TIMESTAMP TS Timestamp Now',
     'Badger::Logic'      => 'LOGIC Logic',
     'Badger::Duration'   => 'DURATION Duration',
@@ -383,7 +383,6 @@ Badger::Utils - various utility functions
             print "self is blessed\n";
         }
     }
-    
 
 =head1 DESCRIPTION
 
@@ -407,13 +406,41 @@ C<Badger::Utils> can automatically load and export functions defined in the
 L<Scalar::Util>, L<List::Util>, L<List::MoreUtils>, L<Hash::Util> and
 L<Digest::MD5> Perl modules.
 
-It also does the same for functions and constants defined in the Badger 
-modules L<Badger::Timestamp> (L<TS|Badger::Timestamp/TS>,
+It also does the same for functions and constants defined in the following
+Badger modules:
+
+=over 4
+
+=item L<Badger::Duration> 
+
+L<DURATION|Badger::Duration/DURATION> and 
+L<Duration()|Badger::Duration/Duration()>.
+
+=item L<Badger::Filesystem>
+
+L<FS|Badger::Filesystem/FS>, 
+L<VFS|Badger::Filesystem/VFS>, 
+L<File()|Badger::Filesystem/File>, 
+L<Dir()|Badger::Filesystem/Dir> and
+L<Bin()|Badger::Filesystem/Bin>.
+
+=item L<Badger::Logic>
+
+L<LOGIC|Badger::Logic/LOGIC> and 
+L<Logic()|Badger::Logic/Logic()>.
+
+=item L<Badger::Timestamp>
+
+L<TIMESTAMP|Badger::Timestamp/TIMESTAMP>, 
+L<TS|Badger::Timestamp/TS>, 
 L<Timestamp()|Badger::Timestamp/Timestamp()> and
-L<Now()|Badger::Timestamp/Now()>), L<Badger::Logic>
-(L<LOGIC|Badger::Logic/LOGIC> and L<Logic()|Badger::Logic/Logic()>) and
-L<Badger::Duration> (L<DURATION|Badger::Duration/DURATION> and 
-L<Duration()|Badger::Duration/Duration()>).
+L<Now()|Badger::Timestamp/Now()>.
+
+=item L<Badger::URL>
+
+L<URL()|Badger::URL/URL()>.
+
+=back
 
 For example:
 
@@ -717,7 +744,7 @@ Andy Wardley L<http://wardley.org/>
 
 =head1 COPYRIGHT
 
-Copyright (C) 1996-2009 Andy Wardley.  All Rights Reserved.
+Copyright (C) 1996-2013 Andy Wardley.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
