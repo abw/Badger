@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Debug modules => 'Badger::Utils';
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural permute_fragments';
 use Badger::Test 
-    tests => 65,
+    tests => 80,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -311,6 +311,96 @@ sub test_permute {
         fail("$input did not permute expected value: $expect");
     }
 }
+
+
+#-----------------------------------------------------------------------------
+# test hash_each() and list_each
+#-----------------------------------------------------------------------------
+
+my @each;
+
+use Badger::Utils 'hash_each list_each';
+
+hash_each(
+    { a => 10, b => 20 },
+    sub {
+        my ($hash, $key, $value) = @_;
+        push(@each, "$key:$value");
+    }
+);
+is( join(', ', sort @each), "a:10, b:20", 'hash_each()' );
+
+@each = ();
+
+list_each(
+    [ 30, 40, 50 ],
+    sub {
+        my ($list, $index, $value) = @_;
+        push(@each, "$index:$value");
+    }
+);
+is( join(', ', sort @each), "0:30, 1:40, 2:50", 'list_each()' );
+
+#-----------------------------------------------------------------------------
+# test split_to_list()
+#-----------------------------------------------------------------------------
+
+use Badger::Utils 'split_to_list';
+
+is( 
+    join(', ', @{ split_to_list('a b c') }), 
+    'a, b, c', 
+    'split_to_list("a b c")'
+);
+
+is( 
+    join(' + ', @{ split_to_list('a, b,c') }), 
+    'a + b + c', 
+    'split_to_list("a, b,c")'
+);
+
+is( 
+    join(', ', @{ split_to_list([qw(a b c)]) }), 
+    'a, b, c', 
+    'split_to_list([qw(a b c)])'
+);
+
+#-----------------------------------------------------------------------------
+# test extend()
+#-----------------------------------------------------------------------------
+
+use Badger::Utils 'extend';
+
+my $one = { a => 10 };
+my $two = { b => 20 };
+extend($one, $two);
+
+is( $one->{ b }, 20, 'extend($one, $two)');
+
+my $combo = extend(
+    { },
+    $one,
+    $two,
+    { c => 30 }
+);
+is( $combo->{ a }, 10, 'extend(...) a=10');
+is( $combo->{ b }, 20, 'extend(...) b=20');
+is( $combo->{ c }, 30, 'extend(...) c=30');
+
+#-----------------------------------------------------------------------------
+# uri methods
+#-----------------------------------------------------------------------------
+
+use Badger::Utils 'join_uri resolve_uri';
+
+is( join_uri('foo',   'bar'), 'foo/bar', 'join_uri("foo", "bar")');
+is( join_uri('foo/',  'bar'), 'foo/bar', 'join_uri("foo/", "bar")');
+is( join_uri('foo',  '/bar'), 'foo/bar', 'join_uri("foo", "/bar")');
+is( join_uri('foo/', '/bar'), 'foo/bar', 'join_uri("foo/", "/bar")');
+
+is( resolve_uri('foo',  'bar'), 'foo/bar', 'resolve_uri("foo", "bar")');
+is( resolve_uri('foo', '/bar'), '/bar',    'resolve_uri("foo", "/bar")');
+
 
 __END__
 

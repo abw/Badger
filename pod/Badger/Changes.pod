@@ -36,8 +36,15 @@ Added no_config() method to L<Badger::Hub>.
 
 Added L<Badger::Comparable> and L<Badger::Duration>.
 
-Added L<plurality()|Badger::Utils/plurality()> and 
-L<inflect()|Badger::Utils/inflect()> to L<Badger::Utils>.
+Added L<plurality()|Badger::Utils/plurality()>, 
+L<inflect()|Badger::Utils/inflect()>,
+L<list_each()|Badger::Utils/list_each()>,
+L<hash_each()|Badger::Utils/hash_each()>,
+L<extend()|Badger::Utils/extend()>,
+L<split_to_list()|Badger::Utils/split_to_list()>,
+L<join_uri()|Badger::Utils/join_uri()> and
+L<resolve_uri()|Badger::Utils/resolve_uri()>,
+to L<Badger::Utils>.
 
 Added additional delegate hooks to L<Badger::Utils> to load utility functions
 in L<Badger::Filesystem>, L<Badger::Timestamp>, L<Badger::Duration>,

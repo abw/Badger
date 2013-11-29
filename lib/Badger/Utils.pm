@@ -61,7 +61,8 @@ our $TEXT_WRAP_WIDTH    = 78;
 __PACKAGE__->export_any(qw(
     UTILS blessed is_object numlike textlike params self_params plural 
     odd_params xprintf dotid random_name camel_case CamelCase wrap
-    permute_fragments plurality inflect
+    permute_fragments plurality inflect split_to_list extend
+    list_each hash_each join_uri resolve_uri
 ));
 
 __PACKAGE__->export_fail(\&_export_fail);
@@ -362,6 +363,84 @@ sub _debug {
     print STDERR @_;
 }
 
+#-----------------------------------------------------------------------------
+# List utilities
+#-----------------------------------------------------------------------------
+
+sub list_each {
+    my ($list, $fn) = @_;
+    my $n = 0;
+
+    for (@$list) {
+        $fn->($list, $n++, $_);
+    }
+
+    return $list;
+}
+
+sub split_to_list {
+    my $list = shift;
+    $list = [ split(DELIMITER, $list) ]
+        unless ref $list eq ARRAY;
+    return $list;
+}
+
+#-----------------------------------------------------------------------------
+# Hash utilities
+#-----------------------------------------------------------------------------
+
+sub hash_each {
+    my ($hash, $fn) = @_;
+
+    while (my ($key, $value) = each %$hash) {
+        $fn->($hash, $key, $value);
+    }
+
+    return $hash;
+}
+
+
+sub extend {
+    my $hash = shift;
+    my $more;
+
+    while (@_) {
+        if (! $_[0]) {
+            # ignore undefined/false values
+            shift;
+            next;
+        }
+        elsif (ref $_[0] eq HASH) {
+            $more = shift;
+        }
+        else {
+            $more = params(@_);
+            @_    = ();
+        }
+        @$hash{ keys %$more } = values %$more;
+    }
+    
+    return $hash;
+}
+
+
+#-----------------------------------------------------------------------------
+# Simple URI manipulation
+#-----------------------------------------------------------------------------
+
+sub join_uri {
+    my $uri = join('/', @_);
+    $uri =~ s{/+}{/}g;
+    return $uri;
+}
+
+sub resolve_uri {
+    my $base = shift;
+    my $rel  = join_uri(@_);
+    return ($rel =~ m{^/})
+        ? $rel
+        : join_uri($base, $rel);
+}
 
 1;
 
@@ -400,23 +479,44 @@ L<Digest::MD5>.
 These modules are loaded on demand so there's no overhead incurred if you
 don't use them (other than a lookup table so we know where to find them).
 
+=head1 EXPORTABLE CONSTANTS
+
+=head2 UTILS
+
+Exports a C<UTILS> constant which contains the name of the C<Badger::Utils>
+class.  
+
 =head1 EXPORTABLE FUNCTIONS
+
+=head2 Standard Perl Utility Modules
 
 C<Badger::Utils> can automatically load and export functions defined in the
 L<Scalar::Util>, L<List::Util>, L<List::MoreUtils>, L<Hash::Util> and
 L<Digest::MD5> Perl modules.
 
-It also does the same for functions and constants defined in the following
-Badger modules:
+    use Badger::Utils 'blessed max md5_hex'
 
-=over 4
+    # a rather contrived example
+    if (blessed $some_ref) {
+        print md5_hex(max @some_list);
+    }
 
-=item L<Badger::Duration> 
+=head2 Other Badger Modules
+
+C<Badger::Utils> can also automatically load and export functions and 
+constants defined in various other Badger modules.  For example, you can use 
+C<Badger::Utils> to load the L<Now()|Badger::Timestamp/Now()> function 
+from L<Badger::Timestamp>.
+
+    use Badger::Utils 'Now';
+    print Now->year;            # prints the current year
+
+=head3 L<Badger::Duration> 
 
 L<DURATION|Badger::Duration/DURATION> and 
 L<Duration()|Badger::Duration/Duration()>.
 
-=item L<Badger::Filesystem>
+=head3 L<Badger::Filesystem>
 
 L<FS|Badger::Filesystem/FS>, 
 L<VFS|Badger::Filesystem/VFS>, 
@@ -424,139 +524,108 @@ L<File()|Badger::Filesystem/File>,
 L<Dir()|Badger::Filesystem/Dir> and
 L<Bin()|Badger::Filesystem/Bin>.
 
-=item L<Badger::Logic>
+=head3 L<Badger::Logic>
 
 L<LOGIC|Badger::Logic/LOGIC> and 
 L<Logic()|Badger::Logic/Logic()>.
 
-=item L<Badger::Timestamp>
+=head3 L<Badger::Timestamp>
 
 L<TIMESTAMP|Badger::Timestamp/TIMESTAMP>, 
 L<TS|Badger::Timestamp/TS>, 
 L<Timestamp()|Badger::Timestamp/Timestamp()> and
 L<Now()|Badger::Timestamp/Now()>.
 
-=item L<Badger::URL>
+=head3 L<Badger::URL>
 
 L<URL()|Badger::URL/URL()>.
 
 =back
 
-For example:
+=head2 Text Utility Functions
 
-    use Badger::Utils 'Now';
-    print Now->year;            # prints the current year
+=head3 alternates($text)
 
-The following exportable functions are also defined in C<Badger::Utils>
+This function is used internally by the L<permute_fragments()> function. It
+returns a reference to a list containing the alternates split from C<$text>.
 
-=head2 UTILS
+    alternates('foo|bar');          # returns ['foo','bar']
+    alternates('foo');              # returns ['','bar']
 
-Exports a C<UTILS> constant which contains the name of the C<Badger::Utils>
-class.  
+If the C<$text> doesn't contain the C<|> character then it is assumed to be
+an optional item.  A list reference is returned containing the empty string
+as the first element and the original C<$text> string as the second.
 
-=head2 is_object($class,$object)
+=head3 camel_case($string) / CamelCase($string)
 
-Returns true if the C<$object> is a blessed reference which isa C<$class>.
+Converts a lower case string where words are separated by underscores (e.g.
+C<like_this_example>) into CamelCase where each word is capitalised and words
+are joined together (e.g. C<LikeThisExample>).
 
-    use Badger::Filesystem 'FS';
-    use Badger::Utils 'is_object';
-    
-    if (is_object( FS => $object )) {       # FS == Badger::Filesystem
-        print $object, ' isa ', FS, "\n";
-    }
+According to Perl convention (and personal preference), we use the lower case
+form wherever possible. However, Perl's convention also dictates that module
+names should be in CamelCase.  This function performs that conversion.
 
-=head2 textlike($item)
+=head3 dotid($text)
 
-Returns true if C<$item> is a non-reference scalar or an object that
-has an overloaded stringification operator.
+The function returns a lower case representation of the text passed as
+an argument with all non-word character sequences replaced with dots.
 
-    use Badger::Filesystem 'File';
-    use Badger::Utils 'textlike';
-    
-    # Badger::Filesystem::File objects have overloaded string operator
-    my $file = File('example.txt'); 
-    print $file;                                # example.txt
-    print textlike $file ? 'ok' : 'not ok';     # ok
+    print dotid('Foo::Bar');            # foo.bar
 
-=head2 numlike($item)
+=head3 inflect($n, $noun, $format, $none_word)
+
+This uses the C<plurality()> function to construct an 
+appropriate string listing the number C<$n> of C<$noun> items.
+
+    inflect(0, 'package');      # no packages
+    inflect(1, 'package');      # 1 package
+    inflect(2, 'package');      # 2 packages
+
+Or:
+
+    inflect($n, 'wo(men|man|men');
+
+The third optional argument can be used to specify a format string for 
+L<xprintf> to generate the string.  The default value is C<%s %s>, expecting
+the number (or word 'no') as the first parameter, followed by the relevant
+noun as the second.
+
+    inflect($n, 'item', 'There are <b>%s</b> %s in your basket');
+
+The fourth optional argument can be used to provide a word other than 'no'
+to be used when C<$n> is zero.
+
+    inflect(
+        $n, 'item', 
+        'You have %s %s in your basket', 
+        'none, none more'
+    );
+
+Please note that this function is intentionally limited.  It's sufficient to 
+generate simple headings, summary lines, etc., but isn't intended to be
+comprehensive or work in languages other than English.
+
+=head3 numlike($item)
 
 This is an alias to the C<looks_like_number()> function defined in 
 L<Scalar::Util>.  
 
-=head2 params(@args)
+=head3 permute_fragments($text)
 
-Method to coerce a list of named parameters to a hash array reference.  If the
-first argument is a reference to a hash array then it is returned.  Otherwise
-the arguments are folded into a hash reference.
+This function permutes any optional or alternate fragments embedded in 
+parentheses. For example, C<Badger(X)> is permuted as (C<Badger>, C<BadgerX>)
+and C<Badger(X|Y)> is permuted as (C<BadgerX>, C<BadgerY>).
 
-    use Badger::Utils 'params';
-    
-    params({ a => 10 });            # { a => 10 }
-    params( a => 10 );              # { a => 10 }
+    permute_fragments('Badger(X)');     # Badger, BadgerX
+    permute_fragments('Badger(X|Y)');   # BadgerX, BadgerY
 
-Pro Tip: If you're getting warnings about an "Odd number of elements in
-anonymous hash" then try enabling debugging in C<Badger::Utils>. To do this,
-add the following to the start of your program before you've loaded
-C<Badger::Utils>:
+Multiple fragments may be embedded. They are expanded in order from left to
+right, with the rightmost fragments changing most often.
 
-    use Badger::Debug
-        modules => 'Badger::Utils'
+    permute_fragments('A(1|2):B(3|4)')  # A1:B3, A1:B4, A2:B3, A2:B4
 
-When debugging is enabled in C<Badger::Utils> you'll get a full stack 
-backtrace showing you where the subroutine was called from.  e.g.
-
-    Badger::Utils::self_params() called with an odd number of arguments: <undef>
-    #1: Called from Foo::bar in /path/to/Foo/Bar.pm at line 210
-    #2: Called from Wam::bam in /path/to/Wam/Bam.pm at line 420
-    #3: Called from main in /path/to/your/script.pl at line 217
-
-=head2 self_params(@args)
-
-Similar to L<params()> but also expects a C<$self> reference at the start of
-the argument list.
-
-    use Badger::Utils 'self_params';
-    
-    sub example {
-        my ($self, $params) = self_params(@_);
-        # do something...
-    }
-
-If you enable debugging in C<Badger::Utils> then you'll get a stack backtrace
-in the event of an odd number of parameters being passed to this function.
-See L<params()> for further details.
-
-=head2 odd_params(@_)
-
-This is an internal function used by L<params()> and L<self_params()> to 
-report any attempt to pass an odd number of arguments to either of them.
-It can be enabled by setting C<$Badger::Utils::DEBUG> to a true value.
-
-    use Badger::Utils 'params';
-    $Badger::Utils::DEBUG = 1;
-    
-    my $hash = params( foo => 10, 20 );    # oops!
-
-The above code will raise a warning showing the arguments passed and a 
-stack backtrace, allowing you to easily track down and fix the offending
-code.  Apart from obvious typos like the above, this is most likely to 
-happen if you call a function or methods that returns an empty list.  e.g.
-
-    params(
-        foo => 10,
-        bar => get_the_bar_value(),
-    );
-
-If C<get_the_bar_value()> returns an empty list then you'll end up with an
-odd number of elements being passed to C<params()>.  You can correct this
-by providing C<undef> as an alternative value.  e.g.
-
-    params(
-        foo => 10,
-        bar => get_the_bar_value() || undef,
-    );
-
-=head2 plural($noun)
+=head3 plural($noun)
 
 The function makes a very naive attempt at pluralising the singular noun word
 passed as an argument. 
@@ -607,7 +676,7 @@ implementation of L<Lingua::EN::Inflect>, see Damian's paper "An Algorithmic
 Approach to English Pluralization" at
 L<http://www.csse.monash.edu.au/~damian/papers/HTML/Plurals.html>
 
-=head2 plurality($n, $noun)
+=head3 plurality($n, $noun)
 
 This function can be used to construct the correct singular or plural form
 for a given number, C<$n>, of a noun, C<$noun> in the English language.
@@ -625,57 +694,29 @@ specified in the format expected by L<permute_fragments()>.
     plurality($n, 'women|woman|women');     # 0 women, 1 woman, 2 women
     plurality($n, 'wo(men|man|men');        # optimised form
 
-=head2 inflect($n, $noun, $format, $none_word)
+=head3 random_name($length,@data)
 
-This uses the C<plurality()> function to construct an 
-appropriate string listing the number C<$n> of C<$noun> items.
+Generates a random name of maximum length C<$length> using any additional 
+seeding data passed as C<@args>.  If C<$length> is undefined then the default
+value in C<$RANDOM_NAME_LENGTH> (32) is used.
 
-    inflect(0, 'package');      # no packages
-    inflect(1, 'package');      # 1 package
-    inflect(2, 'package');      # 2 packages
+    my $name = random_name();
+    my $name = random_name(64);
 
-Or:
+=head3 textlike($item)
 
-    inflect($n, 'wo(men|man|men');
+Returns true if C<$item> is a non-reference scalar or an object that
+has an overloaded stringification operator.
 
-The third optional argument can be used to specify a format string for 
-L<xprintf> to generate the string.  The default value is C<%s %s>, expecting
-the number (or word 'no') as the first parameter, followed by the relevant
-noun as the second.
+    use Badger::Filesystem 'File';
+    use Badger::Utils 'textlike';
+    
+    # Badger::Filesystem::File objects have overloaded string operator
+    my $file = File('example.txt'); 
+    print $file;                                # example.txt
+    print textlike $file ? 'ok' : 'not ok';     # ok
 
-    inflect($n, 'item', 'There are <b>%s</b> %s in your basket');
-
-The fourth optional argument can be used to provide a word other than 'no'
-to be used when C<$n> is zero.
-
-    inflect(
-        $n, 'item', 
-        'You have %s %s in your basket', 
-        'none, none more'
-    );
-
-Please note that this function is intentionally limited.  It's sufficient to 
-generate simple headings, summary lines, etc., but isn't intended to be
-comprehensive or work in languages other than English.
-
-=head2 module_file($name)
-
-Returns the module name passed as an argument as a relative filesystem path
-suitable for feeding into C<require()>
-
-    print module_file('My::Module');     # My/Module.pm
-
-=head2 camel_case($string) / CamelCase($string)
-
-Converts a lower case string where words are separated by underscores (e.g.
-C<like_this_example>) into CamelCase where each word is capitalised and words
-are joined together (e.g. C<LikeThisExample>).
-
-According to Perl convention (and personal preference), we use the lower case
-form wherever possible. However, Perl's convention also dictates that module
-names should be in CamelCase.  This function performs that conversion.
-
-=head2 wrap($text, $width, $indent)
+=head3 wrap($text, $width, $indent)
 
 Simple subroutine to wrap C<$text> to a fixed C<$width>, applying an optional
 indent of C<$indent> spaces.  It uses a trivial algorithm which splits the 
@@ -688,14 +729,7 @@ newline break.  It must be specified as a separate whitespace delimited word.
 If anyone knows how to make L<Text::Wrap> handle this, or knows of a better
 solution then please let me know.
 
-=head2 dotid($text)
-
-The function returns a lower case representation of the text passed as
-an argument with all non-word character sequences replaced with dots.
-
-    print dotid('Foo::Bar');            # foo.bar
-
-=head2 xprintf($format,@args)
+=head3 xprintf($format,@args)
 
 A wrapper around C<sprintf()> which provides some syntactic sugar for 
 embedding positional parameters.
@@ -703,40 +737,214 @@ embedding positional parameters.
     xprintf('The <2> sat on the <1>', 'mat', 'cat');
     xprintf('The <1> costs <2:%.2f>', 'widget', 11.99);
 
-=head2 random_name($length,@data)
+=head2 Hash Utility Functions
 
-Generates a random name of maximum length C<$length> using any additional 
-seeding data passed as C<@args>.  If C<$length> is undefined then the default
-value in C<$RANDOM_NAME_LENGTH> (32) is used.
+=head3 extend($hash, $another_hash, $yet_another_hash, ...)
 
-    my $name = random_name();
-    my $name = random_name(64);
+This function merges the contents of several hash arrays into one.
+The first hash array will end up containing the keys and values of 
+all the others.
 
-=head2 permute_fragments($text)
+    my $one = { a => 10 };
+    my $two = { b => 20 };
+    extend($one, $two);     # $one now contains a and b
 
-This function permutes any optional or alternate fragments embedded in 
-parentheses. For example, C<Badger(X)> is permuted as (C<Badger>, C<BadgerX>)
-and C<Badger(X|Y)> is permuted as (C<BadgerX>, C<BadgerY>).
+If you want to create a new hash, simply pass an empty hash in as the 
+first argument.
 
-    permute('Badger(X)');           # Badger, BadgerX
-    permute('Badger(X|Y)');         # BadgerX, BadgerY
+    my $mixed = extend(
+        { },
+        $one.
+        $two
+    );
 
-Multiple fragments may be embedded. They are expanded in order from left to
-right, with the rightmost fragments changing most often.
+You can also extend a hash array with named parameters.
 
-    permute('A(1|2):B(3|4)')        # A1:B3, A1:B4, A2:B3, A2:B4
+    extend(
+        $mixed,
+        c => 30,
+        d => 40,        
+    );
 
-=head2 alternates($text)
+You can mix and match the two calling conventions as long as any hash 
+references come first.
 
-This function is used internally by the L<permute_fragments()> function. It
-returns a reference to a list containing the alternates split from C<$text>.
+    extend(
+        { },
+        $mixed,
+        $a,
+        $b,
+        c => 30,
+        d => 40,
+    );
 
-    alternates('foo|bar');          # returns ['foo','bar']
-    alternates('foo');              # returns ['','bar']
+=head3 hash_each($hash,$function)
 
-If the C<$text> doesn't contain the C<|> character then it is assumed to be
-an optional item.  A list reference is returned containing the empty string
-as the first element and the original C<$text> string as the second.
+Iterates over each key/value pair in the hash array referenced by the first 
+argument, C<$hash>, calling the function passed as the second argument, 
+C<$function>.
+
+The function is called with 3 arguments: a reference to the hash array, 
+the key of the current item and the value.
+
+    hash_each(
+        { a => 10, b => 20 }, 
+        sub {
+            my ($hash, $key, $value) = @_;
+            print "hash item $key is $value\n";
+        }
+    );
+
+=head2 List Utility Functions
+
+=head3 list_each($list,$function)
+
+Iterates over each item in the array referenced by the first argument, 
+C<$list>, calling the function passed as the second argument, C<$function>.
+
+The function is called with 3 arguments: a reference to the list, the 
+index of the current index (from 0 to size-1) and the item in the list
+at that index.
+
+    list_each(
+        [10,20,30], 
+        sub {
+            my ($list, $index, $item) = @_;
+            print "list item #$index is $item\n";
+        }
+    );
+
+=head3 split_to_list($list)
+
+This splits a string of words separated by whitespace (and/or commas) 
+into a list reference.  The following are all valid and equivalent:
+
+    my $list = split_to_list("foo bar baz");
+    my $list = split_to_list("foo,bar,baz");
+    my $list = split_to_list("foo, bar, baz");
+
+If the argument is already a list then it is returned unmodified.
+
+=head2 Object Utility Functions
+
+=head3 is_object($class,$object)
+
+Returns true if the C<$object> is a blessed reference which isa C<$class>.
+
+    use Badger::Filesystem 'FS';
+    use Badger::Utils 'is_object';
+    
+    if (is_object( FS => $object )) {       # FS == Badger::Filesystem
+        print $object, ' isa ', FS, "\n";
+    }
+
+=head2 Parameter Handling Functions
+
+=head3 params(@args)
+
+Method to coerce a list of named parameters to a hash array reference.  If the
+first argument is a reference to a hash array then it is returned.  Otherwise
+the arguments are folded into a hash reference.
+
+    use Badger::Utils 'params';
+    
+    params({ a => 10 });            # { a => 10 }
+    params( a => 10 );              # { a => 10 }
+
+Pro Tip: If you're getting warnings about an "Odd number of elements in
+anonymous hash" then try enabling debugging in C<Badger::Utils>. To do this,
+add the following to the start of your program before you've loaded
+C<Badger::Utils>:
+
+    use Badger::Debug
+        modules => 'Badger::Utils'
+
+When debugging is enabled in C<Badger::Utils> you'll get a full stack 
+backtrace showing you where the subroutine was called from.  e.g.
+
+    Badger::Utils::self_params() called with an odd number of arguments: <undef>
+    #1: Called from Foo::bar in /path/to/Foo/Bar.pm at line 210
+    #2: Called from Wam::bam in /path/to/Wam/Bam.pm at line 420
+    #3: Called from main in /path/to/your/script.pl at line 217
+
+=head3 self_params(@args)
+
+Similar to L<params()> but also expects a C<$self> reference at the start of
+the argument list.
+
+    use Badger::Utils 'self_params';
+    
+    sub example {
+        my ($self, $params) = self_params(@_);
+        # do something...
+    }
+
+If you enable debugging in C<Badger::Utils> then you'll get a stack backtrace
+in the event of an odd number of parameters being passed to this function.
+See L<params()> for further details.
+
+=head3 odd_params(@_)
+
+This is an internal function used by L<params()> and L<self_params()> to 
+report any attempt to pass an odd number of arguments to either of them.
+It can be enabled by setting C<$Badger::Utils::DEBUG> to a true value.
+
+    use Badger::Utils 'params';
+    $Badger::Utils::DEBUG = 1;
+    
+    my $hash = params( foo => 10, 20 );    # oops!
+
+The above code will raise a warning showing the arguments passed and a 
+stack backtrace, allowing you to easily track down and fix the offending
+code.  Apart from obvious typos like the above, this is most likely to 
+happen if you call a function or methods that returns an empty list.  e.g.
+
+    params(
+        foo => 10,
+        bar => get_the_bar_value(),
+    );
+
+If C<get_the_bar_value()> returns an empty list then you'll end up with an
+odd number of elements being passed to C<params()>.  You can correct this
+by providing C<undef> as an alternative value.  e.g.
+
+    params(
+        foo => 10,
+        bar => get_the_bar_value() || undef,
+    );
+
+=head2 URI Utility Functions
+
+The following functions are provided for very simple manipulation of 
+URI paths.  You should consider using the L<URI> module for anything 
+non-trivial.
+
+=head3 join_uri(frag1, frag2, etc)
+
+Joins the elements of a URI passed as arguments into a single URI.
+
+    use Contentity::Utils 'join_uri';
+    print join_uri('/foo', 'bar');     # /foo/bar
+
+=head3 resolve_uri(base, frag1, frag2, etc)
+
+The first argument is a base URI.  The remaining argument(s) are joined 
+(via L<join_uri()>) to construct a relative URI.  If the relative URI begins
+with C</> then it is considered absolute and is returned unchanged.  Otherwise
+it is appended to the base URI.
+
+    use Contentity::Utils 'resolve_uri';
+    print resolve_uri('/foo', 'bar/baz');     # /foo/bar/baz
+    print resolve_uri('/foo', '/bar/baz');    # /bar/baz
+
+=head2 Miscellanesou Utility Functions
+
+=head3 module_file($name)
+
+Returns the module name passed as an argument as a relative filesystem path
+suitable for feeding into C<require()>
+
+    print module_file('My::Module');     # My/Module.pm
 
 =head1 AUTHOR
 

@@ -34,7 +34,8 @@ CHANGES
 
     Added Badger::Comparable and Badger::Duration.
 
-    Added plurality() and inflect() to Badger::Utils.
+    Added plurality(), inflect(), list_each(), hash_each(), extend(),
+    split_to_list(), join_uri() and resolve_uri(), to Badger::Utils.
 
     Added additional delegate hooks to Badger::Utils to load utility
     functions in Badger::Filesystem, Badger::Timestamp, Badger::Duration,
