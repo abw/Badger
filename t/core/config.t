@@ -65,7 +65,7 @@ ok( $config, 'got config with nested data' );
 is( $config->get('yip'), 'pee', 'yippee' );
 is( $config->get('hoo'), 'ray', 'hooray' );
 is( $config->get('foo.bar.baz.0'), 'wig', 'wig' );
-is( $config->get('foo/bar/baz/1/wam'), 'bam', 'wam bam' );
+is( $config->get(['foo', 'bar','baz', 1, 'wam']), 'bam', 'wam bam' );
 is( $config->get('wibble', 'wobble'), 'wubble', 'wibble wobble' );
 
 
@@ -91,8 +91,8 @@ $config = Badger::Config->new(
 
 is( $config->get('user', 'name', 'given'), 'Arthur', 'Arthur' );
 is( $config->get('user.name.family'),      'Dent', 'Dent' );
-is( $config->get('user/email/0'),          'arthur@dent.org', 'arthur@dent.org' );
-is( $config->get('user email 1'),          'dent@heart-of-gold.com', 'dent@heart-of-gold.com' );
+is( $config->get(['user', 'email', '0']),     'arthur@dent.org', 'arthur@dent.org' );
+is( $config->get([qw(user email 1)]),      'dent@heart-of-gold.com', 'dent@heart-of-gold.com' );
 is( $config->get('things.2.babel'),        'fish', 'babel fish' );
 
 

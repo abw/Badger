@@ -12,7 +12,7 @@
 
 package Badger::Config;
 
-use Badger::Debug ':dump';
+use Badger::Debug ':dump debugf';
 use Badger::Class
     version   => 0.01,
     debug     => 0,
@@ -25,7 +25,8 @@ use Badger::Class
         init  => \&init_config,
     },
     messages  => {
-        get => 'Cannot fetch configuration item <1>.<2> (<1> is <3>)',
+        get       => 'Cannot fetch configuration item <1>.<2> (<1> is <3>)',
+        no_config => 'No configuration data found for %s',
     };
 
 
@@ -71,35 +72,78 @@ sub init_config {
 
 sub get {
     my $self  = shift->prototype;
-    my @names = map { ref $_ eq ARRAY ? @$_ : split /\W+/ } @_;
+    my @names = map { ref $_ eq ARRAY ? @$_ : split /\./ } @_;
     my $name  = shift @names;
-    my $data  = $self->{ data }->{ $name };
+    my @done  = ($name);
     my ($last, $method);
 
-    $self->debug("get: ", join(' / ', @names)) if DEBUG;
+    $self->debug(
+        "get: [", 
+        join('].[', $name, @names),
+        "]"
+    ) if DEBUG;
     
-    while (defined $data && @names) {
-        $data = $data->() if ref $data eq CODE;
+    # fetch the head item
+    my $data = $self->{ data }->{ $name }
+        ||  $self->head($name) 
+        ||  return $self->decline_msg( 
+                no_config => $name
+            );
+
+    # resolve any dotted paths after the head
+    while (@names) {
         $name = shift @names;
-        if (ref $data eq HASH) {
-            $data = $data->{ $name };
+
+        $self->debugf(
+            "get() dot: [%s].[%s] ... [%s]", 
+            join('.', @done),
+            $name,
+            join('.', @names)
+        ) if DEBUG;
+
+        if (ref $data eq CODE) {
+            $data = $data->();
         }
-        elsif (ref $data eq ARRAY && numlike $name) {
-            $data = $data->[$name];
-        }
-        elsif (blessed $data && (my $method = $data->can($name))) {
-            $data = $method->($data);
-        }
-        else {
-            return $self->error_msg(
-                get => $last, $name, ref $last || 'text'
+
+        CHECK: {
+            if (ref $data eq HASH) {
+                $data = $data->{ $name };
+                last CHECK;
+            }
+            elsif (ref $data eq ARRAY) {
+                if (numlike $name) {
+                    $data = $data->[$name];
+                    last CHECK;
+                }
+                # else vmethods?
+            }
+            elsif (blessed $data) {
+                if ($method = $data->can($name)) {
+                    $data = $method->($data);
+                    last CHECK;
+                }
+            }
+            return $self->decline_msg( 
+                no_config => join('.', @done, $name)
             );
         }
+
+        if (! defined $data) {
+            return $self->decline_msg( 
+                no_config => join('.', @done, $name)
+            );
+        }
+        push(@done, $name);
     }
-    
+
     return $data;
 }
 
+sub head {
+    my ($self, $name) = @_;
+    # subclasses can do somethign more complicated
+    return $self->{ data }->{ $name };
+}
 
 sub set {
     my $self = shift->prototype;
