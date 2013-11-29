@@ -14,6 +14,7 @@
 package Badger::Hub;
 
 use Badger::Debug ':dump';
+use Badger::Config;
 use Badger::Class
     version   => 0.01,
     debug     => 0,
@@ -21,30 +22,35 @@ use Badger::Class
     import    => 'class',
     auto_can  => 'auto_can',
     constants => 'HASH ARRAY REFS PKG',
-    utils     => 'blessed params',
+    utils     => 'blessed params is_object',
     words     => 'COMPONENTS DELEGATES COMP_CACHE DELG_CACHE',
+    constant  => {
+        CONFIG_MODULE => 'Badger::Config',
+    },
     messages => {
         no_module  => 'No %s module defined.',
         bad_method => "Invalid method '%s' called on %s at %s line %s",
     };
 
-use Badger::Config;
-our $CONFIG      = 'Badger::Config';
-our $COMPONENTS  = { };
-our $RESOURCES   = { };
-our $DELEGATES   = { };
-our $LOADED      = { };
+our $COMPONENTS    = { };
+our $RESOURCES     = { };
+our $DELEGATES     = { };
+our $LOADED        = { };
 #our $COLLECTIONS = [qw( components resources delegates )];
 
 
 sub init {
     my ($self, $config) = @_;
     $self->init_hub($config);
-# These get initialised on demand
-#   $self->init_collections($config);
 }
 
 sub init_hub {
+    my ($self, $config) = @_;
+    $self->init_config($config);
+    $self->init_items($config);
+}
+
+sub init_config {
     my ($self, $args) = @_;
     my $class = $self->class;
 
@@ -52,23 +58,41 @@ sub init_hub {
     # points to a master configuration object or class name.  We default to the 
     # value in the $CONFIG package variable, which in this case is Badger::Config,
     # but could be re-defined by a subclass to be something else.
-    my $config = delete($args->{ config }) || $class->any_var('CONFIG');
-    class($config)->load unless ref $config;
+    my $config = delete($args->{ config        }) || { };
+    my $module = delete($args->{ config_module })
+        || $class->any_var('CONFIG_MODULE')
+        || $self->CONFIG_MODULE;
+
+    if (is_object($module, $config)) {
+        # $config is already a config module object of the right heritage
+        $self->debug("config is already a $module object") if DEBUG;
+    }
+    elsif (ref $config eq HASH) {
+        $self->debug("loading and instantiating a $module config object") if DEBUG;
+        class($module)->load;
+        $config = $module->new($config);
+    }
+    else {
+        return $self->error_msg( invalid => config => $config );
+    }
+
+    $self->{ config } = $config;
+    $self->debug("hub config: $self->{ config }\n") if DEBUG;
+}
+
+sub init_items {
+    my ($self, $args) = @_;
 
     # merge all values in $CONFIG_ITEMS in with $args->{ items };
     $args->{ items } = $self->class->list_vars( 
         CONFIG_ITEMS => delete($args->{ config_items }), $args->{ items }
     );
 
-    $self->debug("hub config items: ", $self->dump_data($args->{ items })) if DEBUG;
-    
-    $config = $config->new($args) unless blessed $config;
-    $self->{ config      } = $config;
-    $self->{ collections } = $class->list_vars(
-        COLLECTIONS => $args->{ collections }
-    );
+    $self->debug(
+        "hub config items: ", 
+        $self->dump_data($args->{ items })
+    ) if DEBUG;
 
-    $self->debug("hub config: $self->{ config }\n") if DEBUG;
     return $self;
 }
 

@@ -1,0 +1,10 @@
+cheddar: very tangy
+brie: smooth and creamy
+stilton: sharp
+
+# The leading slash forces the URI for this item to be resolved absolutely, 
+# i.e. as /cheese_knife rather than /cheese/cheese_knife.  
+# The "uri_paths: relative" option in the _schema_ for nibbles 
+# (in nibbles.yaml) forces the leading slashes to be removed
+
+/cheese_knife: for cutting cheese

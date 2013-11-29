@@ -29,12 +29,13 @@ L<http://github.com/abw/Template-TT2> and L<http://github.com/abw/Template-TT3>.
 
 =head2 Version 0.10 - Not Yet released
 
+Added L<Badger::Config::Files>, L<Badger::Comparable> and L<Badger::Duration>.
+
 Fixed a bug in the L<auto_can|Badger::Class::Methods/auto_can()> feature
 of L<Badger::Class::Methods> which prevented it from working with subclasses.
 
 Added no_config() method to L<Badger::Hub>.
 
-Added L<Badger::Comparable> and L<Badger::Duration>.
 
 Added L<plurality()|Badger::Utils/plurality()>, 
 L<inflect()|Badger::Utils/inflect()>,
