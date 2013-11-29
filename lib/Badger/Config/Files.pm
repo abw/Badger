@@ -88,12 +88,14 @@ sub init_files {
 # head() method replacing that in the Badger::Config base class
 #-----------------------------------------------------------------------------
 
-
 sub head {
     my ($self, $name) = @_;
 #    $self->todo;
     return $self->fetch($name);
 }
+
+# This is being fed back upstream from Contentity::Workspace - may not be 
+# relevant, not sure yet.
 
 sub HEAD_CACHED_TODO {
     my ($self, $uri) = @_;
@@ -135,7 +137,7 @@ sub HEAD_CACHED_TODO {
 
 
 #-----------------------------------------------------------------------------
-# Public fetch/store methods
+# Filesystem-specific fetch methods
 #-----------------------------------------------------------------------------
 
 sub fetch {
@@ -197,64 +199,6 @@ sub fetch_uri_tree {
 sub fetch_under_tree {
     shift->config_under_tree(@_);
 }
-
-
-#-----------------------------------------------------------------------------
-# Internal methods
-#-----------------------------------------------------------------------------
-
-sub dir {
-    my $self = shift;
-
-    return @_
-        ? $self->root->dir(@_)
-        : $self->root;
-}
-
-sub file {
-    my $self = shift;
-    return $self->root->file(@_);
-}
-
-sub config_file {
-    my ($self, $name) = @_;
-
-    return  $self->{ config_file }->{ $name } 
-        ||= $self->find_config_file($name);
-}
-
-sub config_filespec {
-    my $self     = shift;
-    my $defaults = $self->{ filespec };
-
-    return @_ 
-        ? extend({ }, $defaults, @_)
-        : { %$defaults };
-}
-
-sub find_config_file {
-    my ($self, $name) = @_;
-    my $root = $self->root;
-    my $exts = $self->extensions;
-
-    foreach my $ext (@$exts) {
-        my $path = $name.DOT.$ext;
-        my $file = $self->file($path);
-        if ($file->exists) {
-            $file->codec($self->codec($ext));
-            return $file;
-        }
-    }
-    return $self->decline_msg(
-        not_found => file => $name
-    );
-}
-
-sub codec {
-    my ($self, $name) = @_;
-    return $self->codecs->{ $name } || $name;
-}
-
 
 #-----------------------------------------------------------------------------
 # Tree walking
@@ -497,6 +441,62 @@ sub under_binder {
     }
 }
 
+
+#-----------------------------------------------------------------------------
+# Internal methods
+#-----------------------------------------------------------------------------
+
+sub dir {
+    my $self = shift;
+
+    return @_
+        ? $self->root->dir(@_)
+        : $self->root;
+}
+
+sub file {
+    my $self = shift;
+    return $self->root->file(@_);
+}
+
+sub config_file {
+    my ($self, $name) = @_;
+
+    return  $self->{ config_file }->{ $name } 
+        ||= $self->find_config_file($name);
+}
+
+sub config_filespec {
+    my $self     = shift;
+    my $defaults = $self->{ filespec };
+
+    return @_ 
+        ? extend({ }, $defaults, @_)
+        : { %$defaults };
+}
+
+sub find_config_file {
+    my ($self, $name) = @_;
+    my $root = $self->root;
+    my $exts = $self->extensions;
+
+    foreach my $ext (@$exts) {
+        my $path = $name.DOT.$ext;
+        my $file = $self->file($path);
+        if ($file->exists) {
+            $file->codec($self->codec($ext));
+            return $file;
+        }
+    }
+    return $self->decline_msg(
+        not_found => file => $name
+    );
+}
+
+sub codec {
+    my ($self, $name) = @_;
+    return $self->codecs->{ $name } || $name;
+}
 
 1;
 
