@@ -488,8 +488,6 @@ class.
 
 =head1 EXPORTABLE FUNCTIONS
 
-=head2 Standard Perl Utility Modules
-
 C<Badger::Utils> can automatically load and export functions defined in the
 L<Scalar::Util>, L<List::Util>, L<List::MoreUtils>, L<Hash::Util> and
 L<Digest::MD5> Perl modules.
@@ -501,8 +499,6 @@ L<Digest::MD5> Perl modules.
         print md5_hex(max @some_list);
     }
 
-=head2 Other Badger Modules
-
 C<Badger::Utils> can also automatically load and export functions and 
 constants defined in various other Badger modules.  For example, you can use 
 C<Badger::Utils> to load the L<Now()|Badger::Timestamp/Now()> function 
@@ -511,36 +507,105 @@ from L<Badger::Timestamp>.
     use Badger::Utils 'Now';
     print Now->year;            # prints the current year
 
-=head3 L<Badger::Duration> 
+=head2 L<Badger::Duration> 
 
-L<DURATION|Badger::Duration/DURATION> and 
-L<Duration()|Badger::Duration/Duration()>.
+=head3 L<DURATION|Badger::Duration/DURATION>
 
-=head3 L<Badger::Filesystem>
+An alias for L<Badger::Duration>.
 
-L<FS|Badger::Filesystem/FS>, 
-L<VFS|Badger::Filesystem/VFS>, 
-L<File()|Badger::Filesystem/File>, 
-L<Dir()|Badger::Filesystem/Dir> and
-L<Bin()|Badger::Filesystem/Bin>.
+=head3 L<Duration()|Badger::Duration/Duration()>
 
-=head3 L<Badger::Logic>
+A function to create a L<Badger::Duration> object.
 
-L<LOGIC|Badger::Logic/LOGIC> and 
-L<Logic()|Badger::Logic/Logic()>.
+    use Badger::Utils 'Duration';
 
-=head3 L<Badger::Timestamp>
+    my $duration = Duration('2 hours 20 minutes');
+    print $duration->seconds;
 
-L<TIMESTAMP|Badger::Timestamp/TIMESTAMP>, 
-L<TS|Badger::Timestamp/TS>, 
-L<Timestamp()|Badger::Timestamp/Timestamp()> and
-L<Now()|Badger::Timestamp/Now()>.
+=head2 L<Badger::Filesystem>
 
-=head3 L<Badger::URL>
+=head3 L<FS|Badger::Filesystem/FS>, 
 
-L<URL()|Badger::URL/URL()>.
+An alias for C<Badger::Filesystem>.
 
-=back
+=head3 L<VFS|Badger::Filesystem/VFS>, 
+
+An alias for C<Badger::Filesystem::Virtual>.
+
+=head3 File()
+
+A function for creating a L<Badger::Filesystem::File> object.
+
+    my $f = File('filename');
+    print $filename->modified;
+
+=head3 Dir()
+
+A function for creating a L<Badger::Filesystem::Directory> object.
+
+=head3 Bin()
+
+Returns a L<Badger::Filesystem::Directory> object for the directory in 
+which the current script is located.  See L<Bin()|Badger::Filesystem/Bin>
+in L<Badger::Filesystem>.
+
+=head2 L<Badger::Logic>
+
+=head3 L<LOGIC|Badger::Logic/LOGIC>
+
+An alias for C<Badger::Logic>.
+
+=head3 L<Logic()|Badger::Logic/Logic()>.
+
+Function for returning a L<Badger::Logic> object for representing simple
+logical assertions.
+
+    my $logic  = Logic('trusted and not banned');
+    my $person = {
+        trusted => 1,
+        banned  => 0,
+    };
+
+    if ($logic->evaluate($person)) {
+        ...
+    }
+
+=head2 L<Badger::Timestamp>
+
+=head3 L<TIMESTAMP|Badger::Timestamp/TIMESTAMP>
+
+An alias for C<Badger::Timestamp>.
+
+=head3 L<TS|Badger::Timestamp/TS>
+
+A shorter alias for C<Badger::Timestamp>.
+
+=head3 L<Now()|Badger::Timestamp/Now()>.
+
+Function for returning a L<Badger::Timestamp> object representing the 
+current date and time.
+
+    print Now->date;
+
+=head3 L<Timestamp()|Badger::Timestamp/Timestamp()>
+
+Function for creating a L<Badger::Timestamp> object.
+
+    my $stamp = Timestamp('2013-03-19 16:20:00');
+    print $stamp->time;
+    print $stamp->year;
+
+=head2 L<Badger::URL>
+
+=head3 L<URL()|Badger::URL/URL()>
+
+Function for creating a L<Badger::URL> object for representing and
+manipulating a URL.
+
+    my $url = URL('http://badgerpower.org/example?animal=badger');
+    print $url->path;
+    print $url->query;
+    print $url->server;
 
 =head2 Text Utility Functions
 
@@ -819,7 +884,7 @@ at that index.
 This splits a string of words separated by whitespace (and/or commas) 
 into a list reference.  The following are all valid and equivalent:
 
-    my $list = split_to_list("foo bar baz");
+    my $list = split_to_list("foo bar baz");    # => ['foo', 'bar', 'baz']
     my $list = split_to_list("foo,bar,baz");
     my $list = split_to_list("foo, bar, baz");
 
