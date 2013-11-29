@@ -361,7 +361,7 @@ sub dump_hash {
                 map { "$pad$PAD$_ => " . _dump_data($self, $hash->{$_}, $indent + 1) }
                 sort 
                 grep { $keys ? $keys->{ $_ } : 1 } 
-                grep { ! /^_/ }
+            #   grep { ! /^_/ }
                 keys %$hash 
            ) 
         . "\n$pad}";
