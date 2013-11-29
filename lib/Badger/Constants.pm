@@ -53,12 +53,14 @@ use constant {
     DELIMITER       => qr/(?:,\s*)|\s+/,    # match a comma or whitespace
     WILDCARD        => qr/[\*\?]/,          # wildcards: *.html foo??.txt
     LOADED          => 'BADGER_LOADED',     # set by Badger::Class on autoload
-
+    UTF8            => 'utf8',
+    YAML            => 'yaml',
+    JSON            => 'json',
 };
 
 CONSTANTS->export_any(qw( 
     CONSTANTS FIRST LAST CRLF PKG DOT REFS ONCE WARN BLANK SPACE SLASH
-    DELIMITER WILDCARD LOADED
+    DELIMITER WILDCARD LOADED UTF8 YAML JSON
 ));
 
 CONSTANTS->export_tags({
@@ -254,6 +256,18 @@ wildcard characters.
     if ($path =~ WILDCARD) {
         # do someting...
     } 
+
+=head2 UTF8
+
+The literal string C<utf8>.
+
+=head2 JSON
+
+The literal string C<json>.
+
+=head2 YAML
+
+The literal string C<yaml>.
 
 =head2 LOADED
 

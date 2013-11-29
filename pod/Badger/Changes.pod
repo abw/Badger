@@ -52,6 +52,11 @@ L<Badger::Logic> and L<Badger::URL>.
 
 Squashed a non-numerical warning in Badger::Timestamp.
 
+Refactored parts of L<Badger::Config> and added L<Badger::Config::Files>.
+
+Added the L<UTF8|Badger::Constants/UTF8>, L<JSON|Badger::Constants/JSON>
+and L<YAML|Badger::Constants/YAML> constants to L<Badger::Constants>.
+
 =head2 Version 0.09 - 8th February 2012
 
 Added L<Badger::Codec::Timestamp>. Changed L<Badger::Timestamp> to numify

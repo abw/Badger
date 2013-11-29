@@ -29,20 +29,30 @@ use Badger::Class
     };
 
 use Badger::Config;
-our $CONFIG     = 'Badger::Config';
-our $COMPONENTS = { };
-our $DELEGATES  = { };
-our $LOADED     = { };
+our $CONFIG      = 'Badger::Config';
+our $COMPONENTS  = { };
+our $RESOURCES   = { };
+our $DELEGATES   = { };
+our $LOADED      = { };
+#our $COLLECTIONS = [qw( components resources delegates )];
 
 
 sub init {
+    my ($self, $config) = @_;
+    $self->init_hub($config);
+# These get initialised on demand
+#   $self->init_collections($config);
+}
+
+sub init_hub {
     my ($self, $args) = @_;
+    my $class = $self->class;
 
     # We're looking for a specific 'config' item which the user can provide to
     # points to a master configuration object or class name.  We default to the 
     # value in the $CONFIG package variable, which in this case is Badger::Config,
     # but could be re-defined by a subclass to be something else.
-    my $config = delete($args->{ config }) || $self->class->any_var('CONFIG');
+    my $config = delete($args->{ config }) || $class->any_var('CONFIG');
     class($config)->load unless ref $config;
 
     # merge all values in $CONFIG_ITEMS in with $args->{ items };
@@ -53,18 +63,50 @@ sub init {
     $self->debug("hub config items: ", $self->dump_data($args->{ items })) if DEBUG;
     
     $config = $config->new($args) unless blessed $config;
-    $self->{ config } = $config;
+    $self->{ config      } = $config;
+    $self->{ collections } = $class->list_vars(
+        COLLECTIONS => $args->{ collections }
+    );
 
     $self->debug("hub config: $self->{ config }\n") if DEBUG;
     return $self;
 }
 
+sub init_collections {
+    my ($self, $config) = @_;
+    $self->init_components($config);
+    $self->init_resource($config);
+    $self->init_delegates($config);
+}
+
+sub init_components {
+    shift->init_collection( components => @_ );
+}
+sub init_resources {
+    shift->init_collection( resources => @_ );
+}
+sub init_delegates {
+    shift->init_collection( delegates => @_ );
+}
+
+sub init_collection {
+    my ($self, $type) = @_;
+    my $TYPE = uc $type;
+    my $bits = $self->{ $type } = $self->class->hash_vars( 
+        $TYPE => $self->config($type)
+    );
+    $self->debug("$type: ", $self->dump_data($bits)) if DEBUG;
+    return $bits;
+}
+
+#-----------------------------------------------------------------------------
+# comment
+#-----------------------------------------------------------------------------
 
 sub components {
-    my $self  = shift;
-    my $class = $self->class;
-    my $comps = $class->var(COMP_CACHE) 
-             || $class->var(COMP_CACHE => $class->hash_vars(COMPONENTS));
+    my $self  = shift->prototype;
+    my $comps = $self->{ components }
+             || $self->init_components;
 
     if (@_) {
         my $args = ref $_[0] eq HASH ? shift : { @_ };
@@ -86,10 +128,10 @@ sub component {
 
 
 sub delegates {
-    my $self  = shift;
+    my $self  = shift->prototype;
     my $class = $self->class;
-    my $delgs = $class->var(DELG_CACHE) 
-             || $class->var(DELG_CACHE => $class->hash_vars(DELEGATES));
+    my $delgs = $self->{ delegates }
+             || $self->init_delegates;
 
     if (@_) {
         my $args = ref $_[0] eq HASH ? shift : { @_ };
