@@ -27,12 +27,14 @@ CHANGES
     <http://github.com/abw/Template-TT3>.
 
   Version 0.10 - Not Yet released
-    Added Badger::Config::Files, Badger::Comparable and Badger::Duration.
+    Added Badger::Comparable and Badger::Duration.
+
+    Refactored parts of Badger::Config and added Badger::Config::Directory.
+
+    Added no_config() method to Badger::Hub.
 
     Fixed a bug in the auto_can feature of Badger::Class::Methods which
     prevented it from working with subclasses.
-
-    Added no_config() method to Badger::Hub.
 
     Added plurality(), inflect(), list_each(), hash_each(), extend(),
     split_to_list(), join_uri() and resolve_uri(), to Badger::Utils.
@@ -42,8 +44,6 @@ CHANGES
     Badger::Logic and Badger::URL.
 
     Squashed a non-numerical warning in Badger::Timestamp.
-
-    Refactored parts of Badger::Config and added Badger::Config::Files.
 
     Added the UTF8, JSON and YAML constants to Badger::Constants.
 

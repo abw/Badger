@@ -29,13 +29,14 @@ L<http://github.com/abw/Template-TT2> and L<http://github.com/abw/Template-TT3>.
 
 =head2 Version 0.10 - Not Yet released
 
-Added L<Badger::Config::Files>, L<Badger::Comparable> and L<Badger::Duration>.
+Added L<Badger::Comparable> and L<Badger::Duration>.
 
-Fixed a bug in the L<auto_can|Badger::Class::Methods/auto_can()> feature
-of L<Badger::Class::Methods> which prevented it from working with subclasses.
+Refactored parts of L<Badger::Config> and added L<Badger::Config::Directory>.
 
 Added no_config() method to L<Badger::Hub>.
 
+Fixed a bug in the L<auto_can|Badger::Class::Methods/auto_can()> feature
+of L<Badger::Class::Methods> which prevented it from working with subclasses.
 
 Added L<plurality()|Badger::Utils/plurality()>, 
 L<inflect()|Badger::Utils/inflect()>,
@@ -52,8 +53,6 @@ in L<Badger::Filesystem>, L<Badger::Timestamp>, L<Badger::Duration>,
 L<Badger::Logic> and L<Badger::URL>.
 
 Squashed a non-numerical warning in Badger::Timestamp.
-
-Refactored parts of L<Badger::Config> and added L<Badger::Config::Files>.
 
 Added the L<UTF8|Badger::Constants/UTF8>, L<JSON|Badger::Constants/JSON>
 and L<YAML|Badger::Constants/YAML> constants to L<Badger::Constants>.
