@@ -1,8 +1,8 @@
 #============================================================= -*-perl-*-
 #
-# t/config/files.t
+# t/config/directory.t
 #
-# Test the Badger::Config::Files module.
+# Test the Badger::Config::Directory module.
 #
 # Copyright (C) 2008-2013 Andy Wardley.  All Rights Reserved.
 #
@@ -17,14 +17,14 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Debug ':all';
 use Badger::Test 
-    tests => 25,
-    debug => 'Badger::Config XBadger::Config::Files',
+    tests => 30,
+    debug => 'Badger::Config Badger::Config::Directory',
     args  => \@ARGV;
 
 use Badger::Utils 'Bin';
-use Badger::Config::Files;
-my $pkg  = 'Badger::Config::Files';
-my $dir1 = Bin->dir('test_files/files1');
+use Badger::Config::Directory;
+my $pkg  = 'Badger::Config::Directory';
+my $dir1 = Bin->dir('test_files/dir1');
 
 my $config = $pkg->new( directory => $dir1 );
 ok( $config, "Created $pkg object" );
@@ -137,9 +137,9 @@ is(
 );
 
 #-----------------------------------------------------------------------------
-# Underscore binder.  Like the URI binder, this squashes nested data harvested
+# Join binder.  Like the URI binder, this squashes nested data harvested
 # from files, sub-directories and so on, into the main hash of configuration
-# data, using underscores instead of slashes
+# data, using underscores (by default) instead of slashes
 #-----------------------------------------------------------------------------
 
 my $ents = $config->get('ents');
@@ -167,4 +167,50 @@ is(
     $ents->{ four_twenty_music }, 
     'Pink Floyd', 
     'four twenty music is Pink Floyd', 
+);
+
+#-----------------------------------------------------------------------------
+# Another join binder but this time with a custom joint of '.'
+#-----------------------------------------------------------------------------
+
+my $urls = $config->get('urls');
+main->debug(
+    "urls: ",
+    main->dump_data($urls)
+) if DEBUG;
+
+
+#-----------------------------------------------------------------------------
+# This also makes it useful for checking that we can defeat the default 
+# behaviour of get() to split dotted items.
+#-----------------------------------------------------------------------------
+
+is( 
+    $urls->{ home }, 
+    '/index.html', 
+    'urls.home', 
+);
+
+is( 
+    $urls->{'foo.about'}, 
+    '/about_us.html', 
+    'urls.foo.about', 
+);
+
+is( 
+    $config->get(['urls', 'foo.about']), 
+    '/about_us.html', 
+    "get(['urls', 'foo.about'])", 
+);
+
+is( 
+    $config->get(['urls', 'foo.user', 'login']), 
+    '/auth/login', 
+    "get(['urls', 'foo.user', 'login'])", 
+);
+
+is( 
+    $urls->{'foo.user'}->{'logout'}, 
+    '/auth/logout', 
+    'urls.foo.user.logout', 
 );

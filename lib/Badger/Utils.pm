@@ -47,11 +47,13 @@ our $HELPERS  = {       # keep this compact in case we don't need to use it
                              natatime mesh zip uniq minmax',
     'Hash::Util'         => 'lock_keys unlock_keys lock_value unlock_value
                              lock_hash unlock_hash hash_seed',
-    'Badger::Filesystem' => 'FS VFS File Dir Bin',
     'Badger::Timestamp'  => 'TIMESTAMP TS Timestamp Now',
     'Badger::Logic'      => 'LOGIC Logic',
     'Badger::Duration'   => 'DURATION Duration',
     'Badger::URL'        => 'URL',
+    'Badger::Filesystem' => 'FS File Dir Bin',
+    'Badger::Filesystem::Virtual' 
+                         => 'VFS',
 };
 our $DELEGATES;         # fill this from $HELPERS on demand
 our $RANDOM_NAME_LENGTH = 32;
@@ -528,7 +530,7 @@ A function to create a L<Badger::Duration> object.
 
 An alias for C<Badger::Filesystem>.
 
-=head3 L<VFS|Badger::Filesystem/VFS>, 
+=head3 L<VFS|Badger::Filesystem::Virtual/VFS>, 
 
 An alias for C<Badger::Filesystem::Virtual>.
 
