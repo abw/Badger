@@ -17,7 +17,7 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Debug ':all';
 use Badger::Test 
-    tests => 30,
+    tests => 39,
     debug => 'Badger::Config Badger::Config::Directory',
     args  => \@ARGV;
 
@@ -213,4 +213,80 @@ is(
     $urls->{'foo.user'}->{'logout'}, 
     '/auth/logout', 
     'urls.foo.user.logout', 
+);
+
+
+#-----------------------------------------------------------------------------
+# Directory config object with custom schema
+#-----------------------------------------------------------------------------
+
+my $dir2 = Bin->dir('test_files/dir2');
+
+$config = $pkg->new( 
+    directory  => $dir2,
+    tree_type  => 'join',
+    tree_joint => '-',
+);
+ok( $config, "Created $pkg object" );
+
+my $one = $config->get('one');
+ok( $one, 'got tree one' );
+is( join(', ', sort keys %$one), 'a, b, two-c, two-d', 'got joined keys' );
+
+main->debug(
+    "one: ",
+    main->dump_data($one)
+) if DEBUG;
+
+my $three = $config->get('three');
+ok( $three, 'got tree three' );
+is( join(', ', sort keys %$three), 'e, f, five*six*i, five*six*j, four*g, four*h', 'got joined keys' );
+
+main->debug(
+    "three: ",
+    main->dump_data($three)
+) if DEBUG;
+
+#-----------------------------------------------------------------------------
+# Same again but with default schema specified as 'schema' option
+#-----------------------------------------------------------------------------
+
+$config = $pkg->new( 
+    directory  => $dir2,
+    schema     => {
+        tree_type  => 'join',
+        tree_joint => '+',
+    }
+);
+$one = $config->get('one');
+ok( $one, 'got tree one again' );
+is( join(', ', sort keys %$one), 'a, b, two+c, two+d', 'got joined keys' );
+
+#-----------------------------------------------------------------------------
+# Another similar once with dedicated schema rule for item ten
+#-----------------------------------------------------------------------------
+
+$config = $pkg->new( 
+    directory   => $dir2,
+    schema      => {
+        tree_type  => 'join',
+        tree_joint => '+',
+    },
+    schemas     => {
+        ten     => {
+            tree_type => 'uri',
+            uri_paths => 'absolute',
+        }
+    }
+);
+my $ten = $config->get('ten');
+ok( $ten, 'got ten tree' );
+main->debug(
+    "ten: ",
+    main->dump_data($ten)
+) if DEBUG ;
+is( 
+    join(', ', sort keys %$ten), 
+    '/eleven/m, /eleven/n, /k, /l',
+    'got ten keys' 
 );

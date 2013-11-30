@@ -154,7 +154,6 @@ sub set {
     return $data;
 }
 
-
 sub can_configure {
     my ($self, $name) = @_;
 

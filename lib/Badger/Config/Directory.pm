@@ -1,5 +1,6 @@
 # TODO:
-#  [ ] add schema option
+#  [ ] allow schemas to be added after init
+#  [ ] allow master config file to contain schemas, etc.
 
 package Badger::Config::Directory;
 
@@ -30,6 +31,13 @@ sub init {
     my ($self, $config) = @_;
     $self->init_config($config);
     $self->init_directory($config);
+    $self->init_schema($config);
+    return $self;
+}
+
+sub init_config {
+    my ($self, $config) = @_;
+    $self->{ data } = $config->{ data } || { %$config };
 }
 
 sub init_directory {
@@ -39,15 +47,13 @@ sub init_directory {
     # create hash of options for file objects created by directory object
     my $encoding = $config->{ encoding }
         || $class->any_var('ENCODING');
-
     my $filespec = {
         encoding => $encoding,
     };
 
     # we must have a root directory
-    my $dir = $config->{ directory } || $config->{ dir }
+    my $dir  = $config->{ directory } || $config->{ dir }
         || return $self->error_msg( missing => 'directory' );
-
     my $root = Dir($dir, $filespec);
 
     unless ($root->exists) {
@@ -76,7 +82,6 @@ sub init_directory {
         CODECS => $config->{ extensions } 
     );
 
-
     $self->{ root       } = $root;
     $self->{ uri        } = $config->{ uri } || $root->name;
     $self->{ extensions } = $exts;
@@ -84,14 +89,30 @@ sub init_directory {
     $self->{ codecs     } = $codecs;
     $self->{ encoding   } = $encoding;
     $self->{ filespec   } = $filespec;
-    $self->{ uri_paths  } = $config->{ uri_paths };
-    $self->{ tree_type  } = $config->{ tree_type }
-        || $class->any_var('TREE_TYPE');
-    $self->{ tree_joint } = $config->{ tree_joint }
-        || $class->any_var('TREE_JOINT');
+    $self->{ schemas    } = $config->{ schemas };
+    $self->{ schema     } = { };
 
     return $self;
 }
+
+sub init_schema {
+    my ($self, $config) = @_;
+    my $class  = $self->class;
+    my $schema = $self->{ schema } = $config->{ schema } || { };
+
+    $schema->{ uri_paths  } 
+        ||= $config->{ uri_paths }
+        ||  $class->any_var('URI_PATHS');
+
+    $schema->{ tree_type  } 
+        ||= $config->{ tree_type }
+        ||  $class->any_var('TREE_TYPE');
+
+    $schema->{ tree_joint } 
+        ||= $config->{ tree_joint }
+        ||  $class->any_var('TREE_JOINT');
+}
+
 
 #-----------------------------------------------------------------------------
 # head() method replacing that in the Badger::Config base class
@@ -188,12 +209,9 @@ sub config_tree {
     my $root    = $self->root;
     my $file    = $self->config_file($name);
     my $dir     = $root->dir($name);
-    my $opts    = params(@opts);
-    my $schema  = $opts->{ schema } || $opts;
-    my $binder  = $schema->{ binder };
-    my $data    = { };
     my $do_tree = TRUE;
-    my $more;
+    my $data    = { };
+    my ($file_data, $binder, $more);
 
     $self->debug(
         "Config tree options: ", 
@@ -204,19 +222,25 @@ sub config_tree {
         return $self->decline_msg( not_found => 'file or directory' => $name );
     }
 
+    # start by looking for a data file
     if ($file && $file->exists) {
-        # read data from file
-        $more = $file->try->data;
+        $file_data = $file->try->data;
         return $self->error_msg( load_fail => $file => $@ ) if $@;
-        $self->debug("Read metadata from file '$file':", $self->dump_data($more)) if DEBUG;
-        @$data{ keys %$more } = values %$more;
+        $self->debug("Read metadata from file '$file':", $self->dump_data($data)) if DEBUG;
     }
 
-    # TODO can we put an option in here to select a tree binder and other options?
-    if ($more = $data->{ _schema_ }) {
-        $self->debug("_schema_: ", $self->dump_data($more)) if DEBUG;
-        @$schema{ keys %$more } = values %$more;
-    }
+    # fetch a schema for this data item constructed from the default schema
+    # specification, any named schema for this item, any arguments, then any 
+    # local _schema_ defined in the data file
+    my $schema = $self->schema(
+        $name, 
+        @opts,
+        $file_data ? delete $file_data->{ _schema_ } : ()
+    );
+    $self->debug(
+        "combined schema for $name: ", 
+        $self->dump_data($schema)
+    ) if DEBUG;
 
     if ($more = $schema->{ tree_type }) {
         $self->debug("_schema_.tree_type: $more") if DEBUG;
@@ -224,24 +248,32 @@ sub config_tree {
             $do_tree = FALSE;
         }
         elsif ($binder = $self->tree_binder($more)) {
-            $schema->{ binder } = $binder;
+            $do_tree = TRUE;
         }
         else {
             return $self->error_msg( invalid => tree_type => $more );
         }
     }
 
-    if ($do_tree && $dir->exists) {
-        # TODO: add in multiple roots where project has a parent project?
-
-        # create a virtual file system rooted on the metadata directory
-        # so that all file paths are resolved relative to it
-        my $vfs = VFS->new( root => $dir );
-        $self->debug("Reading metadata from dir: ", $dir->name) if DEBUG;
-        $self->scan_config_dir($vfs->root, $data, [ ], $schema, $binder);
+    if ($do_tree) {
+        # merge file data using binder
+        $binder->($self, $data, [ ], $file_data, $schema);
+ 
+        if ($dir->exists) {
+            # create a virtual file system rooted on the metadata directory
+            # so that all file paths are resolved relative to it
+            my $vfs = VFS->new( root => $dir );
+            $self->debug("Reading metadata from dir: ", $dir->name) if DEBUG;
+            $self->scan_config_dir($vfs->root, $data, [ ], $schema, $binder);
+        }
+    }
+    else {
+        $data = $file_data;
     }
 
     $self->debug("$name config: ", $self->dump_data($data)) if DEBUG;
+
+    # TODO: use inside out object to bind schema to data?
 
     return $data;
 }
@@ -364,7 +396,7 @@ sub join_binder {
             # if the child item has a leading '/' then we want to put it in 
             # the root so we leave $key unchanged
         }
-        else {
+        elsif (length $base) {
             # otherwise the $key is appended onto $base
             $key = join($joint, $base, $key);
         }
@@ -422,6 +454,20 @@ sub fix_uri_path {
 }
 
 
+#-----------------------------------------------------------------------------
+# schema management
+#-----------------------------------------------------------------------------
+
+sub schema {
+    my $self    = shift;
+    my $name    = shift || return $self->{ schema };
+    return extend(
+        { },
+        $self->{ schema  },
+        $self->{ schemas }->{ $name },
+        @_
+    );
+}
 
 #-----------------------------------------------------------------------------
 # Internal methods

@@ -1,0 +1,5 @@
+e: echo
+f: foxtrot
+
+_schema_:
+  tree_joint: '*'
