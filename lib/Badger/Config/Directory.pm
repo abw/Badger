@@ -24,18 +24,19 @@ our $TREE_JOINT   = '_';
 
 
 #-----------------------------------------------------------------------------
-# Initialisation methods
+# Initialisation methods called at object creation time
 #-----------------------------------------------------------------------------
 
 sub init {
     my ($self, $config) = @_;
-    $self->init_config($config);
+    $self->init_data($config);
     $self->init_directory($config);
-    $self->init_schema($config);
+    $self->init_schemas($config);
+    $self->init_configure($config);
     return $self;
 }
 
-sub init_config {
+sub init_data {
     my ($self, $config) = @_;
     $self->{ data } = $config->{ data } || { %$config };
 }
@@ -89,16 +90,18 @@ sub init_directory {
     $self->{ codecs     } = $codecs;
     $self->{ encoding   } = $encoding;
     $self->{ filespec   } = $filespec;
-    $self->{ schemas    } = $config->{ schemas };
-    $self->{ schema     } = { };
 
     return $self;
 }
 
-sub init_schema {
+sub init_schemas {
     my ($self, $config) = @_;
-    my $class  = $self->class;
-    my $schema = $self->{ schema } = $config->{ schema } || { };
+    my $class   = $self->class;
+    my $schema  = $config->{ schema  } || { };
+    my $schemas = $config->{ schemas };
+
+    $self->{ schema  } = { };
+    $self->{ schemas } = { };
 
     $schema->{ uri_paths  } 
         ||= $config->{ uri_paths }
@@ -111,6 +114,55 @@ sub init_schema {
     $schema->{ tree_joint } 
         ||= $config->{ tree_joint }
         ||  $class->any_var('TREE_JOINT');
+
+    $self->configure_schema($schema);
+    $self->configure_schemas($schemas) if $schema;
+
+}
+
+sub init_configure {
+    my ($self, $config) = @_;
+    my $file = $config->{ file };
+    $self->init_config_file($file) if $file;
+}
+
+sub init_config_file {
+    my ($self, $name) = @_;
+    my $data = $self->config_file_data($name)
+        || return $self->error_msg( invalid => file => $name );
+
+    $self->debug(
+        "Config file data: ",
+        $self->dump_data($data)
+    ) if DEBUG;
+
+    $self->configure($data);
+}
+
+#-----------------------------------------------------------------------------
+# Configuration methods called at initialisation time or some time after
+#-----------------------------------------------------------------------------
+
+sub configure {
+    my ($self, $config) = @_;
+
+    $self->configure_schema($config->{ schema }) 
+        if $config->{ schema };
+
+    $self->configure_schemas($config->{ schemas })
+        if $config->{ schemas };
+}
+
+sub configure_schema {
+    my ($self, $more) = @_;
+    my $schema = $self->{ schema } ||= { };
+    @$schema{ keys %$more } = values %$more;
+}
+
+sub configure_schemas {
+    my ($self, $more) = @_;
+    my $schemas = $self->{ schemas } ||= { };
+    @$schemas{ keys %$more } = values %$more;
 }
 
 
@@ -491,6 +543,14 @@ sub config_file {
 
     return  $self->{ config_file }->{ $name } 
         ||= $self->find_config_file($name);
+}
+
+sub config_file_data {
+    my $self = shift;
+    my $file = $self->config_file(@_) || return;
+    my $data = $file->try->data;
+    return $self->error_msg( load_fail => $file => $@ ) if $@;
+    return $data;
 }
 
 sub config_filespec {

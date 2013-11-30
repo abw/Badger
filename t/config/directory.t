@@ -17,7 +17,7 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Debug ':all';
 use Badger::Test 
-    tests => 39,
+    tests => 41,
     debug => 'Badger::Config Badger::Config::Directory',
     args  => \@ARGV;
 
@@ -284,9 +284,29 @@ ok( $ten, 'got ten tree' );
 main->debug(
     "ten: ",
     main->dump_data($ten)
-) if DEBUG ;
+) if DEBUG;
 is( 
     join(', ', sort keys %$ten), 
     '/eleven/m, /eleven/n, /k, /l',
+    'got ten keys' 
+);
+
+#-----------------------------------------------------------------------------
+# Same thing but using a config_file.
+#-----------------------------------------------------------------------------
+
+$config = $pkg->new( 
+    dir  => $dir2,
+    file => 'config',
+);
+my $ten2 = $config->get('ten');
+ok( $ten2, 'got ten tree' );
+main->debug(
+    "ten2: ",
+    main->dump_data($ten2)
+) if DEBUG;
+is( 
+    join(', ', sort keys %$ten2),
+    'eleven/m, eleven/n, k, l',
     'got ten keys' 
 );

@@ -1,0 +1,8 @@
+# This isn't loaded by default.  The config_file option must be set
+schema:
+    tree_type: join
+    tree_joint: '-'
+schemas:
+    ten:
+        tree_type: uri
+        uri_paths: relative
