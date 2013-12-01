@@ -18,9 +18,12 @@ use Badger::Class
     debug     => 0,
     import    => 'class',
     base      => 'Badger::Prototype',
-    utils     => 'blessed numlike',
+    utils     => 'blessed numlike is_object',
     constants => 'HASH ARRAY CODE DELIMITER',
     auto_can  => 'can_configure',
+    constant  => {
+        METADATA_OBJECT => 'Badger::Config::Metadata',
+    },
     alias     => {
         init  => \&init_config,
     },
@@ -74,8 +77,6 @@ sub get {
     my $self  = shift->prototype;
     my @names = map { ref $_ eq ARRAY ? @$_ : split /\./ } @_;
     my $name  = shift @names;
-    my @done  = ($name);
-    my ($last, $method);
 
     $self->debug(
         "get: [", 
@@ -84,56 +85,64 @@ sub get {
     ) if DEBUG;
     
     # fetch the head item
-    my $data = $self->{ data }->{ $name }
-        ||  $self->head($name) 
+    my $data = $self->head($name) 
         ||  return $self->decline_msg( 
                 no_config => $name
             );
 
+    return @names
+        ? $self->dot($name, $data, \@names)
+        : $data;
+}
+
+sub dot {
+    my ($self, $name, $data, $dots) = @_;
+    my @done = ($name);
+    my ($dot, $last, $method);
+
+    $self->debug(
+        "dot: [", 
+        join('].[', $name, @$dots),
+        "]"
+    ) if DEBUG;
+    
+
     # resolve any dotted paths after the head
-    while (@names) {
-        $name = shift @names;
-
-        $self->debugf(
-            "get() dot: [%s].[%s] ... [%s]", 
-            join('.', @done),
-            $name,
-            join('.', @names)
-        ) if DEBUG;
-
+    foreach $dot (@$dots) {
+        # call any function reference to return a value
         if (ref $data eq CODE) {
             $data = $data->();
         }
 
         CHECK: {
-            if (ref $data eq HASH) {
-                $data = $data->{ $name };
+            if (ref $data eq HASH || is_object(METADATA_OBJECT, $data)) {
+                $data = $data->{ $dot };
                 last CHECK;
             }
             elsif (ref $data eq ARRAY) {
-                if (numlike $name) {
-                    $data = $data->[$name];
+                if (numlike $dot) {
+                    $data = $data->[$dot];
                     last CHECK;
                 }
                 # else vmethods?
             }
             elsif (blessed $data) {
-                if ($method = $data->can($name)) {
-                    $data = $method->($data);
+                if ($method = $data->can($dot)) {
+                    $data = $method->($dot);
                     last CHECK;
                 }
             }
             return $self->decline_msg( 
-                no_config => join('.', @done, $name)
+                no_config => join('.', @done, $dot)
             );
         }
 
         if (! defined $data) {
             return $self->decline_msg( 
-                no_config => join('.', @done, $name)
+                no_config => join('.', @done, $dot)
             );
         }
-        push(@done, $name);
+        push(@done, $dot);
     }
 
     return $data;

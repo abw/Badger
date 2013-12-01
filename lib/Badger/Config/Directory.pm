@@ -1,6 +1,6 @@
 # TODO:
-#  [ ] allow schemas to be added after init
-#  [ ] allow master config file to contain schemas, etc.
+#  [X] allow schemas to be added after init
+#  [X] allow master config file to contain schemas, etc.
 
 package Badger::Config::Directory;
 
@@ -9,7 +9,8 @@ use Badger::Class
     debug     => 0,
     import    => 'class',
     base      => 'Badger::Config',
-    utils     => 'Dir VFS extend join_uri resolve_uri split_to_list params',
+    utils     => 'Dir VFS Now Duration join_uri resolve_uri split_to_list 
+                  extend params truelike falselike',
     constants => 'UTF8 YAML JSON DOT NONE TRUE FALSE',
     accessors => 'root extensions codecs schemas',
     messages  => {
@@ -32,7 +33,7 @@ sub init {
     $self->init_data($config);
     $self->init_directory($config);
     $self->init_schemas($config);
-    $self->init_configure($config);
+    $self->configure($config);
     return $self;
 }
 
@@ -117,26 +118,6 @@ sub init_schemas {
 
     $self->configure_schema($schema);
     $self->configure_schemas($schemas) if $schema;
-
-}
-
-sub init_configure {
-    my ($self, $config) = @_;
-    my $file = $config->{ file };
-    $self->init_config_file($file) if $file;
-}
-
-sub init_config_file {
-    my ($self, $name) = @_;
-    my $data = $self->config_file_data($name)
-        || return $self->error_msg( invalid => file => $name );
-
-    $self->debug(
-        "Config file data: ",
-        $self->dump_data($data)
-    ) if DEBUG;
-
-    $self->configure($data);
 }
 
 #-----------------------------------------------------------------------------
@@ -151,6 +132,22 @@ sub configure {
 
     $self->configure_schemas($config->{ schemas })
         if $config->{ schemas };
+
+    $self->configure_file($config->{ file })
+        if $config->{ file };
+}
+
+sub configure_file {
+    my ($self, $name) = @_;
+    my $data = $self->config_file_data($name)
+        || return $self->error_msg( invalid => file => $name );
+
+    $self->debug(
+        "Config file data: ",
+        $self->dump_data($data)
+    ) if DEBUG;
+
+    $self->configure($data);
 }
 
 sub configure_schema {
@@ -172,41 +169,105 @@ sub configure_schemas {
 
 sub head {
     my ($self, $name) = @_;
-#    $self->todo;
-    return $self->fetch($name);
+    return $self->memory_cache_fetch($name)
+        || $self->fetch($name);
+}
+
+
+# tail() is called when data is found.  Any schema in effect is passed
+# as the third argument in case we need to do something with it.
+
+sub tail {
+    my ($self, $name, $data, $schema) = @_;
+    $schema ||= $self->schema($name);
+    $self->debug(
+        "tail($name)\n  DATA: ", $self->dump_data($data), 
+        "\n SCHEMA: ", $self->dump_data($schema)
+    ) if DEBUG;
+    my $cache = $schema->{ memory_cache };
+
+    if ($cache) {
+        $self->debug("found memory_cache option: $cache") if DEBUG;
+        $self->memory_cache_store($name, $data, $cache, $schema);
+    }
+    return $data;
+}
+
+#-----------------------------------------------------------------------------
+# Memory cache
+#-----------------------------------------------------------------------------
+
+sub memory_cache_fetch {
+    my ($self, $name) = @_;
+    my $data   = $self->{ data    }->{ $name } || return;
+    my $expiry = $self->{ expires }->{ $name } || return $data;
+    my $now    = Now;
+    if ($expiry->before($now)) {
+        delete $self->{ data    }->{ $name };
+        delete $self->{ expires }->{ $name };
+        $self->debug(
+            "memory cache version of $name has expired (at $expiry, it's now $now)"
+        ) if DEBUG;
+        return undef;
+    }
+    $self->debug(
+        "returned data for $name from memory cache"
+    ) if DEBUG;
+    return $data;
+}
+
+sub memory_cache_store {
+    my ($self, $name, $data, $cache) = @_;
+    return unless $cache;
+
+    if (falselike($cache)) {
+        $self->debug("memory cache never");
+        return;
+    }
+
+    # store in internal memory cache
+    $self->{ data }->{ $name } = $data;
+
+    # see if we need to set an expiry timestamp
+    if (truelike($cache)) {
+        $self->debug("memory cache forever");
+    }
+    else {
+        my $duration = Duration($cache);
+        my $expires  = Now->adjust( 
+            seconds => $duration->seconds
+        );
+        $self->{ expires }->{ $name } = $expires;
+        $self->debug(
+            "caching for $duration, expires $expires"
+        ) if DEBUG;
+    }
 }
 
 # This is being fed back upstream from Contentity::Workspace - may not be 
 # relevant, not sure yet.
 
-sub HEAD_CACHED_TODO {
+sub head_with_caching_EXAMPLE {
     my ($self, $uri) = @_;
+
+    # this is problematic as we end up creating two separate schemas,
+    # furthermore, schema data defined as _schema_ in a file won't be read
+    # until after the file has been read....
     my $schema = $self->schema($uri);
+
+    # ...but we need some kind of schema to see if it might be in the cache
     my $cache  = $schema->{ cache };
-    my $cdata  = $self->fetch_cached_data($uri, $schema) if $cache;
-    my $data   = $cdata || $self->config_filesystem($uri, $schema);
 
-    $self->debug(
-        "metadata for $uri\nSCHEMA: ", 
-        $self->dump_data($schema), 
-        "\nDATA: ", 
-        $self->dump_data($data)
-    )  if DEBUG;
-
-    if ($cdata) {
-        # got data from the cache, that's cool
-        $self->debug(
-            "Got data from cache for $uri: ", 
-            $self->dump_data($cdata)
-        ) if DEBUG;
-        return $cdata;
+    if ($cache) {
+        $self->fetch_cached_data($uri, $schema) && return;
     }
+
+    my $data = $self->fetch($uri);
 
     if ($schema) {
         # look to see if the schema says we should inherit some or all of 
         # this data from the parent superspace
         my $inherit = $schema->{ inherit };
-        $self->debug("inherit option: $inherit") if DEBUG;
         $data = $self->inherit_metadata($uri, $data, $inherit)
             if $inherit;
     }
@@ -224,7 +285,6 @@ sub HEAD_CACHED_TODO {
 
 sub fetch {
     my ($self, $uri) = @_;
-
     my $file = $self->config_file($uri);
     my $dir  = $self->dir($uri);
     my $fok  = $file && $file->exists;
@@ -243,12 +303,13 @@ sub fetch {
         $self->debug("Found file for $uri, loading file data") if DEBUG;
         my $data = $file->try->data;
         return $self->error_msg( load_fail => $file => $@ ) if $@;
-        return $data;
+        return $self->tail(
+            $uri, $data
+        );
     }
 
     $self->debug("No file or directory found for $uri") if DEBUG;
     return undef;
-
 }
 
 
@@ -257,18 +318,13 @@ sub fetch {
 #-----------------------------------------------------------------------------
 
 sub config_tree {
-    my ($self, $name, @opts) = @_;
+    my ($self, $name) = @_;
     my $root    = $self->root;
     my $file    = $self->config_file($name);
     my $dir     = $root->dir($name);
     my $do_tree = TRUE;
     my $data    = { };
     my ($file_data, $binder, $more);
-
-    $self->debug(
-        "Config tree options: ", 
-        $self->dump_data(\@opts)
-    ) if DEBUG;
 
     unless ($file && $file->exists || $dir->exists) {
         return $self->decline_msg( not_found => 'file or directory' => $name );
@@ -286,7 +342,6 @@ sub config_tree {
     # local _schema_ defined in the data file
     my $schema = $self->schema(
         $name, 
-        @opts,
         $file_data ? delete $file_data->{ _schema_ } : ()
     );
     $self->debug(
@@ -325,9 +380,9 @@ sub config_tree {
 
     $self->debug("$name config: ", $self->dump_data($data)) if DEBUG;
 
-    # TODO: use inside out object to bind schema to data?
-
-    return $data;
+    return $self->tail(
+        $name, $data, $schema
+    );
 }
 
 sub scan_config_dir {
@@ -511,14 +566,32 @@ sub fix_uri_path {
 #-----------------------------------------------------------------------------
 
 sub schema {
-    my $self    = shift;
-    my $name    = shift || return $self->{ schema };
-    return extend(
+    my $self = shift;
+    my $name = shift || return $self->{ schema };
+    my $full = $self->{ merged_schemas } ||= { };
+    delete $full->{ $name } if @_;
+    return $full->{ $name } ||= extend(
         { },
         $self->{ schema  },
-        $self->{ schemas }->{ $name },
+        $self->lookup_schema($name),
         @_
     );
+}
+
+sub lookup_schema {
+    my $self    = shift;
+    my $name    = shift;
+    my $schemas = $self->{ schemas };
+    my $schema  = $schemas->{ $name };
+
+    while (! $schema && length $name) {
+        # keep chopping bits off the end of the name to find a more generic
+        # schema, e.g. forms/user/login -> forms/user -> forms
+        last unless $name =~ s/\W\w+\W?$//;
+        $self->debug("trying $name") if DEBUG;
+        $schema = $schemas->{ $name };
+    }
+    return $schema;
 }
 
 #-----------------------------------------------------------------------------
@@ -584,6 +657,7 @@ sub codec {
     my ($self, $name) = @_;
     return $self->codecs->{ $name } || $name;
 }
+
 
 1;
 

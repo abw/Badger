@@ -61,7 +61,8 @@ our $TEXT_WRAP_WIDTH    = 78;
 
 
 __PACKAGE__->export_any(qw(
-    UTILS blessed is_object numlike textlike params self_params plural 
+    UTILS blessed is_object numlike textlike truelike falselike
+    params self_params plural 
     odd_params xprintf dotid random_name camel_case CamelCase wrap
     permute_fragments plurality inflect split_to_list extend
     list_each hash_each join_uri resolve_uri
@@ -107,6 +108,14 @@ sub textlike($) {
     !  ref $_[0]                        # check if $[0] is a non-reference
     || blessed $_[0]                    # or an object with an overloaded
     && overload::Method($_[0], '""');   # '""' stringification operator
+}
+
+sub truelike($) {
+    $_[0] && $_[0] =~ /^(1|on|yes|true)$/i;
+}
+
+sub falselike {
+    $_[0] && $_[0] =~ /^(0|off|no|none|false)$/i;
 }
 
 sub params {
