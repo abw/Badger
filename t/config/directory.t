@@ -310,3 +310,5 @@ is(
     'eleven/m, eleven/n, k, l',
     'got ten keys' 
 );
+
+my $ten3 = $config->get('ten');
