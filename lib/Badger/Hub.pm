@@ -58,7 +58,11 @@ sub init_config {
     # points to a master configuration object or class name.  We default to the 
     # value in the $CONFIG package variable, which in this case is Badger::Config,
     # but could be re-defined by a subclass to be something else.
-    my $config = delete($args->{ config        }) || { };
+
+    my $config = delete($args->{ config }) 
+        || $self->class->any_var('CONFIG')
+        || { };
+
     my $module = delete($args->{ config_module })
         || $class->any_var('CONFIG_MODULE')
         || $self->CONFIG_MODULE;
@@ -67,13 +71,21 @@ sub init_config {
         # $config is already a config module object of the right heritage
         $self->debug("config is already a $module object") if DEBUG;
     }
-    elsif (ref $config eq HASH) {
-        $self->debug("loading and instantiating a $module config object") if DEBUG;
+    else {
+        if (ref $config eq HASH) {
+            # cool
+        }
+        elsif (! ref $config) {
+            # $config is a module name
+            $module = $config;
+            $config = { };
+        }
+        else {
+            return $self->error_msg( invalid => config => $config );
+        }
+        $self->debug("loading and instantiating a custom $module config object") if DEBUG;
         class($module)->load;
         $config = $module->new($config);
-    }
-    else {
-        return $self->error_msg( invalid => config => $config );
     }
 
     $self->{ config } = $config;

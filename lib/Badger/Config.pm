@@ -18,12 +18,9 @@ use Badger::Class
     debug     => 0,
     import    => 'class',
     base      => 'Badger::Prototype',
-    utils     => 'blessed numlike is_object',
+    utils     => 'blessed numlike',
     constants => 'HASH ARRAY CODE DELIMITER',
     auto_can  => 'can_configure',
-    constant  => {
-        METADATA_OBJECT => 'Badger::Config::Metadata',
-    },
     alias     => {
         init  => \&init_config,
     },
@@ -33,6 +30,7 @@ use Badger::Class
     };
 
 
+
 sub init_config {
     my ($self, $config) = @_;
     my $data  = $self->{ data } = $config->{ data } || { %$config };
@@ -40,9 +38,14 @@ sub init_config {
     
     # merge all $ITEMS in package variables with those listed in 
     # $config->{ items } and all other $config keys.
-    my $items = $self->class->list_vars( 
+    my $items = $class->list_vars( 
         ITEMS => delete($config->{ items }), keys %$data
     );
+
+    if (DEBUG) {
+        $self->debug("[$self] $class ITEMS: ", $self->dump_data($items));
+        $self->debug("[$self] $class DATA: ", $self->dump_data($data));
+    }
     
     # store hash lookup table marking valid items
     $items = $self->{ item } = {
@@ -115,7 +118,7 @@ sub dot {
         }
 
         CHECK: {
-            if (ref $data eq HASH || is_object(METADATA_OBJECT, $data)) {
+            if (ref $data eq HASH) {
                 $data = $data->{ $dot };
                 last CHECK;
             }
@@ -150,7 +153,7 @@ sub dot {
 
 sub head {
     my ($self, $name) = @_;
-    # subclasses can do somethign more complicated
+    # subclasses can do something more complicated
     return $self->{ data }->{ $name };
 }
 
@@ -183,7 +186,6 @@ sub can_configure {
 sub has_item {
     my $self = shift->prototype;
     my $name = shift;
-    $self = $self->prototype unless ref $self;
     return $self->{ item }->{ $name };
 }
 
