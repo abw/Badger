@@ -17,7 +17,7 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Debug ':all';
 use Badger::Test 
-    tests => 1,
+    tests => 5,
     debug => 'Badger::Workspace Badger::Config::Directory',
     args  => \@ARGV;
 

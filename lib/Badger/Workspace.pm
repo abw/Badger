@@ -134,14 +134,79 @@ sub config {
     my $config = $self->{ config }; return $config unless @_;
     my @names  = map { ref $_ eq ARRAY ? @$_ : split /\./ } @_;
     my $name   = shift @names;
-    my $data   = $config->get($name);
+    my $cache  = $self->{ cache };
+    my $data;#   = $self->fetch_cached_data($name) if $cache;
 
-    # do other stuff... (like caching)
+    if ($data) {
+        $self->debug(
+            "Got data from cache for $name: ", 
+            $self->dump_data($data)
+        ) if DEBUG or 1;
+        return $data;
+    }
+
+    $data = $config->get($name);
+
+    if ($data) {
+        $self->dump_data("got data for $name: ", $self->dump_data($data));
+    }
+#        || return;
+
+    #my $schema   = $config->schema($name);
+    #my $cacheopt = $schema->{ shared_cache };
+
+    # do other stuff... (like caching) - hmm on second thoughts, we should
+    # cache it in the config - BUT that prevents us from adding in inherited
+    # data... (unless we push it into the cache at the higher level of the 
+    # workspace and read only in the config... nah, that's problematic...
+    # could lead to data being merged/inherited over and over again... hmm)
 
     return @names
         ? $config->dot($name, $data, \@names)
         : $data;
 }
+
+#-----------------------------------------------------------------------------
+# Shared memory cache
+#-----------------------------------------------------------------------------
+
+sub cache {
+    # subclasses may define a cache
+    return undef;
+}
+
+sub fetch_cached_data {
+    my ($self, $key) = @_;
+    my $cache    = $self->cache || return;
+    my $uri      = $self->uri($key);
+    my $data     = $cache->get($uri);
+
+    $self->debug(
+        "fetch_cached_data($key, [uri:$uri])\n",
+        "Data loaded from cache: ",
+        $self->dump_data($data)
+    ) if (DEBUG || 1) && $data;
+
+    return $data;
+}
+
+sub store_cached_data {
+    my ($self, $key, $data, $schema) = @_;
+    my $cache    = $self->cache       || return;
+    my $duration = $schema->{ cache } || return;
+    my $uri      = $self->uri($key);
+    my $seconds  = $duration->seconds;
+
+    # TODO: expiry times > 30 days are assumed to be unix timestamps
+    $cache->set($uri, $data, $seconds);
+    $self->debug(
+        "store_cached_data($key [uri:$uri] [duration:$duration]): ", 
+        $self->dump_data($data)
+    ) if DEBUG or 1;
+
+    return $data;
+}
+
 
 #-----------------------------------------------------------------------------
 

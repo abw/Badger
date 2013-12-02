@@ -169,7 +169,7 @@ sub configure_schemas {
 
 sub head {
     my ($self, $name) = @_;
-    return $self->memory_cache_fetch($name)
+    return $self->cache_fetch($name)
         || $self->fetch($name);
 }
 
@@ -184,63 +184,53 @@ sub tail {
         "tail($name)\n  DATA: ", $self->dump_data($data), 
         "\n SCHEMA: ", $self->dump_data($schema)
     ) if DEBUG;
-    my $cache = $schema->{ memory_cache };
 
-    if ($cache) {
-        $self->debug("found memory_cache option: $cache") if DEBUG;
-        $self->memory_cache_store($name, $data, $cache, $schema);
+    my $duration = $schema->{ cache };
+    if ($duration) {
+        $self->debug("found cache duration option: $duration") if DEBUG;
+        $self->cache_store($name, $data, $duration, $schema);
     }
     return $data;
 }
 
 #-----------------------------------------------------------------------------
-# Memory cache
+# Caching via a Cache::* module
 #-----------------------------------------------------------------------------
 
-sub memory_cache_fetch {
+sub cache {
+    my $self  = shift;
+
+    return $self->{ cache } 
+        unless @_;
+
+    return @_ > 1
+        ? $self->cache_store(@_)
+        : $self->cache_fetch(@_);
+}
+
+sub cache_fetch {
     my ($self, $name) = @_;
-    my $data   = $self->{ data    }->{ $name } || return;
-    my $expiry = $self->{ expires }->{ $name } || return $data;
-    my $now    = Now;
-    if ($expiry->before($now)) {
-        delete $self->{ data    }->{ $name };
-        delete $self->{ expires }->{ $name };
-        $self->debug(
-            "memory cache version of $name has expired (at $expiry, it's now $now)"
-        ) if DEBUG;
-        return undef;
-    }
-    $self->debug(
-        "returned data for $name from memory cache"
-    ) if DEBUG;
-    return $data;
+    my $cache = $self->cache || return;
+    return $cache->get($name);
 }
 
-sub memory_cache_store {
-    my ($self, $name, $data, $cache) = @_;
-    return unless $cache;
+sub cache_store {
+    my ($self, $name, $data, $expires) = @_;
+    my $cache = $self->cache || return;
 
-    if (falselike($cache)) {
-        $self->debug("memory cache never");
+    if (falselike($expires)) {
+        $self->debug("cache never");
         return;
     }
 
-    # store in internal memory cache
-    $self->{ data }->{ $name } = $data;
-
     # see if we need to set an expiry timestamp
-    if (truelike($cache)) {
-        $self->debug("memory cache forever");
+    if (truelike($expires)) {
+        $self->debug("memory cache forever") if DEBUG or 1;
+        $cache->set($name, $data);
     }
     else {
-        my $duration = Duration($cache);
-        my $expires  = Now->adjust( 
-            seconds => $duration->seconds
-        );
-        $self->{ expires }->{ $name } = $expires;
-        $self->debug(
-            "caching for $duration, expires $expires"
-        ) if DEBUG;
+        $self->debug("caching for $expires") if DEBUG or 1;
+        $cache->set($name, $data, $expires);
     }
 }
 
