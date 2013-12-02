@@ -312,16 +312,16 @@ sub dump_ref {
     
     # TODO: change these to reftype
     if (UNIVERSAL::isa($data, HASH)) {
-        return $self->dump_hash($data, $indent);
+        return dump_hash($self, $data, $indent);
     }
     elsif (UNIVERSAL::isa($data, ARRAY)) {
-        return $self->dump_list($data, $indent);
+        return dump_list($self, $data, $indent);
     }
     elsif (UNIVERSAL::isa($data, REGEX)) {
-        return $self->dump_text("$data");
+        return dump_text($self, $data);
     }
     elsif (UNIVERSAL::isa($data, SCALAR)) {
-        return $self->dump_text($$data);
+        return dump_text($self, $$data);
     }
     else {
         return $data;

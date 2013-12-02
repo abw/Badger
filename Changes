@@ -36,6 +36,10 @@ CHANGES
     Fixed a bug in the auto_can feature of Badger::Class::Methods which
     prevented it from working with subclasses.
 
+    Fixed a bug in Badger::Debug dump_ref() to make it directly call other
+    "dump_XXX()" functions instead of relying on inheritance of those
+    methods through $self.
+
     Added plurality(), inflect(), list_each(), hash_each(), extend(),
     split_to_list(), join_uri() and resolve_uri(), to Badger::Utils.
 
