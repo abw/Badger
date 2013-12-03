@@ -1,0 +1,7 @@
+name:      Workspace Example 2
+
+inherit:   all
+
+schema:
+  cache:   30 seconds
+

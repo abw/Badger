@@ -9,9 +9,10 @@ use Badger::Class
     debug     => 0,
     import    => 'class',
     base      => 'Badger::Config',
-    utils     => 'Dir VFS Now Duration join_uri resolve_uri split_to_list 
-                  extend params truelike falselike',
-    constants => 'UTF8 YAML JSON DOT NONE TRUE FALSE',
+    utils     => 'Dir VFS Now Duration Filter 
+                  blessed join_uri resolve_uri split_to_list 
+                  extend params truelike falselike self_params',
+    constants => 'UTF8 YAML JSON DOT NONE TRUE FALSE SLASH HASH ARRAY',
     accessors => 'root extensions codecs schemas',
     messages  => {
         load_fail => 'Failed to load data from %s: %s',
@@ -39,7 +40,7 @@ sub init {
 
 sub init_data {
     my ($self, $config) = @_;
-    $self->{ data } = $config->{ data } || { %$config };
+    $self->{ data   } = $config->{ data   } || { %$config };
 }
 
 sub init_directory {
@@ -85,7 +86,7 @@ sub init_directory {
     );
 
     $self->{ root       } = $root;
-    $self->{ uri        } = $config->{ uri } || $root->name;
+#   $self->{ uri        } = $config->{ uri } || $root->name;
     $self->{ extensions } = $exts;
     $self->{ match_ext  } = $ext_re;
     $self->{ codecs     } = $codecs;
@@ -125,7 +126,29 @@ sub init_schemas {
 #-----------------------------------------------------------------------------
 
 sub configure {
-    my ($self, $config) = @_;
+    my ($self, $config) = self_params(@_);
+    my $item;
+
+    # A bit of hackery to allow the config object to load configuration options
+    # for the cache and store it like any other data.  Badger::Workspace then
+    # reads the cache config, creates a cache object and passes it to this 
+    # method to have it set.  So me must detect the difference between an
+    # object and raw data.
+    if ($item = $config->{ cache }) {
+        if (blessed $item) {
+            $self->debug("Got a new cache object: $item") if DEBUG;
+            $self->{ cache } = $item;
+        }
+        else {
+            $self->debug("Got a new cache config: ", $self->dump_data($item)) if DEBUG;
+            $self->{ data }->{ cache } = $item;
+        }
+    }
+
+    foreach $item (qw( uri parent )) {
+        $self->{ $item } = $config->{ $item }
+            if $config->{ $item };
+    }
 
     $self->configure_schema($config->{ schema }) 
         if $config->{ schema };
@@ -135,6 +158,12 @@ sub configure {
 
     $self->configure_file($config->{ file })
         if $config->{ file };
+
+    $self->{ inherit } = $self->configure_filter( inherit => $config->{ inherit } )
+        if $config->{ inherit };
+
+    $self->{ merge } = $self->configure_filter( merge => $config->{ merge } )
+        if $config->{ merge };
 }
 
 sub configure_file {
@@ -162,6 +191,29 @@ sub configure_schemas {
     @$schemas{ keys %$more } = values %$more;
 }
 
+sub configure_filter {
+    my ($self, $name, $spec) = @_;
+
+    if (! ref $spec) {
+        # single word like 'all' or 'none'
+        $spec = { 
+            accept => $spec 
+        };
+    }
+    elsif (ref $spec ne HASH) {
+        $spec = { 
+            include => $spec 
+        };
+    }
+
+    $self->debug(
+        "$name filter spec: ", 
+        $self->dump_data($spec),
+    ) if DEBUG;
+
+    return Filter($spec);
+}
+
 
 #-----------------------------------------------------------------------------
 # head() method replacing that in the Badger::Config base class
@@ -169,8 +221,11 @@ sub configure_schemas {
 
 sub head {
     my ($self, $name) = @_;
-    return $self->cache_fetch($name)
-        || $self->fetch($name);
+    my $data =   
+            $self->{ data }->{ $name }
+        ||  $self->cache_fetch($name)
+        ||  $self->fetch($name)
+        ||  $self->parent_fetch($name);
 }
 
 
@@ -179,19 +234,34 @@ sub head {
 
 sub tail {
     my ($self, $name, $data, $schema) = @_;
+    my $pdata = $self->parent_head($name, $self->{ merge });
+    my $duration;
+
     $schema ||= $self->schema($name);
+
     $self->debug(
         "tail($name)\n  DATA: ", $self->dump_data($data), 
         "\n SCHEMA: ", $self->dump_data($schema)
     ) if DEBUG;
 
-    my $duration = $schema->{ cache };
-    if ($duration) {
+    # if we've got some data from the parent item (implying that there is a 
+    # parent and the rules in $self->{ merge } permit us to merge in data 
+    # from the parent) then we merge it into the child data set.
+
+    if ($pdata) {
+        # we may fetch the parent data if the merge ruleset says we can 
+        $data = $self->merge_data($name, $pdata, $data, $schema);
+    }
+
+    $self->debug("merged data for $name: ", $self->dump_data($data)) if DEBUG;
+
+    if ($self->{ cache } && ($duration = $schema->{ cache })) {
         $self->debug("found cache duration option: $duration") if DEBUG;
         $self->cache_store($name, $data, $duration, $schema);
     }
     return $data;
 }
+
 
 #-----------------------------------------------------------------------------
 # Caching via a Cache::* module
@@ -208,65 +278,173 @@ sub cache {
         : $self->cache_fetch(@_);
 }
 
+sub cache_key {
+    my $self = shift;
+    my $base = $self->{ uri } || return join_uri(@_);
+    return join_uri($base, @_);
+}
+
 sub cache_fetch {
     my ($self, $name) = @_;
     my $cache = $self->cache || return;
-    return $cache->get($name);
+    my $key   = $self->cache_key($name);
+    return $cache->get($key);
 }
 
 sub cache_store {
     my ($self, $name, $data, $expires) = @_;
     my $cache = $self->cache || return;
+    my $key   = $self->cache_key($name);
 
     if (falselike($expires)) {
-        $self->debug("cache never");
+        $self->debug("cache $name ($key) never") if DEBUG;
         return;
     }
 
     # see if we need to set an expiry timestamp
     if (truelike($expires)) {
-        $self->debug("memory cache forever") if DEBUG or 1;
-        $cache->set($name, $data);
+        $self->debug("cache $name ($key) forever") if DEBUG;
+        $cache->set($key, $data);
     }
     else {
-        $self->debug("caching for $expires") if DEBUG or 1;
-        $cache->set($name, $data, $expires);
+        $self->debug("cache $name ($key) for $expires") if DEBUG;
+        $cache->set($key, $data, "$expires");
     }
 }
 
-# This is being fed back upstream from Contentity::Workspace - may not be 
-# relevant, not sure yet.
 
-sub head_with_caching_EXAMPLE {
-    my ($self, $uri) = @_;
+#-----------------------------------------------------------------------------
+# Parent: fallback for when data isn't found
+#-----------------------------------------------------------------------------
 
-    # this is problematic as we end up creating two separate schemas,
-    # furthermore, schema data defined as _schema_ in a file won't be read
-    # until after the file has been read....
-    my $schema = $self->schema($uri);
+sub parent_fetch {
+    my ($self, $name) = @_;
+    my $parent = $self->{ parent  }                     || return;
+    my $rules  = $self->{ inherit } || $self->{ merge } || return;
+    my $data   = $self->parent_head($name, $rules)      || return;
+    my $schema = $self->schema($name);
+    my $duration;
 
-    # ...but we need some kind of schema to see if it might be in the cache
-    my $cache  = $schema->{ cache };
+    $self->debug(
+        "parent_fetch($name)\n",
+        "DATA: ", $self->dump_data($data), "\n",
+        "SCHEMA: ", $self->dump_data($schema) 
+    ) if DEBUG;
 
-    if ($cache) {
-        $self->fetch_cached_data($uri, $schema) && return;
+    # The schema for this particular data item may have rules about the 
+    # items within it that should be inherited and/or merged from the 
+    # parent data into the (empty) child
+    $data = $self->merge_data($name, $data, { }, $schema);
+
+    $self->debug("merged data for $name: ", $self->dump_data($data)) if DEBUG;
+
+    if ($self->{ cache } && ($duration = $schema->{ cache })) {
+        $self->debug("found cache duration option: $duration") if DEBUG;
+        $self->cache_store($name, $data, $duration, $schema);
     }
-
-    my $data = $self->fetch($uri);
-
-    if ($schema) {
-        # look to see if the schema says we should inherit some or all of 
-        # this data from the parent superspace
-        my $inherit = $schema->{ inherit };
-        $data = $self->inherit_metadata($uri, $data, $inherit)
-            if $inherit;
-    }
-
-    $self->store_cached_data($uri, $data, $schema) 
-        if $cache && $data;
 
     return $data;
 }
+
+sub parent_head {
+    my ($self, $name, $rules) = @_;
+    my $parent = $self->{ parent  } || return;
+
+    # The $rules option is either the "inherit" or "merge" Filter 
+    # for the top-level config items.  This tells us if we're allowed
+    # to inherit/merge from the parent
+    if (! $rules) {
+        return undef;
+    }
+
+    if ($rules->item_accepted($name)) {
+        $self->debug("YES, we can inherit/merge $name from parent") if DEBUG;
+    }
+    else {
+        $self->debug("NO, we cannot inherit/merge $name from parent") if DEBUG;
+        return undef;
+    }
+
+    $self->debug("Asking parent for $name") if DEBUG;
+
+    return $parent->head($name);
+}
+
+
+sub merge_data {
+    my ($self, $name, $parent, $child, $schema) = @_;
+    my $merged = { };
+    my @keys = keys %$parent;
+
+    if (DEBUG) {
+        $self->debug("TODO: merge_data()");
+        $self->debug("  PARENT: ", $self->dump_data($parent));
+        $self->debug("  CHILD: ", $self->dump_data($child));
+        $self->debug("  SCHEMA: ", $self->dump_data($schema));
+    }
+    my $inherit = $schema->{ inherit_filter };
+    my $merge   = $schema->{ merge_filter   };
+
+    if (! $inherit && ! $merge) {
+        $self->debug("No inherit or merge rules - doing a simple inherit") if DEBUG;
+        return {
+            %$parent,
+            %$child
+        };
+    }
+
+    # first inherit the relevant items from the parent data set
+    while (my ($key, $value) = each %$parent) {
+        next if $inherit
+            &&  $inherit->item_rejected($key);
+        $merged->{ $key } = $value;
+    }
+
+    # then add (or merge) in any items from the child data set
+    while (my ($key, $value) = each %$child) {
+        if ($merge && $merge->item_accepted($key)) {
+            my $old = $merged->{ $key };
+            $value = $self->merge_data_item($name, $key, $old, $value)
+                if defined $old;
+        }
+        $merged->{ $key } = $value;
+    }
+
+    return $merged;
+}
+
+sub merge_data_item {
+    my ($self, $name, $key, $parent, $child) = @_;
+    my $pref = ref $parent;
+    my $cref = ref $child;
+
+    if (DEBUG) {
+        $self->debug("$name.$key parent: ", $self->dump_data($parent));
+        $self->debug("$name.$key child:  ", $self->dump_data($child));
+    }
+
+    if ($pref eq HASH && $cref eq HASH) {
+        $self->debug("$name.$key merging two hashes") if DEBUG;
+        return { %$parent, %$child };
+    }
+
+    if ($pref eq ARRAY) {
+        if ($cref eq ARRAY) {
+            $self->debug("$name.$key merging two lists") if DEBUG;
+            return [ @$parent, @$child ];
+        }
+        else {
+            return [ @$parent, $child ];
+        }
+    }
+
+    if ($cref eq ARRAY) {
+        return [ $parent, @$child ];
+    }
+
+    return [ $parent, $child ];
+}
+
 
 
 #-----------------------------------------------------------------------------
@@ -560,12 +738,31 @@ sub schema {
     my $name = shift || return $self->{ schema };
     my $full = $self->{ merged_schemas } ||= { };
     delete $full->{ $name } if @_;
-    return $full->{ $name } ||= extend(
+    return $full->{ $name } 
+        ||= $self->prepare_schema($name, @_);
+}
+
+sub prepare_schema {
+    my ($self, $name, @args) = @_;
+    my $schema = extend(
         { },
         $self->{ schema  },
         $self->lookup_schema($name),
-        @_
+        @args
     );
+    if ($schema->{ inherit }) {
+        $self->debug("adding inherit filter: ", $self->dump_data($schema->{ inherit })) if DEBUG;
+        $schema->{ inherit_filter } = $self->configure_filter(
+            inherit => $schema->{ inherit }
+        );
+    }
+    if ($schema->{ merge }) {
+        $self->debug("adding merge filter: ", $self->dump_data($schema->{ merge })) if DEBUG;
+        $schema->{ merge_filter } = $self->configure_filter(
+            inherit => $schema->{ inherit }
+        );
+    }
+    return $schema;
 }
 
 sub lookup_schema {
@@ -646,6 +843,15 @@ sub find_config_file {
 sub codec {
     my ($self, $name) = @_;
     return $self->codecs->{ $name } || $name;
+}
+
+sub uri {
+    my $self = shift;
+    my $base = $self->{ uri };
+    return $base unless @_;
+    my $path = resolve_uri(SLASH, @_);
+    return $path unless $base;
+    return sprintf("%s%s", $base, $path);
 }
 
 

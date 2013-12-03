@@ -1,6 +1,6 @@
 #============================================================= -*-perl-*-
 #
-# t/utils.t
+# t/core/utils.t
 #
 # Test the Badger::Utils module.
 #
@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Debug modules => 'Badger::Utils';
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural permute_fragments';
 use Badger::Test 
-    tests => 80,
+    tests => 102,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -400,6 +400,37 @@ is( join_uri('foo/', '/bar'), 'foo/bar', 'join_uri("foo/", "/bar")');
 
 is( resolve_uri('foo',  'bar'), 'foo/bar', 'resolve_uri("foo", "bar")');
 is( resolve_uri('foo', '/bar'), '/bar',    'resolve_uri("foo", "/bar")');
+
+
+#-----------------------------------------------------------------------------
+# truelike/falselike
+#-----------------------------------------------------------------------------
+
+use Badger::Utils 'truelike falselike';
+
+ok(   truelike(1),        '1 is truelike'            );
+ok(   truelike('1'),      "'1' is truelike"          );
+ok(   truelike('on'),     'on is truelike'           );
+ok(   truelike('yes'),    'yes is truelike'          );
+ok(   truelike('true'),   'true is truelike'         );
+ok( ! truelike(undef),    'undef is not truelike'    );
+ok( ! truelike(0),        '0 is not truelike'        );
+ok( ! truelike('0'),      "'0' is not truelike"      );
+ok( ! truelike('off'),    "off is not truelike"      );
+ok( ! truelike('no'),     "'no' is not truelike"     );
+ok( ! truelike('false'),  "'false' is not truelike"  );
+
+ok(   falselike(undef),   'undef is falselike'       );
+ok(   falselike(0),       '0 is falselike'           );
+ok(   falselike('0'),     "'0' is falselike"         );
+ok(   falselike('off'),   "off is falselike"         );
+ok(   falselike('no'),    "'no' is falselike"        );
+ok(   falselike('false'), "'false' is falselike"     );
+ok( ! falselike(1),       '1 is not falselike'       );
+ok( ! falselike('1'),     "'1' is not falselike"     );
+ok( ! falselike('on'),    'on is not falselike'      );
+ok( ! falselike('yes'),   'yes is not falselike'     );
+ok( ! falselike('true'),  'true is not falselike'    );
 
 
 __END__

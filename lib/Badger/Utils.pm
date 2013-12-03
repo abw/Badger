@@ -51,6 +51,7 @@ our $HELPERS  = {       # keep this compact in case we don't need to use it
     'Badger::Logic'      => 'LOGIC Logic',
     'Badger::Duration'   => 'DURATION Duration',
     'Badger::URL'        => 'URL',
+    'Badger::Filter'     => 'FILTER Filter',
     'Badger::Filesystem' => 'FS File Dir Bin',
     'Badger::Filesystem::Virtual' 
                          => 'VFS',
@@ -115,7 +116,7 @@ sub truelike($) {
 }
 
 sub falselike {
-    $_[0] && $_[0] =~ /^(0|off|no|none|false)$/i;
+    ! $_[0] || $_[0] =~ /^(0|off|no|none|false)$/i;
 }
 
 sub params {
@@ -559,6 +560,24 @@ A function for creating a L<Badger::Filesystem::Directory> object.
 Returns a L<Badger::Filesystem::Directory> object for the directory in 
 which the current script is located.  See L<Bin()|Badger::Filesystem/Bin>
 in L<Badger::Filesystem>.
+
+=head2 L<Badger::Filter>
+
+=head3 L<FILTER|Badger::Filter/FILTER>
+
+An alias for C<Badger::Filter>.
+
+=head3 L<Filter()|Badger::Filter/Filter()>
+
+Function for returning a L<Badger::Filter> object for filtering data.
+
+    my $filter = Filter(
+        include => [ qr/beer/ ],
+        exclude => [ 'root beer' ],
+    );
+    my @matches = $filter->accept(
+        'beer', 'lite beer', 'root beer', 'soda'
+    );
 
 =head2 L<Badger::Logic>
 

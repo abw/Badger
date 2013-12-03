@@ -29,7 +29,8 @@ L<http://github.com/abw/Template-TT2> and L<http://github.com/abw/Template-TT3>.
 
 =head2 Version 0.10 - Not Yet released
 
-Added L<Badger::Comparable> and L<Badger::Duration>.
+Added L<Badger::Comparable>, L<Badger::Duration>, L<Badger::Filter> and
+L<Badger::Cache>.
 
 Refactored parts of L<Badger::Config> and added L<Badger::Config::Directory>.
 

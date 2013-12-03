@@ -240,7 +240,11 @@ main->debug(
 
 my $three = $config->get('three');
 ok( $three, 'got tree three' );
-is( join(', ', sort keys %$three), 'e, f, five*six*i, five*six*j, four*g, four*h', 'got joined keys' );
+is( 
+    join(', ', sort keys %$three), 
+    'e, f, five*six*i, five*six*j, four*g, four*h, iv*i-j, iv*i-k', 
+    'got joined keys' 
+);
 
 main->debug(
     "three: ",

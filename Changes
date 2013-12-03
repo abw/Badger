@@ -27,7 +27,8 @@ CHANGES
     <http://github.com/abw/Template-TT3>.
 
   Version 0.10 - Not Yet released
-    Added Badger::Comparable and Badger::Duration.
+    Added Badger::Comparable, Badger::Duration, Badger::Filter and
+    Badger::Cache.
 
     Refactored parts of Badger::Config and added Badger::Config::Directory.
 

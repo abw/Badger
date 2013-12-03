@@ -1,0 +1,35 @@
+# simple whitespace delimited string of items to inherit
+inherit: one ten
+
+# alternately a list of strings
+merge:
+    - three
+
+# alternately, specific include and exclude lists
+# merge:
+#  include:
+#    - foo
+#    - bar
+
+
+# default schema for any and all items
+schema:
+    tree_type:     join
+    tree_joint:    '-'
+    cache:         2 seconds
+
+# more specific schema rules for specific items
+schemas:
+    ten:
+        tree_type: uri
+        uri_paths: relative
+        cache:     5 seconds
+    three:
+        inherit:
+            exclude:
+                - iv-i-j
+                - iv-i-k
+        merge:
+            - e
+            - f
+
