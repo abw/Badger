@@ -48,6 +48,7 @@ sub init_hub {
     my ($self, $config) = @_;
     $self->init_config($config);
     $self->init_items($config);
+    # $self->init_collections($config);     # init on demand
 }
 
 sub init_config {
@@ -118,9 +119,11 @@ sub init_collections {
 sub init_components {
     shift->init_collection( components => @_ );
 }
+
 sub init_resources {
     shift->init_collection( resources => @_ );
 }
+
 sub init_delegates {
     shift->init_collection( delegates => @_ );
 }
@@ -128,11 +131,27 @@ sub init_delegates {
 sub init_collection {
     my ($self, $type) = @_;
     my $TYPE = uc $type;
+    my $cfg  = $self->config($type);
     my $bits = $self->{ $type } = $self->class->hash_vars( 
         $TYPE => $self->config($type)
     );
-    $self->debug("$type: ", $self->dump_data($bits)) if DEBUG;
+    $self->debug("init_collection: $type: ", $self->dump_data($bits)) if DEBUG;
     return $bits;
+}
+
+sub configure {
+    my ($self, $config) = self_params(@_);
+    my $item;
+
+    if ($item = delete $config->{ components }) {
+        $self->components($item);
+    }
+    if ($item = delete $config->{ resources }) {
+        $self->resources($item);
+    }
+    if ($item = delete $config->{ delegates }) {
+        $self->delegates($item);
+    }
 }
 
 #-----------------------------------------------------------------------------
@@ -291,14 +310,19 @@ sub config {
         # $self->{ config } can be a hash ref with a $name item
         $defaults = $config->{ $name };
     }
+    elsif (blessed $config && ($method = $config->can('get'))) {
+        # $self->{ config } can be an object with a get($name) method which we call
+        $self->debug("calling config->get($name)") if DEBUG;
+        $defaults = $method->($config, $name);
+    }
     elsif (blessed $config && ($method = $config->can($name))) {
         # $self->{ config } can be an object with a $name method which we call
+        $self->debug("calling config->$name") if DEBUG;
         $defaults = $method->($config);
     }
-    else {
-        # no defaults
-        return $self->no_config($name, $params);
-    }
+    # no defaults
+    return $self->no_config($name, $params)
+        unless $defaults;
 
     $self->debug(
         "config for $name: DEFAULTS: ", 

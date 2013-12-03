@@ -24,9 +24,9 @@ use Badger::Test
 
 use Badger::Utils 'Bin';
 use Badger::Config::Directory;
-use Cache::Memory;          # TODO: skip if not found...
+use Badger::Cache;          # TODO: skip if not found...
 
-my $cache  = Cache::Memory->new;
+my $cache  = Badger::Cache->new;
 my $pkg    = 'Badger::Config::Directory';
 my $dir2   = Bin->dir('test_files/dir2');
 my $dir3   = Bin->dir('test_files/dir3');

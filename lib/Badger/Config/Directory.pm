@@ -1,9 +1,6 @@
-# TODO:
-#  [X] allow schemas to be added after init
-#  [X] allow master config file to contain schemas, etc.
-
 package Badger::Config::Directory;
 
+use Badger::Debug ':all';
 use Badger::Class
     version   => 0.01,
     debug     => 0,
@@ -13,7 +10,7 @@ use Badger::Class
                   blessed join_uri resolve_uri split_to_list 
                   extend params truelike falselike self_params',
     constants => 'UTF8 YAML JSON DOT NONE TRUE FALSE SLASH HASH ARRAY',
-    accessors => 'root extensions codecs schemas',
+    accessors => 'root extensions codecs schemas data',
     messages  => {
         load_fail => 'Failed to load data from %s: %s',
     };
@@ -31,6 +28,7 @@ our $TREE_JOINT   = '_';
 
 sub init {
     my ($self, $config) = @_;
+    $self->debug("init() config: ", $self->dump_data($config)) if DEBUG;
     $self->init_data($config);
     $self->init_directory($config);
     $self->init_schemas($config);
@@ -40,7 +38,8 @@ sub init {
 
 sub init_data {
     my ($self, $config) = @_;
-    $self->{ data   } = $config->{ data   } || { %$config };
+    $self->{ data } = delete $config->{ data } || $config; #{ %$config };
+    #$self->debug("init_data(): ", $self->dump_data($self->{ data }));
 }
 
 sub init_directory {
@@ -48,14 +47,14 @@ sub init_directory {
     my $class = $self->class;
 
     # create hash of options for file objects created by directory object
-    my $encoding = $config->{ encoding }
+    my $encoding = delete $config->{ encoding }
         || $class->any_var('ENCODING');
     my $filespec = {
         encoding => $encoding,
     };
 
     # we must have a root directory
-    my $dir  = $config->{ directory } || $config->{ dir }
+    my $dir  = delete $config->{ directory } || delete $config->{ dir }
         || return $self->error_msg( missing => 'directory' );
     my $root = Dir($dir, $filespec);
 
@@ -82,7 +81,7 @@ sub init_directory {
     # a mapping of file extensions to codecs, for any that Badger::Codecs 
     # can't grok automagically
     my $codecs = $class->hash_vars( 
-        CODECS => $config->{ extensions } 
+        CODECS => delete $config->{ extensions } 
     );
 
     $self->{ root       } = $root;
@@ -106,15 +105,15 @@ sub init_schemas {
     $self->{ schemas } = { };
 
     $schema->{ uri_paths  } 
-        ||= $config->{ uri_paths }
+        ||= delete $config->{ uri_paths }
         ||  $class->any_var('URI_PATHS');
 
     $schema->{ tree_type  } 
-        ||= $config->{ tree_type }
+        ||= delete $config->{ tree_type }
         ||  $class->any_var('TREE_TYPE');
 
     $schema->{ tree_joint } 
-        ||= $config->{ tree_joint }
+        ||= delete $config->{ tree_joint }
         ||  $class->any_var('TREE_JOINT');
 
     $self->configure_schema($schema);
@@ -129,12 +128,20 @@ sub configure {
     my ($self, $config) = self_params(@_);
     my $item;
 
+    if (%$config) {
+        #$self->debug_callers;
+        $self->debug(
+            "$self things starting in $config: ", 
+            join(', ', keys %$config)
+        ) if DEBUG;
+    }
+
     # A bit of hackery to allow the config object to load configuration options
     # for the cache and store it like any other data.  Badger::Workspace then
     # reads the cache config, creates a cache object and passes it to this 
     # method to have it set.  So me must detect the difference between an
     # object and raw data.
-    if ($item = $config->{ cache }) {
+    if ($item = delete $config->{ cache }) {
         if (blessed $item) {
             $self->debug("Got a new cache object: $item") if DEBUG;
             $self->{ cache } = $item;
@@ -146,24 +153,33 @@ sub configure {
     }
 
     foreach $item (qw( uri parent )) {
-        $self->{ $item } = $config->{ $item }
+        $self->{ $item } = delete $config->{ $item }
             if $config->{ $item };
     }
 
-    $self->configure_schema($config->{ schema }) 
-        if $config->{ schema };
+    $self->configure_schema($item) 
+        if ($item = delete $config->{ schema });
 
-    $self->configure_schemas($config->{ schemas })
-        if $config->{ schemas };
+    $self->configure_schemas($item)
+        if ($item = delete $config->{ schemas });
 
-    $self->configure_file($config->{ file })
-        if $config->{ file };
+    $self->configure_file($item)
+        if ($item = delete $config->{ file });
 
-    $self->{ inherit } = $self->configure_filter( inherit => $config->{ inherit } )
-        if $config->{ inherit };
+    $self->{ inherit } = $self->configure_filter( inherit => $item )
+        if ($item = delete $config->{ inherit });
 
-    $self->{ merge } = $self->configure_filter( merge => $config->{ merge } )
-        if $config->{ merge };
+    $self->{ merge } = $self->configure_filter( merge => $item )
+        if ($item = delete $config->{ merge });
+
+    if (%$config) {
+        $self->debug(
+            "$self things left over in $config: ", 
+            $self->dump_data($config)
+        ) if DEBUG;
+        my $data = $self->{ data };
+        @$data{ keys %$config } = values %$config; 
+    }
 }
 
 sub configure_file {
@@ -172,7 +188,7 @@ sub configure_file {
         || return $self->error_msg( invalid => file => $name );
 
     $self->debug(
-        "Config file data: ",
+        "Config file data from $name: ",
         $self->dump_data($data)
     ) if DEBUG;
 
@@ -234,7 +250,8 @@ sub head {
 
 sub tail {
     my ($self, $name, $data, $schema) = @_;
-    my $pdata = $self->parent_head($name, $self->{ merge });
+    my $rules = $self->{ inherit } || $self->{ merge };
+    my $pdata = $self->parent_head($name, $rules);
     my $duration;
 
     $schema ||= $self->schema($name);
@@ -242,6 +259,10 @@ sub tail {
     $self->debug(
         "tail($name)\n  DATA: ", $self->dump_data($data), 
         "\n SCHEMA: ", $self->dump_data($schema)
+    ) if DEBUG;
+
+    $self->debug(
+        "parent data: ", $self->dump_data($pdata), 
     ) if DEBUG;
 
     # if we've got some data from the parent item (implying that there is a 
@@ -278,37 +299,29 @@ sub cache {
         : $self->cache_fetch(@_);
 }
 
-sub cache_key {
-    my $self = shift;
-    my $base = $self->{ uri } || return join_uri(@_);
-    return join_uri($base, @_);
-}
-
 sub cache_fetch {
     my ($self, $name) = @_;
     my $cache = $self->cache || return;
-    my $key   = $self->cache_key($name);
-    return $cache->get($key);
+    return $cache->get($name);
 }
 
 sub cache_store {
     my ($self, $name, $data, $expires) = @_;
     my $cache = $self->cache || return;
-    my $key   = $self->cache_key($name);
 
     if (falselike($expires)) {
-        $self->debug("cache $name ($key) never") if DEBUG;
+        $self->debug("cache $name never") if DEBUG;
         return;
     }
 
     # see if we need to set an expiry timestamp
     if (truelike($expires)) {
-        $self->debug("cache $name ($key) forever") if DEBUG;
-        $cache->set($key, $data);
+        $self->debug("cache $name forever") if DEBUG;
+        $cache->set($name, $data);
     }
     else {
-        $self->debug("cache $name ($key) for $expires") if DEBUG;
-        $cache->set($key, $data, "$expires");
+        $self->debug("cache $name for $expires") if DEBUG;
+        $cache->set($name, $data, "$expires");
     }
 }
 
@@ -354,6 +367,7 @@ sub parent_head {
     # for the top-level config items.  This tells us if we're allowed
     # to inherit/merge from the parent
     if (! $rules) {
+        $self->debug("No merge rules");
         return undef;
     }
 

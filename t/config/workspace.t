@@ -14,11 +14,11 @@
 use strict;
 use warnings;
 
-use lib qw( ./lib ../lib ../../lib );
+use lib qw( ./lib ../lib ../../lib t/config/lib );
 use Badger::Debug ':all';
 use Badger::Test 
-    tests => 15,
-    debug => 'Badger::Workspace Badger::Cache xBadger::Config::Directory',
+    tests => 22,
+    debug => 'Badger::Workspace Badger::Hub Badger::Cache Badger::Config::Directory',
     args  => \@ARGV;
 
 use Badger::Utils 'Bin';
@@ -56,6 +56,8 @@ my $style = $wspace->config('wibble.wibbled');
 is( $pouch, 'frusset pouch', "fetched wibble.item frusset pouch" );
 is( $style, 'pleasantly', "You have pleasantly wibbled my frusset pouch" );
 
+my $data = $wspace->config->data;
+main->debug("config data: ", main->dump_data($data)) if DEBUG;
 
 #-----------------------------------------------------------------------------
 # Subspace
@@ -74,3 +76,34 @@ is( $swibble->{ wibbled }, 'pleasantly', "subspace pleasantly wibbled my frusset
 
 my $again = $subspace->config('wibble');
 ok( $again, "subspace fetched wibble data again" );
+
+main->debug("config data: ", main->dump_data($subspace->config->data)) if DEBUG;
+
+
+#-----------------------------------------------------------------------------
+# components
+#-----------------------------------------------------------------------------
+
+my $comp_cfg = $subspace->config('components');
+main->debug(
+    "components config: ",
+    main->dump_data($comp_cfg)
+) if DEBUG;
+
+is( $comp_cfg->{ flibble }, 'My::Flibble', 'flibble component config' );
+is( $comp_cfg->{ wibble }, 'My::Wibble', 'wibble component config' );
+is( $comp_cfg->{ tribble }, 'My::Tribble', 'tribble component config' );
+is( $comp_cfg->{ flobble }->{ module }, 'My::Flobble', 'flobble component config' );
+is( $comp_cfg->{ wobble }->{ module }, 'My::Wobble', 'wobble component config' );
+
+# trouble component is excluded by inherit/exclude rule in workspace.yaml
+ok( ! $comp_cfg->{ trouble }, 'no trouble' );
+
+
+$wibble = $subspace->component('wibble');
+ok( $wibble, 'got a wibble component' );
+
+
+#-----------------------------------------------------------------------------
+# comment
+#-----------------------------------------------------------------------------

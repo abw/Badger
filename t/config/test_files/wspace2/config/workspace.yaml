@@ -5,3 +5,7 @@ inherit:   all
 schema:
   cache:   30 seconds
 
+schemas:
+  components:
+    inherit:
+      exclude: trouble

@@ -1,0 +1,6 @@
+wibble:   My::Wibble
+
+wobble:
+  module: My::Wobble
+  foo:    10
+  bar:    20
