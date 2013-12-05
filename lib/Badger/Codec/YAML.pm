@@ -17,40 +17,39 @@ use Badger::Class
     base    => 'Badger::Codec',
     import  => 'class CLASS';
 
-BEGIN {
-    eval { require 'YAML.pm' } 
-        || CLASS->error("You don't have YAML installed");
-}
-
 eval "require YAML::XS";
 our $HAS_YAML_XS = $@ ? 0 : 1;
 
 eval "require YAML";
 our $HAS_YAML = $@ ? 0 : 1;
-our $MODULE =
-    $HAS_YAML    ? 'YAML::XS' :
-    $HAS_YAML    ? 'YAML'     :
-    die "No YAML implementation installed\n";
 
+our $MODULE =
+    $HAS_YAML_XS ? 'YAML::XS' :
+    $HAS_YAML    ? 'YAML'     :
+    CLASS->error("You don't have YAML or YAML::XS installed");
+    #die "No YAML implementation installed\n";
+
+*yaml_dump = $HAS_YAML_XS ? \&YAML::XS::Dump : \&YAML::Dump;
+*yaml_load = $HAS_YAML_XS ? \&YAML::XS::Load : \&YAML::Load;
 
 sub encode {
     my $self = shift;
-    YAML::Dump(shift);
+    yaml_ump(shift);
 }
 
 sub decode {
     my $self = shift;
-    YAML::Load(shift);
+    yaml_load(shift);
 }
 
 # shortcuts straight to the real encoder/decoder subs for efficient aliasing
 
 sub encoder {
-    \&YAML::Dump;
+    \&yaml_dump;
 }
 
 sub decoder {
-    \&YAML::Load;
+    \&yaml_load;
 }
 
 

@@ -51,6 +51,8 @@ CHANGES
 
     Added the UTF8, JSON and YAML constants to Badger::Constants.
 
+    Fixed Badger::Codec::YAML to work better with YAML::XS.
+
   Version 0.09 - 8th February 2012
     Added Badger::Codec::Timestamp. Changed Badger::Timestamp to numify
     values to remove leading zeroes (e.g. 2012/04/20 now yields a month of 4

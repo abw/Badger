@@ -61,6 +61,8 @@ Squashed a non-numerical warning in Badger::Timestamp.
 Added the L<UTF8|Badger::Constants/UTF8>, L<JSON|Badger::Constants/JSON>
 and L<YAML|Badger::Constants/YAML> constants to L<Badger::Constants>.
 
+Fixed L<Badger::Codec::YAML> to work better with L<YAML::XS>.
+
 =head2 Version 0.09 - 8th February 2012
 
 Added L<Badger::Codec::Timestamp>. Changed L<Badger::Timestamp> to numify
