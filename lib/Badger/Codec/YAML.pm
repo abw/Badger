@@ -37,7 +37,7 @@ our $MODULE =
 
 sub encode {
     my $self = shift;
-    yaml_ump(shift);
+    yaml_dump(shift);
 }
 
 sub decode {
