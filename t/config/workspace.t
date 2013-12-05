@@ -100,9 +100,9 @@ is( $comp_cfg->{ wobble }->{ module }, 'My::Wobble', 'wobble component config' )
 ok( ! $comp_cfg->{ trouble }, 'no trouble' );
 
 
-$wibble = $subspace->component('wibble');
-ok( $wibble, 'got a wibble component' );
-
+my $wobble = $subspace->component('wobble');
+ok( $wobble, 'got a wobble component' );
+is( $wobble->name, 'WOBBLE', 'wobble name' );
 
 #-----------------------------------------------------------------------------
 # comment

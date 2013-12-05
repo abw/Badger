@@ -1,17 +1,18 @@
-package My::Wibble;
+package My::Wobble;
 
 use Badger::Class
     debug    => 0,
     base     => 'Badger::Base',
     constant => {
-        name => 'WIBBLE',
+        name => 'WOBBLE',
     };
 
 sub init {
     my ($self, $config) = @_;
-    $self->debug("My::Wibble init: ", $self->dump_data($config)) if DEBUG;
+    $self->debug("My::Wobble init: ", $self->dump_data($config)) if DEBUG;
     return $self;
 }
+
 
 1;
 

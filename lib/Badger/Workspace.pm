@@ -5,9 +5,9 @@ use Badger::Class
     debug       => 0,
     base        => 'Badger::Base',
     import      => 'class',
-    utils       => 'resolve_uri Dir self_params',
+    utils       => 'resolve_uri truelike falselike Dir self_params',
     accessors   => 'root parent config_dir urn type',
-    constants   => 'SLASH ARRAY HASH', # :config DOT DELIMITER HASH  CODE',
+    constants   => 'ARRAY HASH SLASH DELIMITER',
     constant    => {
         CACHE          => 'cache',
         CACHE_MANAGER  => 'Badger::Cache',
@@ -17,12 +17,17 @@ use Badger::Class
         HUB            => 'hub',
         HUB_MODULE     => 'Badger::Hub',
         WORKSPACE_TYPE => 'workspace',
+        COMPONENTS     => 'components',
+        RESOURCES      => 'resources',
+        DELEGATES      => 'delegates',
     },
     messages => {
         no_module  => 'No %s module defined.',
     };
 
-our $LOADED = { };
+our $LOADED      = { };
+our $COLLECTIONS = [COMPONENTS, RESOURCES];
+
 
 #-----------------------------------------------------------------------------
 # Initialisation methods
@@ -36,7 +41,7 @@ sub init {
     # from this point on, all configuration is read from the config object
     # so we don't really need to pass $config, but it can't hurt, right?
     $self->init_cache($config);
-    $self->init_hub($config);
+    $self->init_collections($config);
     return $self;
 }
 
@@ -138,16 +143,178 @@ sub init_cache {
     $self->config->configure( cache => $cache );
 }
 
-sub init_hub {
+sub init_collections {
     my ($self, $config) = @_;
-    my $hub = delete $config->{ hub } 
-        || $self->class->any_var(uc HUB)
-        || $self->HUB_MODULE;
+    my $cols = $self->{ collections } = $self->class->list_vars(
+        COLLECTIONS => $config->{ collections }
+    );
 
-    $self->hub($hub);
+    $self->debug(
+        "COLLECTIONS: ", $self->dump_data($cols)
+    ) if DEBUG;
 
-    return $self;
+    $self->init_collection($_) 
+        for @$cols;
 }
+
+sub init_collection {
+    my ($self, $type) = @_;
+
+    # First look for any hashes defined in package variables for this module
+    # or any of its subclasses, e.g. $COMPONENTS, $RESOURCES, etc.
+    my $pkg_vars = $self->class->list_vars( uc $type );
+
+    $self->configure_collection( $type => $_ )
+        for @$pkg_vars;
+
+    # Then read any additional configuration data from the config object
+    # e.g. config/components.yaml
+    $self->configure_collection(
+        $type => $self->config($type)
+    );
+
+    $self->debug(
+        "init_collection: $type => ", 
+        $self->dump_data($self->{ $type })
+    ) if DEBUG;
+}
+
+#-----------------------------------------------------------------------------
+# Configuration methods that can be called at init() time or some time later
+#-----------------------------------------------------------------------------
+
+sub configure {
+    my ($self, $config) = self_params(@_);
+    my $item;
+
+    if ($item = delete $config->{ parent }) {
+        # if we change the parent workspace we must also re-attach the 
+        # workspace config manager to the parent workspace config manager
+        $self->{ parent } = $item;
+        $self->{ config }->configure(
+            parent => $item->config
+        );
+        $self->debug(
+            "attached workspace to new parent workspace @", 
+            $item->uri
+        ) if DEBUG;
+    }
+
+    foreach my $collection ($self->collection_names) {
+        if ($item = delete $config->{ $collection }) {
+            $self->configure_collection( $collection => $item );
+        }
+    }
+
+    # Other things in Contentity::Workspace that we might want to merge
+    # back upstream at some point
+    #   my $dirs    = delete($config->{ dirs         });
+    #   my $cfile   = delete($config->{ config_file  });
+    #   my $cfiles  = delete($config->{ config_files });
+    #   if ($dirs)   { $self->dirs($dirs);                }
+    #   if ($cfile)  { $self->init_config_file($cfile);   }
+    #   if ($cfiles) { $self->init_config_files($cfiles); }
+}
+
+sub configure_components {
+    shift->configure_collection(COMPONENTS, @_);
+}
+
+sub configure_resources {
+    shift->configure_collection(RESOURCES, @_);
+}
+
+sub configure_collection {
+    my ($self, $type, $source) = @_;
+    my $collection = $self->{ $type } ||= { };
+    my $components = $self->prepare_components($type, $source) || return;
+
+    $self->debug(
+        "OLD $type collection: ", $self->dump_data($collection), "\n",
+        "ADD $type components: ", $self->dump_data($components)
+    ) if DEBUG;
+
+    @$collection{ keys %$components } = values %$components;
+
+    if (DEBUG) {
+        $self->debug("NEW $type collection: ", $self->dump_data($collection));
+    }
+}
+
+sub prepare_components {
+    my ($self, $type, $components) = @_;
+    my $collection = { };
+    my $component;
+
+    return $collection
+        unless $components;
+
+    # text string is split to a list reference, 
+    # e.g. 'database sitemap' => ['database','sitemap']
+    $components = [ split(DELIMITER, $components) ]
+        unless ref $components;
+
+    # a list reference is mapped to a hash reference of hash refs
+    # e.g. ['database','sitemap'] => { database => { }, sitemap => { } }
+    $components = { 
+        map { $_ => { } }
+        @$components
+    }   if ref $components eq ARRAY;
+
+    # if it isn't a hash ref by this point then we can't handle it
+    return $self->error_msg( invalid => components => $components )
+        unless ref $components eq HASH;
+
+    # Components can be set to any simple true value to enable them (e.g. 1) 
+    # or a false value to explicitly disable them (e.g. 0).  Otherwise we 
+    # expect them to be a module name (e.g. My::Component) or a hash reference
+    # of configuration options, possibly including a 'module' item.
+    while (my ($key, $value) = each %$components) {
+        $component = $components->{ $key };
+
+        if (! $component) {
+            # ignore false values
+            next;
+        }
+        elsif (ref $component eq HASH) {
+            # reference to a hash is fine
+        }
+        elsif (ref $component) {
+            # reference to anything else is not
+            return $self->error_msg( invalid => "'$key' $type" => $component );
+        }
+        elsif (truelike $component) {
+            # simple true value means yes, make it available
+            $component = { };
+        }
+        else {
+            # any other non-reference value is assumed to be a module name
+            $component = {
+                module => $component
+            };
+        }
+
+        $collection->{ $key } = $component;
+
+    }
+
+    return $collection;
+}
+
+
+#-----------------------------------------------------------------------------
+# tmp
+#-----------------------------------------------------------------------------
+#sub init_hub {
+#    my ($self, $config) = @_;
+#    my $hub = delete $config->{ hub } 
+#        || $self->class->any_var(uc HUB)
+#        || $self->HUB_MODULE;
+#
+#    $self->hub($hub);
+#
+#    return $self;
+#}
 
 
 #sub init_config_files {
@@ -183,31 +350,6 @@ sub init_hub {
 #}
 
 
-sub configure {
-    my ($self, $config) = self_params(@_);
-    my $item;
-
-    if ($item = delete $config->{ parent }) {
-        # if we change the parent workspace we must also re-attach the 
-        # workspace config manager to the parent workspace config manager
-        $self->{ parent } = $item;
-        $self->{ config }->configure(
-            parent => $item->config
-        );
-        $self->debug("attached workspace to new parent workspace @", $item->uri) if DEBUG;
-    }
-
-    # Other things in Contentity::Workspace that we might want to merge
-    # back upstream at some point
-    #   my $dirs    = delete($config->{ dirs         });
-    #   my $cfile   = delete($config->{ config_file  });
-    #   my $cfiles  = delete($config->{ config_files });
-    #   if ($dirs)   { $self->dirs($dirs);                }
-    #   if ($cfile)  { $self->init_config_file($cfile);   }
-    #   if ($cfiles) { $self->init_config_files($cfiles); }
-
-
-}
 
 
 #-----------------------------------------------------------------------------
@@ -237,13 +379,14 @@ sub config {
 
 sub component {
     my ($self, $name) = @_;
-    my $hub    = $self->hub;
-    my $config = $hub->component($name)
+    my $config = $self->{ components }->{ $name }
         || return $self->error_msg( invalid => component => $name );
 
     $config = {
         module => $config,
     } unless ref $config;
+
+    $self->debug("$name component config: ", $self->dump_data($config));
 
     # see if a module name is specified in $args, config hash or use $pkgmod
     my $module = $config->{ module }
@@ -257,7 +400,6 @@ sub component {
         $self->dump_data($config)
     ) if DEBUG;
 
-    $config->{ hub       } = $self->{ hub };
     $config->{ workspace } = $self;
 
     return $module->new($config);
@@ -351,6 +493,13 @@ sub dir {
         : $self->root;
 }
 
+sub collection_names {
+    my $self = shift;
+    my $cols = $self->{ collections } || [ ];
+    return wantarray
+        ? @$cols
+        :  $cols;
+}
 
 sub destroy {
     my $self = shift;

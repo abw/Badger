@@ -115,7 +115,7 @@ sub truelike($) {
     $_[0] && $_[0] =~ /^(1|on|yes|true)$/i;
 }
 
-sub falselike {
+sub falselike($) {
     ! $_[0] || $_[0] =~ /^(0|off|no|none|false)$/i;
 }
 
