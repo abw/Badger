@@ -35,7 +35,8 @@ use Badger::Class
             blue    => 34,
             magenta => 35,
             cyan    => 36, 
-            white   => 37,
+            grey    => 37,
+            white   => 38,
         },
     };
 

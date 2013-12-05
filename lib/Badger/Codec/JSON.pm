@@ -12,7 +12,6 @@
 
 package Badger::Codec::JSON;
 
-use warnings;
 use Badger::Class
     version => 0.01,
     base    => 'Badger::Codec',
