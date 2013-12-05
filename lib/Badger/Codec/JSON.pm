@@ -18,9 +18,18 @@ use Badger::Class
     import  => 'class',
     codecs  => 'utf8';
 
-use JSON qw();
+eval "require JSON::XS";
+our $HAS_JSON_XS = $@ ? 0 : 1;
 
-our $JSON = JSON->new;
+eval "require JSON";
+our $HAS_JSON = $@ ? 0 : 1;
+
+our $MODULE =
+    $HAS_JSON_XS ? 'JSON::XS' :
+    $HAS_JSON    ? 'JSON'     :
+    CLASS->error("You don't have JSON or JSON::XS installed");
+
+our $JSON = $HAS_JSON_XS ? JSON::XS->new : JSON->new;
 
 sub encode_json {
     $JSON->encode(shift);
