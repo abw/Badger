@@ -12,6 +12,7 @@
 
 package Badger::Codec::JSON;
 
+use warnings;
 use Badger::Class
     version => 0.01,
     base    => 'Badger::Codec',
@@ -20,9 +21,12 @@ use Badger::Class
 
 eval "require JSON::XS";
 our $HAS_JSON_XS = $@ ? 0 : 1;
+our $HAS_JSON;
 
-eval "require JSON";
-our $HAS_JSON = $@ ? 0 : 1;
+unless ($HAS_JSON_XS) {
+    eval "require JSON";
+    $HAS_JSON = $@ ? 0 : 1;
+}
 
 our $MODULE =
     $HAS_JSON_XS ? 'JSON::XS' :

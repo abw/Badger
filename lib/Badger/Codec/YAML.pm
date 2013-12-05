@@ -19,9 +19,12 @@ use Badger::Class
 
 eval "require YAML::XS";
 our $HAS_YAML_XS = $@ ? 0 : 1;
+our $HAS_YAML;
 
-eval "require YAML";
-our $HAS_YAML = $@ ? 0 : 1;
+unless ($HAS_YAML_XS) {
+    eval "require YAML";
+    $HAS_YAML = $@ ? 0 : 1;
+}
 
 our $MODULE =
     $HAS_YAML_XS ? 'YAML::XS' :
