@@ -1,8 +1,0 @@
-e: echo
-f: 
-  - foxtrot 1
-  - foxtrot 2
-
-
-_schema_:
-  tree_joint: '*'

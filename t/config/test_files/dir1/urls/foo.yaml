@@ -1,5 +1,0 @@
-/home:    /index.html
-about:    /about_us.html
-user:
-  login:  /auth/login
-  logout: /auth/logout

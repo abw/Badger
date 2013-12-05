@@ -1,8 +1,0 @@
-foo:
-  name: The foo widget
-bar:
-  name: The bar widget
-
-_schema_:
-  tree_type: flat
-
