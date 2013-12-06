@@ -84,9 +84,10 @@ sub init_factory {
     
     # Merge all XXXX_PATH package vars with any 'xxxx_path' or 'path' config 
     # items.  Ditto for XXXX_NAME / 'xxxx_name' / 'aka' and  XXXXS/ 'xxxxs'
-    
+
     my @path  = @$config{ path  => lc $ipath  };
     my @names = @$config{ names => lc $inames };
+
     $self->{ path     } = $class->list_vars(uc $ipath, @path);
     $self->{ names    } = $class->hash_vars(uc $inames, @names);
     $self->{ $items   } = $class->hash_vars(uc $items, $config->{ $items });
