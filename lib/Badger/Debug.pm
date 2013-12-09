@@ -76,9 +76,9 @@ sub _export_debug_default {
     unshift(
         @$symbols, 
         '$DEBUG' => $value, 
-         'DEBUG' => $value,
-         'debug', 
-         'debugging'
+        'DEBUG' => $value,
+        'debug', 
+        'debugging'
     );
     return $self;
 }
