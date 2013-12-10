@@ -47,7 +47,7 @@ sub init_item {
     # A '!' at the end of the name indicates it's mandatory.
     # A '=value' at the end indicates a default value.
     $self->{ required } = ($name =~ s/!$//)        ?  1 : $config->{ required };
-    $self->{ default  } = ($name =~ s/=(\w\S+)$//) ? $1 : $config->{ default  };
+    $self->{ default  } = ($name =~ s/=(\w\S*)$//) ? $1 : $config->{ default  };
 
     # Alternately, '=$XXX', '=@XXX' or '=%XXX' can be used to indicate that
     # the options takes one 'XXX' argument, multiple 'XXX' arguments or key
