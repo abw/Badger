@@ -15,12 +15,9 @@ use strict;
 use warnings;
 use lib qw( ../../lib );
 use Badger::Filesystem 'Bin';
-#use Badger
-#    lib   => '../../lib',
-#    utils => 'Bin';
 
 use Badger::Test 
-    tests => 14,
+    tests => 17,
     debug => 'Badger::Config::Filesystem',
     args  => \@ARGV;
 
@@ -52,7 +49,11 @@ my $name = $config->get('site.name');
 is( $name, "example", "got name: $name" );
 
 my $pages = $config->get('pages');
-ok( $pages, "got pages" ); # . main->dump_data($pages) );
+ok( $pages, "got pages" . main->dump_data($pages) );
+
+is( $pages->{ about }->{ name }, 'About Us', 'got "about" page' );
+is( $pages->{"auth/login"}->{ name }, 'Login', 'got "auth/login" page' );
+is( $pages->{"/register"}->{ name }, 'Register', 'got "/register" page' );
 
 #-----------------------------------------------------------------------
 # examples from docs
