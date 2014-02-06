@@ -1,0 +1,11 @@
+# This file includes some metadata about pages in a fictional web site
+index:
+  name:  Home
+  title: Home Page
+
+about:
+  name:  About Us
+  title: Further Information About Us
+
+_schema_:
+  tree_type: uri

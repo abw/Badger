@@ -1,0 +1,12 @@
+# These are merged into the pages tree as URIs relative to the file
+# base (e.g. auth.yaml + login = /auth/login)
+
+login:
+  name: Login
+
+logout: 
+  name: Logout
+
+# This has an abssolute URI so is resolved as just /register, not /auth/register
+/register:
+  name: Register

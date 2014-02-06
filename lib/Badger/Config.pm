@@ -88,10 +88,13 @@ sub get {
     ) if DEBUG;
     
     # fetch the head item
-    my $data = $self->head($name) 
-        ||  return $self->decline_msg( 
-                no_config => $name
-            );
+    my $data = $self->head($name);
+
+    if (! defined $data) {
+        return $self->decline_msg( 
+            no_config => $name
+        );
+    }
 
     return @names
         ? $self->dot($name, $data, \@names)
@@ -186,7 +189,18 @@ sub can_configure {
 sub has_item {
     my $self = shift->prototype;
     my $name = shift;
-    return $self->{ item }->{ $name };
+    my $item = $self->{ item }->{ $name };
+    if (defined $item) {
+        # A 1/0 entry in the item tells us if an item categorically does or
+        # doesn't exist in the config data set (or allowable set - it might 
+        # be a valid configuration option that simply hasn't been set yet)
+        return $item;
+    }
+    else {
+        # Otherwise the existence (or not) of an item in the data set is 
+        # enough to satisfy us one way or another
+        return exists $self->{ data }->{ $name };
+    }
 }
 
 
