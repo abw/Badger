@@ -71,3 +71,48 @@ sub file {
 }
 
 1;
+
+=head1 NAME
+
+Badger::Workplace - a place to do work
+
+=head1 DESCRIPTION
+
+This is a very simple base class for modules that operate on or around 
+a particular filesystem directory.  See L<Badger::Config::Filesystem> for an 
+example of it in us.
+
+=head1 CONFIGURATION OPTIONS
+
+=head2 root / dir / directory
+
+Any of C<root>, C<dir> or C<directory> can be provided to specify the root
+directory of the workplace.
+
+=head1 METHODS
+
+=head2 dir($name) / directory($name)
+
+Returns a L<Badger::Filesystem::Directory> object for a named sub-directory 
+relative to the workplace root.
+
+When called with any arguments it returns a L<Badger::Filesystem::Directory> 
+object for the workplace root directory.
+
+=head2 file($name)
+
+Returns a L<Badger::Filesystem::File> object for a named files
+relative to the workplace root.
+
+=head1 AUTHOR
+
+Andy Wardley L<http://wardley.org/>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2008-2014 Andy Wardley.  All Rights Reserved.
+
+This module is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut

@@ -10,17 +10,13 @@ use Badger::Class
     words     => 'ENCODING CODECS',
     constants => 'DOT NONE TRUE FALSE YAML JSON UTF8',
     constant  => {
-
+        ABSOLUTE => 'absolute',
+        RELATIVE => 'relative',
     };
-#    utils     => ' 
-#    accessors => 'codecs root extensions',
-#    messages  => {
-#        load_fail => 'Failed to load data from %s: %s',
-#    };
 
-our $EXTENSIONS   = [YAML, JSON];
-our $ENCODING     = UTF8;
-our $CODECS       = { };
+our $EXTENSIONS = [YAML, JSON];
+our $ENCODING   = UTF8;
+our $CODECS     = { };
 
 
 #-----------------------------------------------------------------------------
@@ -95,13 +91,14 @@ sub init_filesystem {
 }
 
 
+#-----------------------------------------------------------------------------
+# Redefine head() method in Badger::Config to hook into fetch() to load data
+#-----------------------------------------------------------------------------
 
 sub head {
     my ($self, $name) = @_;
     return $self->{ data }->{ $name }
-    #   // $self->cache_fetch($name)
         // $self->fetch($name);
-    #   // $self->parent_fetch($name);
 }
 
 sub tail {
@@ -127,7 +124,7 @@ sub fetch {
 
     if ($dok) {
         $self->debug("Found directory for $uri, loading tree") if DEBUG;
-        return $self->config_tree($uri);
+        return $self->config_tree($uri, $file, $dir);
     }
 
     if ($fok) {
@@ -149,10 +146,10 @@ sub fetch {
 #-----------------------------------------------------------------------------
 
 sub config_tree {
-    my ($self, $name) = @_;
-    my $root    = $self->root;
-    my $file    = $self->config_file($name);
-    my $dir     = $root->dir($name);
+    my $self    = shift;
+    my $name    = shift;
+    my $file    = shift || $self->config_file($name);
+    my $dir     = shift || $self->dir($name);
     my $do_tree = TRUE;
     my $data    = undef; #{ };
     my ($file_data, $binder, $more);
@@ -294,11 +291,11 @@ sub tree_binder {
         || $self->{ tree_type } 
         || return $self->error_msg( missing => 'tree_type' );
 
-    return $self->can("${name}_binder")
+    return $self->can("${name}_tree_binder")
         || return $self->decline_msg( invalid => binder => $name );
 }
 
-sub nest_binder {
+sub nest_tree_binder {
     my ($self, $parent, $path, $child, $schema) = @_;
     my $data = $parent;
 
@@ -310,7 +307,7 @@ sub nest_binder {
     }
 }
 
-sub flat_binder {
+sub flat_tree_binder {
     my ($self, $parent, $path, $child, $schema) = @_;
 
     while (my ($key, $value) = each %$child) {
@@ -318,7 +315,7 @@ sub flat_binder {
     }
 }
 
-sub join_binder {
+sub join_tree_binder {
     my ($self, $parent, $path, $child, $schema) = @_;
     my $joint = $schema->{ tree_joint } || $self->{ tree_joint };
     my $base  = join($joint, @$path);
@@ -344,7 +341,7 @@ sub join_binder {
     }
 }
 
-sub uri_binder {
+sub uri_tree_binder {
     my ($self, $parent, $path, $child, $schema) = @_;
     my $opt  = $schema->{ uri_paths } || $self->{ uri_paths };
     my $base = join_uri(@$path);
@@ -470,19 +467,23 @@ __END__
 
 =head1 NAME
 
-Contentity::Config::Filesystem - reads configuration files in a directory
+Badger::Config::Filesystem - reads configuration files in a directory
 
 =head1 SYNOPSIS
 
-    use Contentity::Config::Filesystem;
+    use Badger::Config::Filesystem;
     
-    my $config = Contentity::Config::Filesystem->new(
-        root => 'config'
+    my $config = Badger::Config::Filesystem->new(
+        root => 'path/to/some/dir'
     );
 
-    # Fetch the data in config/lost.[yaml|json]
-    my $lost = $config->get('lost')
-        || die "lost: not found";
+    # Fetch the data in user.[yaml|json] in above dir
+    my $user = $config->get('user')
+        || die "user: not found";
+
+    # Fetch sub-data items using dotted syntax
+    print $config->get('user.name');
+    print $config->get('user.emails.0');
 
 =head1 DESCRIPTION
 
@@ -499,10 +500,10 @@ Consider a directory that contains the following files and sub-directories:
             admin.yaml
             developer.yaml
 
-We can create a L<Contentity::Metadata::Filesystem> object to read the configuration
+We can create a L<Badger::Config::Filesystem> object to read the configuration
 data from the files in this directory like so:
 
-    my $config = Contentity::Config::Filesystem->new(
+    my $config = Badger::Config::Filesystem->new(
         root => 'config'
     );
 
@@ -577,10 +578,12 @@ We end up with a data structure like this:
         },
     }
 
-Note how the C<admin> and C<developer> items have been loaded into the data.
+Note how the C<admin> and C<developer> items have been nested into the data.
+The filename base (e.g. C<admin>, C<developer>) is used to define an entry
+in the "parent" hash array containing the data in the "child" data file.
 
-The C<tree_type> option can be used to determine how this data is merged. 
-To use this option, put it in a C<_schema_> section in a top level 
+The C<tree_type> option can be used to change the way that this data is merged. 
+To use this option, put it in a C<_schema_> section in the top level 
 configuration file, e.g. the C<pages.yaml>:
 
 F<pages.yaml>:
@@ -588,19 +591,21 @@ F<pages.yaml>:
     one:        Page One
     two:        Page Two
     _schema_:
-      tree_type: uri
+      tree_type: flat
 
-This collapses the nested data files by combining the paths as URIs.
+If you don't want the data nested at all then specify a C<flat> value for
+C<tree_type>.  This would return the following data:
 
     {
-        one             => 'Page One',
-        two             => 'Page Two',
-        admin/three     => 'Page Three',
-        admin/four      => 'Page Four',
-        developer/five  => 'Page Five',
+        one   => 'Page One',
+        two   => 'Page Two',
+        three => 'Page Three',
+        four  => 'Page Four',
+        five  => 'Page Five',
     }
 
-A C<tree_type> of C<join> will produce this instead:
+The C<join> type collapses the nested data files by joining the file path
+(without extension) onto the data items contain therein. e.g.
 
     {
         one             => 'Page One',
@@ -614,7 +619,7 @@ You can specify a different character sequence to join paths via the
 C<tree_joint> option, e.g.
 
     _schema_:
-      tree_type:  uri
+      tree_type:  join
       tree_joint: '-'
 
 That would producing this data structure:
@@ -627,15 +632,59 @@ That would producing this data structure:
         developer-five  => 'Page Five',
     }
 
-If you don't want the data nested at all then specify a C<flat> value for
-C<tree_type>:
+The C<uri> type is a slightly smarter version of the C<join> type.
+It joins path elements with the C</> character to create URI paths.
 
     {
-        one   => 'Page One',
-        two   => 'Page Two',
-        three => 'Page Three',
-        four  => 'Page Four',
-        five  => 'Page Five',
+        one             => 'Page One',
+        two             => 'Page Two',
+        admin/three     => 'Page Three',
+        admin/four      => 'Page Four',
+        developer/five  => 'Page Five',
+    }
+
+What makes it special is that it follows the standard rules for URI resolution
+and recognises a path with a leading slash to be absolute rather than relative
+to the current location.
+
+For example, the F<pages/admin.yaml> file could contain something like this:
+
+F<pages/admin.yaml>:
+
+    three:      Page Three
+    /four:      Page Four
+
+The C<three> entry is considered to be relative to the C<admin> file so results
+in a final path of C<admin/three> as before.  However, C</four> is an absolute
+path so the C<admin> path is ignored.  The end result is a data structure like 
+this:
+
+    {
+        one             => 'Page One',
+        two             => 'Page Two',
+        admin/three     => 'Page Three',
+        /four           => 'Page Four',
+        developer/five  => 'Page Five',
+    }
+
+In this example we've ended up with an annoying inconsistency in that our
+C</four> path has a leading slash when the other items don't.  The 
+C<uri_paths> option can be set to C<relative> or C<absolute> to remove or add
+leading slashes respectively, effectively standardising all paths as one or
+the other.
+
+    _schema_:
+      tree_type:  uri
+      uri_paths:  absolute
+
+The data would then be returned like so:
+
+    {
+        /one            => 'Page One',
+        /two            => 'Page Two',
+        /admin/three    => 'Page Three',
+        /four           => 'Page Four',
+        /developer/five => 'Page Five',
     }
 
 =head1 CONFIGURATION OPTIONS
@@ -647,7 +696,7 @@ to specify the directory that the module should load configuration files
 from.  Directories can be specified as absolute paths or relative to the
 current working directory.
 
-    my $config = Contentity::Config::Filesystem->new(
+    my $config = Badger::Config::Filesystem->new(
         dir => 'path/to/config/dir'
     );
 
@@ -656,7 +705,7 @@ current working directory.
 Any additional configuration data can be provided via the C<data> named 
 parameter:
 
-    my $config = Contentity::Config::Filesystem->new(
+    my $config = Badger::Config::Filesystem->new(
         dir  => 'path/to/config/dir'
         data => {
             name  => 'Arthur Dent',
@@ -674,7 +723,7 @@ A list of file extensions to try in addition to C<yaml> and C<json>.
 Note that you may also need to define a C<codecs> entry to map the 
 file extension to a data encoder/decoder module.
 
-    my $config = Contentity::Metadata::Filesystem->new(
+    my $config = Badger::Config::Filesystem->new(
         dir        => 'path/to/config/dir'
         extensions => ['str'],
         codecs     => {
@@ -689,7 +738,7 @@ which can then provide the appropriate L<Badger::Codec> module to handle the
 encoding and decoding of data in the file.  The L<codecs> options can be used 
 to provide mapping from other file extensions to L<Badger::Codec> modules.  
 
-    my $config = Contentity::Metadata::Filesystem->new(
+    my $config = Badger::Config::Filesystem->new(
         dir        => 'path/to/config/dir'
         extensions => ['str'],
         codecs     => {
@@ -714,6 +763,10 @@ The following tree types are supported:
 
 This is the default tree type, creating nested hash arrays of data.
 
+=head3 flat
+
+Creates a flat hash array by merging all nested hash array of data into one.
+
 =head3 join
 
 Joins data paths together using the C<tree_joint> string which is C<_> by
@@ -737,23 +790,72 @@ I wasn't here.
 
 =head2 tree_joint
 
-This option can be used to sets the default character sequence for joining
+This option can be used to set the default character sequence for joining
 paths
+
+=head2 uri_paths
+
+This option can be used to set the default C<uri_paths> option for joining
+paths as URIs.  It should be set to C<relative> or C<absolute>.  It can 
+be over-ridden in a C<_schema_> section of a top-level configuration file.
 
 =head1 METHODS
 
-The following methods are implemented in addition to those inherited from
-the L<Badger::Config> base class.
+The module inherits all methods defined in the L<Badger::Config> and 
+L<Badger::Workplace> base classes.
 
 =head1 INTERNAL METHODS
 
-=head2 init_directory($config)
+The following methods are defined for internal use.
+
+=head2 init($config)
+
+This overrides the default initialisation method inherited from 
+L<Badger::Config>.  It calls the L<init_config()|Badger::Config/init_config()>
+method to perform the base class L<Badger::Config> initialisation and then 
+the L<init_filesystem()> method to perform initialisation specific to the 
+L<Badger::Config::Filesystem> module.
+
+=head2 init_filesystem($config)
+
+This performs the initialisation of the object specific to the filesystem 
+object.
 
 =head2 head($item)
 
+This redefines the L<head()|Badger::Config/head()> method in the 
+L<Badger::Config> base class.  The method is called by 
+L<get()|Badger::Config/get()> to fetch a top-level data item
+(e.g. C<user> in C<$config-E<gt>get('user.name')>).  This implementation 
+looks for existing data items as usual, but additionally falls back on a 
+call to L<fetch($item)> to load additional data (or attempt to load it).
+
+=head2 tail($item, $data)
+
+This is a do-nothing stub for subclasses to redefine.  It is called after
+a successful call to L<fetch()>.
+
 =head2 fetch($item)
 
-=head2 config_tree()
+This is the main method called to load a configuration file (or tree of 
+files) from the filesystem.  It looks to see if a configuration file 
+(with one of the known L<extensions> appended, e.g. C<"$item.yaml">, 
+C<"$item.json">, etc) exists and/or a directory named C<$item>.
+
+If the file exists but the directory doesn't then the configuration data 
+is read from the file.  If the directory exists
+
+=head2 config_tree($item, $file, $dir)
+
+This scans a configuration tree comprising of a configuration file and/or
+a directory.  The C<$file> and C<$dir> arguments are optional and are only
+supported as an internal optimisation.  The method can safely be called with
+a single C<$item> argument and the relevant file and directory will be 
+determined automatically.
+
+The configuration file is loaded (via L<scan_config_file()>).  If the 
+directory exists then it is also scanned (via L<scan_config_dir()>) and the
+files contained therein are loaded.
 
 =head2 scan_config_file($file, $data, $path, $schema, $binder)
 
@@ -779,19 +881,19 @@ on the C<$name> parameter provided.
 If no C<$name> is specified then it uses the default C<tree_type> of C<nest>.
 This can be changed via the L<tree_type> configuration option.
 
-=head2 nest_binder($parent, $path, $child, $schema)
+=head2 nest_tree_binder($parent, $path, $child, $schema)
 
 This handles the merging of data for the L<nest> L<tree_type>.
 
-=head2 flat_binder($parent, $path, $child, $schema)
+=head2 flat_tree_binder($parent, $path, $child, $schema)
 
 This handles the merging of data for the L<flat> L<tree_type>.
 
-=head2 uri_binder($parent, $path, $child, $schema)
+=head2 uri_tree_binder($parent, $path, $child, $schema)
 
 This handles the merging of data for the L<uri> L<tree_type>.
 
-=head2 join_binder($parent, $path, $child, $schema)
+=head2 join_tree_binder($parent, $path, $child, $schema)
 
 This handles the merging of data for the L<join> L<tree_type>.
 

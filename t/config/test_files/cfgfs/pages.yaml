@@ -9,3 +9,4 @@ about:
 
 _schema_:
   tree_type: uri
+  uri_paths: relative
