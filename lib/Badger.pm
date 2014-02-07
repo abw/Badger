@@ -18,7 +18,7 @@ use Badger::Class
         fail   => \&_export_handler,
     };
 
-our $VERSION = 0.093;
+our $VERSION = 0.094;
 our $HUB     = 'Badger::Hub::Badger';
 our $AUTOLOAD;
 
