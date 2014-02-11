@@ -28,7 +28,10 @@ sub init_workplace {
     # The neophyte flag is used to indicate the special case where the root 
     # directory (and perhaps other support files, data, etc) don't yet exist
     # because some other bit of code is in the process of creating it anew.
-    my $neophyte = $config->{ nephyte } || 0;
+    my $neophyte = $config->{ neophyte } || 0;
+
+    # The filespec can be specified to provide a hash of options for files
+    my $filespec = $config->{ filespec } || { };
 
     # The root directory must exist unless this is a neophyte in which case 
     # we can create the directory.
@@ -36,10 +39,10 @@ sub init_workplace {
             || $config->{ dir       } 
             || $config->{ directory }
             || return $self->error_msg( missing => 'root directory' );
-    my $root = Dir($dir, $config->{ filespec });
+    my $root = Dir($dir, $filespec);
 
     if (! $root->exists) {
-        if ($self->{ neophyte }) {
+        if ($neophyte) {
             $root->mkdir;
         }
         else {
@@ -47,9 +50,10 @@ sub init_workplace {
         }
     }
 
-    $self->{ root } = $root;
-    $self->{ urn  } = $config->{ urn } // $root->name;
-    $self->{ uri  } = $config->{ uri } // $self->{ urn };
+    $self->{ root     } = $root;
+    $self->{ urn      } = $config->{ urn } // $root->name;
+    $self->{ uri      } = $config->{ uri } // $self->{ urn };
+    $self->{ neophyte } = $neophyte;
 
     return $self;
 }

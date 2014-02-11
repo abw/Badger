@@ -12,6 +12,9 @@ use Badger::Class
     constant  => {
         ABSOLUTE => 'absolute',
         RELATIVE => 'relative',
+    },
+    messages  => {
+        load_fail => 'Failed to load data from %s: %s',
     };
 
 our $EXTENSIONS = [YAML, JSON];
@@ -25,7 +28,6 @@ our $CODECS     = { };
 
 sub init {
     my ($self, $config) = @_;
-    my $class = $self->class;
 
     # First call Badger::Config base class method to handle any 'items' 
     # definitions and other general initialisation
