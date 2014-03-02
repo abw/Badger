@@ -17,7 +17,7 @@ use lib qw( ../../lib );
 use Badger::Filesystem 'Bin';
 
 use Badger::Test 
-    tests => 26,
+    tests => 29,
     debug => 'Badger::Config::Filesystem',
     args  => \@ARGV;
 
@@ -102,3 +102,8 @@ is( $pages2->{'/doge'}->{ title }, 'Such Metadata', 'Such Metadata' );
 is( $pages2->{'/more/biscuits'}->{ name }, 'More Biscuits', 'More Biscuits' );
 is( $pages2->{'/more/cheese'  }->{ name }, 'More Cheese',   'More Cheese'   );
 
+# should be able to auto-load user.yaml
+my $ford = $config2->user;
+ok( $ford, 'got Ford' );
+is( $ford->{ name }->{ given  }, 'Ford',    "Ford's given name is 'Ford'" );
+is( $ford->{ name }->{ family }, 'Prefect', "Ford's family name is 'Prefect'" );

@@ -533,7 +533,7 @@ sub lookup_item {
 }
 
 
-sub TODO_has_item {
+sub has_item {
     my $self = shift->prototype;
     my $name = shift;
     my $item = $self->{ item }->{ $name };
@@ -557,7 +557,7 @@ sub TODO_has_item {
         # matching config file.  We cache the existence in $self->{ item }
         # so we know if it's there (or not) for next time
         return $self->{ item }
-            =  $self->config_file($name)->exists;
+            =  $self->config_file($name);
     }
 }
 
