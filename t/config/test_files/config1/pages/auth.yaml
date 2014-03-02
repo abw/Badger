@@ -1,5 +1,6 @@
 # These are merged into the pages tree as URIs relative to the file
-# base (e.g. auth.yaml + login = /auth/login)
+# base (e.g. auth.yaml + login = /auth/login).  This is controlled by
+# the 'schema' entry in ../pages.yaml
 
 login:
   name: Login

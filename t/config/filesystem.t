@@ -17,7 +17,7 @@ use lib qw( ../../lib );
 use Badger::Filesystem 'Bin';
 
 use Badger::Test 
-    tests => 17,
+    tests => 26,
     debug => 'Badger::Config::Filesystem',
     args  => \@ARGV;
 
@@ -27,8 +27,8 @@ use Badger::Config::Filesystem;
 my $pkg = 'Badger::Config::Filesystem';
 
 my $config = $pkg->new(
-    root => Bin->dir( test_files => 'cfgfs' ),
-    data => { x => 10, y => 20 }, 
+    root  => Bin->dir( test_files => 'config1' ),
+    data  => { x => 10, y => 20 }, 
     items => 'a b c',
 );
 
@@ -64,4 +64,41 @@ is( $config->get('user.name.family'),      'Dent', 'Dent' );
 is( $config->get(['user', 'email', '0']),     'arthur@dent.org', 'arthur@dent.org' );
 is( $config->get([qw(user email 1)]),      'dent@heart-of-gold.com', 'dent@heart-of-gold.com' );
 is( $config->get('things.2.babel'),        'fish', 'babel fish' );
+
+
+#-----------------------------------------------------------------------------
+# Second example with master config file containing schemas
+#-----------------------------------------------------------------------------
+
+my $config2 = $pkg->new(
+    root    => Bin->dir( test_files => 'config2' ),
+    file    => 'config',
+    data    => { p => 11, q => 13 },
+#   items   => 'pages',
+    schemas => {
+        urls => {
+            tree_type => 'uri',
+            uri_paths => 'absolute',
+        }
+    },
+);
+
+ok( $config2, 'Created second config object' );
+
+# The first two are defined in the 'data' above when the object is created
+is( $config2->p, 11, 'p is 11' );
+is( $config2->q, 13, 'q is 13' );
+
+# The next two are defined in the master config.yaml file
+is( $config2->r, 17, 'r is 17' );
+is( $config2->s, 19, 's is 19' );
+
+my $pages2 = $config2->pages;
+main->debug("got pages: ", main->dump_data($pages)) if DEBUG;
+
+is( $pages2->{'/doge'}->{ name }, 'Wow!', 'Wow!' );
+is( $pages2->{'/doge'}->{ title }, 'Such Metadata', 'Such Metadata' );
+
+is( $pages2->{'/more/biscuits'}->{ name }, 'More Biscuits', 'More Biscuits' );
+is( $pages2->{'/more/cheese'  }->{ name }, 'More Cheese',   'More Cheese'   );
 

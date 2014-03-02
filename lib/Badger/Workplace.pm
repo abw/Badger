@@ -5,7 +5,8 @@ use Badger::Class
     debug       => 0,
     base        => 'Badger::Base',
     import      => 'class',
-    utils       => 'Dir', # resolve_uri truelike falselike params self_params extend',
+    utils       => 'Dir resolve_uri', # resolve_uri truelike falselike params self_params extend',
+    constants   => 'SLASH',
     accessors   => 'root urn',
     alias       => {
         directory => \&dir,
@@ -74,6 +75,13 @@ sub file {
     return $self->root->file(@_);
 }
 
+sub uri {
+    my $self = shift;
+    return @_
+        ? sprintf("%s%s", $self->{ uri }, resolve_uri(SLASH, @_))
+        : $self->{ uri };
+}
+
 1;
 
 =head1 NAME
@@ -93,6 +101,18 @@ example of it in us.
 Any of C<root>, C<dir> or C<directory> can be provided to specify the root
 directory of the workplace.
 
+=head2 urn
+
+This option can be set to define a Universal Resource Name (URN) for the 
+workplace for reference purposes.  If undefined it defaults to the name of
+the root directory.
+
+=head2 uri
+
+This option can be set to define a Universal Resource Identifier (URN) for the 
+workplace for reference purposes.  If undefined it defaults to the name of
+the value of L<urn>.
+
 =head1 METHODS
 
 =head2 dir($name) / directory($name)
@@ -107,6 +127,10 @@ object for the workplace root directory.
 
 Returns a L<Badger::Filesystem::File> object for a named files
 relative to the workplace root.
+
+=head2 uri($path)
+
+Resolves a URI path relative to the workplace L<uri>.
 
 =head1 AUTHOR
 

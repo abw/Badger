@@ -1,0 +1,13 @@
+# These are merged into the pages tree as URIs relative to the file
+# base (e.g. auth.yaml + login = /auth/login).  This is controlled by
+# the 'schema' entry in ../config.yaml
+
+cheese:
+  name: More Cheese
+
+biscuits: 
+  name: More Biscuits
+
+# This has an abssolute URI so is resolved as just /register, not /auth/register
+/fruit:
+  name: More Fruit

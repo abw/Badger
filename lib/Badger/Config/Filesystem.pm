@@ -6,7 +6,7 @@ use Badger::Class
     import    => 'class',
     base      => 'Badger::Config Badger::Workplace',
     utils     => 'split_to_list extend VFS join_uri resolve_uri',
-    accessors => 'root filespec encoding codecs extensions',
+    accessors => 'root filespec encoding codecs extensions quiet',
     words     => 'ENCODING CODECS',
     constants => 'DOT NONE TRUE FALSE YAML JSON UTF8',
     constant  => {
@@ -14,6 +14,7 @@ use Badger::Class
         RELATIVE => 'relative',
     },
     messages  => {
+        no_config => 'Missing configuration file: %s',
         load_fail => 'Failed to load data from %s: %s',
     };
 
@@ -82,12 +83,51 @@ sub init_filesystem {
         CODECS => $config->{ codecs } 
     );
 
-    $self->{ data       } = $config->{ data } || { };
+    my $data = $config->{ data } || { };
+
+    $self->{ data       } = $data;
     $self->{ extensions } = $exts;
     $self->{ match_ext  } = $ext_re;
     $self->{ codecs     } = $codecs;
     $self->{ encoding   } = $encoding;
     $self->{ filespec   } = $filespec;
+    $self->{ quiet      } = $config->{ quiet   } || 0;
+
+    # Add any item schemas
+    $self->items( $config->{ schemas } )
+        if $config->{ schemas };
+
+    # Configuration file allows further data items (and schemas) to be defined
+    $self->init_file( $config->{ file } )
+        if $config->{ file };
+
+    return $self;
+}
+
+sub init_file {
+    my ($self, $file) = @_;
+    my $data = $self->get($file);
+
+    if ($data) {
+        $self->debug(
+            "config file data from $file: ",
+            $self->dump_data($data)
+        ) if DEBUG;
+
+        # file can contain 'items' or 'schemas' (I don't love this, but it'll do for now)
+        $self->items(
+            $data->{ items   },
+            $data->{ schemas }
+        );
+
+        # anything else is config data
+        extend($self->{ data }, $data);
+
+        $self->debug("merged data: ", $self->dump_data($self->{ data })) if DEBUG;
+    }
+    elsif (! $self->{ quiet }) {
+        $self->warn_msg( no_config => $file );
+    }
 
     return $self;
 }
@@ -169,10 +209,10 @@ sub config_tree {
 
     # fetch a schema for this data item constructed from the default schema
     # specification, any named schema for this item, any arguments, then any 
-    # local _schema_ defined in the data file
-    my $schema = $self->schema(
+    # local schema defined in the data file
+    my $schema = $self->item(
         $name, 
-        $file_data ? delete $file_data->{ _schema_ } : ()
+        $file_data ? delete $file_data->{ schema } : ()
     );
     $self->debug(
         "combined schema for $name: ", 
@@ -180,7 +220,7 @@ sub config_tree {
     ) if DEBUG;
 
     if ($more = $schema->{ tree_type }) {
-        $self->debug("_schema_.tree_type: $more") if DEBUG;
+        $self->debug("schema.tree_type: $more") if DEBUG;
         if ($more eq NONE) {
             $do_tree = FALSE;
         }
@@ -457,9 +497,68 @@ sub codec {
         || $name;
 }
 
-sub schema {
+
+#-----------------------------------------------------------------------------
+# item schema management
+#-----------------------------------------------------------------------------
+
+sub items {
+    return extend(
+        shift->{ item }, 
+        @_
+    );
+}
+
+sub item {
     my ($self, $name, $schema) = @_;
-    return $schema;
+    return  $schema
+        || ($self->{ item }->{ $name }
+        ||= $self->lookup_item($name));
+}
+
+sub lookup_item {
+    my $self  = shift;
+    my $name  = shift;
+    my $items = $self->{ item };
+    my $item  = $items->{ $name };
+
+    while (! $item && length $name) {
+        # keep chopping bits off the end of the name to find a more generic
+        # schema, e.g. forms/user/login -> forms/user -> forms
+        last unless $name =~ s/\W\w+\W?$//;
+        $self->debug("trying $name") if DEBUG;
+        $item = $items->{ $name };
+    }
+    return $item;
+}
+
+
+sub TODO_has_item {
+    my $self = shift->prototype;
+    my $name = shift;
+    my $item = $self->{ item }->{ $name };
+
+    # This is all the same as in the base class up to the final test which 
+    # looks for $self->config_file($name) as a last-ditch attempt
+
+    if (defined $item) {
+        # A 1/0 entry in the item tells us if an item categorically does or
+        # doesn't exist in the config data set (or allowable set - it might 
+        # be a valid configuration option that simply hasn't been set yet)
+        return $item;
+    }
+    else {
+        # Otherwise the existence (or not) of an item in the data set is 
+        # enough to satisfy us one way or another
+        return 1
+            if exists $self->{ data }->{ $name };
+
+        # Special case for B::C::Filesystem which looks to see if there's a
+        # matching config file.  We cache the existence in $self->{ item }
+        # so we know if it's there (or not) for next time
+        return $self->{ item }
+            =  $self->config_file($name)->exists;
+    }
 }
 
 
@@ -585,14 +684,14 @@ The filename base (e.g. C<admin>, C<developer>) is used to define an entry
 in the "parent" hash array containing the data in the "child" data file.
 
 The C<tree_type> option can be used to change the way that this data is merged. 
-To use this option, put it in a C<_schema_> section in the top level 
+To use this option, put it in a C<schema> section in the top level 
 configuration file, e.g. the C<pages.yaml>:
 
 F<pages.yaml>:
 
     one:        Page One
     two:        Page Two
-    _schema_:
+    schema:
       tree_type: flat
 
 If you don't want the data nested at all then specify a C<flat> value for
@@ -620,7 +719,7 @@ The C<join> type collapses the nested data files by joining the file path
 You can specify a different character sequence to join paths via the 
 C<tree_joint> option, e.g.
 
-    _schema_:
+    schema:
       tree_type:  join
       tree_joint: '-'
 
@@ -675,7 +774,7 @@ C<uri_paths> option can be set to C<relative> or C<absolute> to remove or add
 leading slashes respectively, effectively standardising all paths as one or
 the other.
 
-    _schema_:
+    schema:
       tree_type:  uri
       uri_paths:  absolute
 
@@ -753,11 +852,19 @@ the data format you want, but it's usually just a few lines of code that are
 required to provide the L<Badger::Codec> wrapper module around whatever other 
 Perl module or custom code you've using to load and save the data format.
 
+=head2 schemas
+
+TODO: document specification of item schemas.  The items below (tree_type 
+through uri_paths) must now be defined in a schema.  Support for a default
+schema has temporarily been disabled/broken.
+
 =head2 tree_type
 
 This option can be used to sets the default tree type for any configuration 
 items that don't explicitly declare it by other means.  The default tree
 type is C<nest>.  
+
+NOTE: this has been changed.  Don't trust these docs.
 
 The following tree types are supported:
 
@@ -799,7 +906,7 @@ paths
 
 This option can be used to set the default C<uri_paths> option for joining
 paths as URIs.  It should be set to C<relative> or C<absolute>.  It can 
-be over-ridden in a C<_schema_> section of a top-level configuration file.
+be over-ridden in a C<schema> section of a top-level configuration file.
 
 =head1 METHODS
 
@@ -912,10 +1019,3 @@ under the same terms as Perl itself.
 
 =cut
 
-# Local Variables:
-# mode: perl
-# perl-indent-level: 4
-# indent-tabs-mode: nil
-# End:
-#
-# vim: expandtab shiftwidth=4:

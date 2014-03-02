@@ -1,0 +1,12 @@
+r: 17
+s: 19
+
+items:
+  pages:
+    tree_type:  uri
+    uri_paths:  absolute
+  fruit:
+    tree_type:  flat
+  cheese:
+    tree_type:  join
+    tree_joint: =
