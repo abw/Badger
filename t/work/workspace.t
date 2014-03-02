@@ -17,7 +17,7 @@ use lib qw( ../../lib );
 use Badger::Filesystem 'Bin';
 
 use Badger::Test 
-    tests => 10,
+    tests => 20,
     debug => 'Badger::Workspace',
     args  => \@ARGV;
 
@@ -49,7 +49,8 @@ is( $workspace->config('greetings.hello'), 'Hello World!', 'got greetings.hello'
 
 
 #-----------------------------------------------------------------------------
-# 'dirs' config maps 'first' and 'second' directories onto 'one' and 'two'
+# 'dirs' config section in config/workspace.yaml maps 'first' and 'second' 
+# directories onto 'one' and 'two'
 #-----------------------------------------------------------------------------
 
 my $dir1 = $workspace->dir('first');
@@ -63,7 +64,27 @@ ok( $foo1, 'got one/foo' );
 my $foo2 = $workspace->file('first/foo');
 ok( $foo2, 'got first/foo' );
 is( $foo1->text, $foo2->text, 'file contents match ' );
+
 my $text = $foo2->text;
 chomp($text);
 is( $text, 'This is one/foo', $text );
+
+
+#-----------------------------------------------------------------------------
+# This workspace has a separate config/dirs.yaml file
+#-----------------------------------------------------------------------------
+
+my $workspace2 = WORKSPACE->new(
+    root => Bin->dir( test_files => 'workspace2' ),
+);
+
+ok( $workspace2, 'got second workspace' );
+my $five = $workspace2->file('charlie/five');
+ok( $five, 'got charlie/five file' );
+
+is( $five->parent->name, 'four', 'charlie dir is actually five' );
+
+my $text2 = $five->text;
+chomp($text2);
+is( $text2, 'This is three/four/five', $text2 );
 
