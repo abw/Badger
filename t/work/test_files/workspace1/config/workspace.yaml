@@ -3,3 +3,6 @@ more: Config Data
 example:
   foo: The Foo Item
   bar: The Bar Item
+dirs:
+  first: one
+  second: two

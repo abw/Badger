@@ -26,10 +26,10 @@ sub init {
 sub init_workplace {
     my ($self, $config) = @_;
 
-    # The neophyte flag is used to indicate the special case where the root 
+    # The mkdir flag is used to indicate the special case where the root 
     # directory (and perhaps other support files, data, etc) don't yet exist
     # because some other bit of code is in the process of creating it anew.
-    my $neophyte = $config->{ neophyte } || 0;
+    my $mkdir = $config->{ mkdir } || 0;
 
     # The filespec can be specified to provide a hash of options for files
     my $filespec = $config->{ filespec } || { };
@@ -43,7 +43,7 @@ sub init_workplace {
     my $root = Dir($dir, $filespec);
 
     if (! $root->exists) {
-        if ($neophyte) {
+        if ($mkdir) {
             $root->mkdir;
         }
         else {
@@ -51,10 +51,10 @@ sub init_workplace {
         }
     }
 
-    $self->{ root     } = $root;
-    $self->{ urn      } = $config->{ urn } // $root->name;
-    $self->{ uri      } = $config->{ uri } // $self->{ urn };
-    $self->{ neophyte } = $neophyte;
+    $self->{ root  } = $root;
+    $self->{ urn   } = $config->{ urn } // $root->name;
+    $self->{ uri   } = $config->{ uri } // $self->{ urn };
+    $self->{ mkdir } = $mkdir;
 
     return $self;
 }
@@ -113,6 +113,12 @@ This option can be set to define a Universal Resource Identifier (URN) for the
 workplace for reference purposes.  If undefined it defaults to the name of
 the value of L<urn>.
 
+=head2 mkdir
+
+The object constructor will fail if the root directory specified via L<root>
+(or C<dir> or C<directory>) does not exist.  Alternately, set the C<mkdir>
+option to any true value and the directory will be created automatically.
+
 =head1 METHODS
 
 =head2 dir($name) / directory($name)
@@ -130,7 +136,15 @@ relative to the workplace root.
 
 =head2 uri($path)
 
-Resolves a URI path relative to the workplace L<uri>.
+When called without any arguments this method returns the base URI for the 
+workspace.
+
+    print $workspace->uri;              # e.g. foo
+
+When called with a relative URI path as an argument, it returns the URI
+resolved relative to the project base URI. 
+
+    print $workspace->uri('bar');       # e.g. foo/bar
 
 =head1 AUTHOR
 

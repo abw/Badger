@@ -1006,6 +1006,30 @@ This handles the merging of data for the L<uri> L<tree_type>.
 
 This handles the merging of data for the L<join> L<tree_type>.
 
+=head2 config_file($name)
+
+This method returns a L<Badger::Filesystem::File> object representing a 
+configuration file in the configuration directory.  It will automatically
+have the correct filename extension added (via a call to L<config_filename>)
+and the correct C<codec> and C<encoding> parameters set (via a call to 
+L<config_filespec>) so that the data in the configuration file can be 
+automatically loaded (see L<config_data($name)>).
+
+=head2 config_file_data($name)
+
+This method fetches a configuration file via a call to L<config_file()>
+and then returns the data contained therein.
+
+=head2 config_filespec($params)
+
+Returns a reference to a hash array containing appropriate initialisation
+parameters for L<Badger::Filesystem::File> objects created to read general
+and resource-specific configuration files.  The parameters are  constructed
+from the C<codecs> (default: C<yaml>) and C<encoding> (default: C<utf8>) 
+configuration options.  These can be overridden or augmented by extra
+parameters passed as arguments.
+
+
 =head1 AUTHOR
 
 Andy Wardley L<http://wardley.org/>

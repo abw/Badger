@@ -46,3 +46,24 @@ my $greetings = $workspace->config('greetings');
 ok( $greetings, 'got greetings config' );
 is( $greetings->{ hello }, 'Hello World!', 'got hello greeting' );
 is( $workspace->config('greetings.hello'), 'Hello World!', 'got greetings.hello' );
+
+
+#-----------------------------------------------------------------------------
+# 'dirs' config maps 'first' and 'second' directories onto 'one' and 'two'
+#-----------------------------------------------------------------------------
+
+my $dir1 = $workspace->dir('first');
+ok( $dir1, 'got first dir' );
+is( $dir1->name, 'one', 'first dir is mapped to one' );
+
+
+my $foo1 = $workspace->file('one/foo');
+ok( $foo1, 'got one/foo' );
+
+my $foo2 = $workspace->file('first/foo');
+ok( $foo2, 'got first/foo' );
+is( $foo1->text, $foo2->text, 'file contents match ' );
+my $text = $foo2->text;
+chomp($text);
+is( $text, 'This is one/foo', $text );
+

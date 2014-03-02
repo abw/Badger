@@ -5,14 +5,15 @@ use Badger::Class
     debug       => 0,
     base        => 'Badger::Workplace',
     import      => 'class',
-    utils       => 'extend',
-    accessors   => 'root config_dir urn type',
+    utils       => 'params',
+    accessors   => 'config_dir',
     constants   => 'ARRAY HASH SLASH DELIMITER NONE',
     constant    => {
         # configuration directory and file
         CONFIG_MODULE  => 'Badger::Config::Filesystem',
         CONFIG_DIR     => 'config',
         CONFIG_FILE    => 'workspace',
+        DIRS           => 'dirs',
     };
 
 
@@ -24,11 +25,13 @@ sub init {
     my ($self, $config) = @_;
     $self->init_workplace($config);
     $self->init_workspace($config);
+    return $self;
 }
 
 sub init_workspace {
     my ($self, $config) = @_;
     $self->init_config(@_);
+    $self->init_dirs(@_);
 }
 
 sub init_config {
@@ -50,16 +53,106 @@ sub init_config {
     # load the configuration module
     class($conf_mod)->load;
 
-    # config directory and filesystem
+    # config directory 
+    $self->{ config_dir } = $conf_dir;
+
+    # config directory manager
     $self->{ config } = $conf_mod->new(
         directory => $conf_dir,
         file      => $conf_file,
     );
 
-    $self->{ parent } = $config->{ parent };
-
     return $self;
 }
+
+sub init_dirs {
+    my ($self, $config) = @_;
+    my $dirs = $self->config(DIRS) || return;
+    $self->dirs($dirs);
+}
+
+
+#-----------------------------------------------------------------------------
+# A 'dirs' config file can provide mappings for local workspace directories in
+# case that they're not 1:1, e.g. images => resource/images
+#-----------------------------------------------------------------------------
+
+sub dir {
+    my $self = shift;
+
+    return @_
+        ? $self->resolve_dir(@_)
+        : $self->root;
+}
+
+sub dirs {
+    my $self = shift;
+    my $dirs = $self->{ dirs } ||= { };
+
+    if (@_) {
+        # resolve all new directories relative to workspace directory
+        my $root  = $self->root;
+        my $addin = params(@_);
+
+        while (my ($key, $value) = each %$addin) {
+            my $subdir = $root->dir($value);
+            if ($subdir->exists) {
+                $dirs->{ $key } = $subdir;
+            }
+            else {
+                return $self->error_msg( 
+                    invalid => "directory for $key" => $value 
+                );
+            }
+        }
+        $self->debug(
+            "set dirs: ", 
+            $self->dump_data($dirs)
+        ) if DEBUG;
+    }
+
+    return $dirs;
+}
+
+sub resolve_dir {
+    my ($self, @path) = @_;
+    my $dirs = $self->dirs;
+    my $path = join(SLASH, @path);
+    my @pair = split(SLASH, $path, 2); 
+    my $head = $pair[0];
+    my $tail = $pair[1];
+    my $alias;
+
+    $self->debug("[HEAD:$head] [TAIL:$tail]") if DEBUG;
+
+    # the first element of a directory path can be an alias defined in dirs
+    if ($alias = $dirs->{ $head }) {
+        $self->debug(
+            "resolve_dir($path) => [HEAD:$head=$alias] + [TAIL:$tail]"
+        ) if DEBUG;
+        return defined($tail)
+            ? $alias->dir($tail)
+            : $alias;
+    }
+
+    $self->debug("resolving: ", $self->dump_data(\@path)) if DEBUG;
+    return $self->root->dir(@path);
+}
+
+sub file {
+    my ($self, @path) = @_;
+    my $path = join(SLASH, @path);
+    my @bits = split(SLASH, $path);
+    my $file = pop(@bits);
+
+    if (@bits) {
+        return $self->dir(@bits)->file($file);
+    }
+    else {
+        return $self->dir->file($file);
+    }
+}
+
 
 
 #-----------------------------------------------------------------------------
@@ -79,9 +172,7 @@ sub config {
 #-----------------------------------------------------------------------------
 
 sub destroy {
-    my $self = shift;
-    delete $self->{ parent    };
-#    delete $self->{ uberspace };
+    # nothing to be done here - subclasses may need to do stuff
 }
 
 sub DESTROY {
@@ -121,34 +212,42 @@ Badger::Workspace - an object representing a project workspace
 
 =head1 DESCRIPTION
 
-This module implements an object for representing a Badger workspace.
+This module implements an object for representing a workspace, for example
+the directory containing the source, configuration, resources and other files
+for a web site or some other project.  It is a subclass of L<Badger::Workplace>
+which implements the base functionality.
 
-NOTE: this documentation was cut-n-pasted from Badger::Project which 
-is in the process of being refactored.  Don't trust it to be accurate or
-up to date.  The documentation will be updated when the refactoring is 
-complete and the architecure more stable.
+The root directory for a workspace is expected to contain a configuration 
+directory, called F<config> by default, containing configuration files for
+the workspace.  This is managed by delegation to a L<Badger::Config::Filesystem>
+object.
 
 =head1 CLASS METHODS
 
 =head2 new(\%config)
 
-This is the constructor method to create a new C<Badger::Project> object.
+This is the constructor method to create a new C<Badger::Workspace> object.
 
     use Badger::Workspace;
     
     my $space = Badger::Workspace->new(
-        directory => '/path/to/workspace'
+        directory => '/path/to/workspace',
     );
 
 =head3 CONFIGURATION OPTIONS
 
-=head4 directory
+=head4 root / dir / directory 
 
 This mandatory parameter must be provided to indicate the filesystem path
-to the project directory.  It can be also specified as either of the aliases
-C<dir> or C<root>
+to the project directory.  It can be also specified using any of the names
+C<root>, C<dir> or C<directory>, as per L<Badger::Workplace>
 
-=head4 config_dir
+=head4 config_module
+
+The name of the delegate module for managing the files in the configuration
+directory.  This defaults to L<Badger::Config::Filesystem>.
+
+=head4 config_dir / config_directory
 
 This optional parameter can be used to specify the name of the configuration
 direction under the L<root> project directory.  The default configuration 
@@ -159,238 +258,51 @@ directory name is C<config>.
 This optional parameter can be used to specify the name of the main 
 configuration file (without file extension) that should reside in the 
 L<config_dir> directory under the C<root> project directory.  The default 
-configuration file name is C<Badger>.
+configuration file name is C<workspace>.
 
-=head1 GENERAL PURPOSE OBJECT METHODS
+=head1 PUBLIC METHODS
 
-=head2 uri($path)
+=head2 dir($name)
 
-When called without any arguments this method returns the base URI for the 
-project.
+=head2 dirs(\%dirmap)
 
-    print $project->uri;            # e.g. foo
+=head2 resolve_dir($name)
 
-When called with a relative URI path as an argument, it returns the URI
-resolved relative to the project base URI. 
+=head2 file($path)
 
-    print $project->uri;
+=head2 config($item)
 
-=head2 dir($path)
+When called without any arguments this returns a L<Badger::Config::Filesystem>
+object which manages the configuration directory for the project.
 
-Returns a L<Badger::Filesystem::Directory> object representing a directory
-under the project root directory denoted by the C<$path> argument (or 
-arguments).  Returns the root directory object when called without any 
-arguments.
+    my $cfg = $workspace->config;
 
-    my $root   = $project->dir;
-    my $images = $project->dir('images');
+When called with a named item it returns the configuration data associated
+with that item.  This will typically be defined in a master configuration 
+file, or in a file of the same name as the item, with an appropriate file 
+extension added.
 
-=head2 resources_dir($path)
+    my $name = $workspace->config('name');
 
-Returns a L<Badger::Filesystem::Directory> object for the directory in 
-which resource data files are stored.  This is defined via the 
-C<resources_dir> configuration option and is usually specified relative 
-to the project root directory (C<resources> by default).  If one or more
-C<$path> arguments are specified then it returns a directory underneath 
-the resources directory, in a similar fashion to L<dir()>.
-
-    my $resources = $project->resources_dir;
-    my $forms     = $project->resources_dir('forms');
-    my $widgets   = $project->resources_dir('ui/widgets');
-
-=head2 resource_dir($type,$spec)
-
-This is a more strict wrapper around L<resources_dir()> which provides
-additional configuration parameters (from L<config_filespec()>) and asserts 
-that the directory exists.  It caches the directory object for subequent use.
-This should generally be used in preference to L<resources_dir()>.
-
-    my $forms = $project->resource_dir('forms');
-
-=head1 OBJECT METHODS FOR READING CONFIGURATION FILES
-
-=head2 config_dir($path)
-
-When called without any arguments this returns a L<Badger::Filesystem::Directory>
-object representing the configuration directory for the project.
-
-    my $dir = $project->config_dir;
-
-When called with a relative directory path as argument it returns a 
-L<Badger::Filesystem::Directory> representing the directory relative to
-configuration directory. 
-
-    my $dir = $project->config_dir('forms');
-
-=head2 config_filename($name)
-
-This method is used to construct the name of configuration files under the 
-configuration directory.  It automatically appends the correct file extension.
-
-    my $filename = $project->config_filename('foo');
-
-=head2 config_filespec($params)
-
-Returns a reference to a hash array containing appropriate initialisation
-parameters for L<Badger::Filesystem::File> objects created to read general
-and resource-specific configuration files.  The parameters are  constructed
-from the C<config_codec> (default: C<yaml>) and C<config_encoding> (default:
-C<utf8>) configuration options.  These can be overridden or augmented by extra
-parameters passed as arguments.
-
-=head2 config_file($name)
-
-This method returns a L<Badger::Filesystem::File> object representing a 
-configuration file in the configuration directory.  It will automatically
-have the correct filename extension added (via a call to L<config_filename>)
-and the correct C<codec> and C<encoding> parameters set (via a call to 
-L<config_filespec>) so that the data in the configuration file can be 
-automatically loaded (see L<config_data($name)>).
-
-EDIT: Hmmm... it appear it doesn't add the filename extension, etc.  You 
-have to do that via an additional call to L<config_filename()>.  This may
-get changed RSN.  Watch this space.
-
-=head2 config_data($name)
-
-This method fetches a configuration file via a call to L<config_file()>
-and then returns the data contained therein.
-
-=head2 config_tree($name)
-
-This method constructs a tree of configuration data from one or more 
-configuration files under the configuration directory.  For example,
-suppose there are F<config/urls.yaml> and F<config/urls/admin.yaml>
-files that look like this:
-
-Example F<config/urls.yaml>
-
-    foo: /path/to/foo
-
-Example F<config/urls/admin.yaml>
-
-    bar: /path/to/bar
-
-Then call the C<config_tree()> method like so:
-
-    my $tree = $project->config_tree('urls');
-
-The returned tree will contain the items defined in both files:
-
-    {
-        foo   => '/path/to/foo',
-        admin => {
-            bar => '/path/to/bar',
-        }
-    }
-
-=head2 config_uri_tree($name)
-
-This method works in a similar way to L<config_tree> but it merges nested
-configuration files into a flat structure, using the file name (without the
-file extension) as an intermediate URI component.  Consider the following
-configuration files:
-
-Example F<config/urls.yaml>
-
-    foo: /path/to/foo
-
-Example F<config/urls/admin.yaml>
-
-    bar:  /path/to/bar
-    /baz: /path/to/baz
-
-Calling the C<config_uri_tree()> method like so:
-
-    my $tree = $project->config_uri_tree('urls');
-
-Will return a hash array like this:
-
-    {
-        foo         => '/path/to/foo',
-        /admin/bar  => '/path/to/bar',
-        /baz        => '/path/to/baz',
-    }
-
-Note that relative URIs (e.g. C<bar>) in nested files get appended to the 
-file basename (e.g. C</admin/bar>) whereas those that are absolute (starting
-with a C</> do not).  At present all resultant URIs from nested files are
-absolute (i.e. C</admin/bar> instead of C<admin/bar>).  I'm not sure that's
-necessarily correct but that's how it is for now.
-
-=head2 scan_config_dir()
-
-This method is used internally by L<config_tree()> to scan the files in a 
-configuration directory.
-
-=head2 scan_config_file()
-
-This method is used internally by L<config_tree()> to load an individual 
-files in a configuration directory.
-
-=head2 uri_binder()
-
-This method is used internally by L<config_uri_tree()> for resolving for 
-constructing composite URIs.
-
-=head1 OBJECT METHODS FOR LOADING COMPONENTS
-
-Components are one-off (singleton) objects that can be loaded into a Badger
-project.  For example, a database can be implemented as a component.  You 
-generally only ever need to load one database component into a project and 
-all other internal components and external code using the project can share it.
-
-=head2 component($name)
-
-Returns a cached instance of a named component or loads (and caches) it via
-a call to L<load_component()>.
-
-=head2 has_component($name)
-
-Return a boolean value to indicate if this project has a named component
-
-=head2 load_component($name)
-
-=head2 component_config($name)
-
-=head2 component_factory()
-
-
-
-=head1 OBJECT METHODS FOR LOADING RESOURCES
-
-=head1 INITIALISATION METHODS
-
-These methods are used internally to initialise the C<Badger::Project>
-object.
+=head1 PRIVATE METHODS
 
 =head2 init(\%config)
 
-This is the main initialisation method.  It performs some object initalisation,
-sets sensible defaults for any missing values in the C<\%config> parameters 
-and loads the configuration data defined in the main configuration file.  It 
-then calls each of the following initialisation methods passing a reference 
-to a hash array of merged configuration parameters.
+This method redefines the default initialisation method.  It calls the 
+L<init_workplace()|Badger::Workplace/init_workplace()> method inherited
+from L<Badger::Workplace> and then calls the L<init_workspace()> method
+to perform any workspace-specific initialisation.
 
-=head2 init_project(\%merged_config)
+=head2 init_workspace(\%config)
 
-This doesn't do anything much at present but is provided as a stub for 
-future expansion.
+This method performs workspace-specific initialisation.  In this module it
+simply calls L<init_config()>.  Subclasses may redefine it to do something 
+different.
 
-=head2 init_components(\%merged_config)
+=head2 init_config(\%config)
 
-This calls the L<prepare_components()> method to initialise all C<components>
-defined in the merged configuration.
-
-=head2 init_resources(\%merged_config)
-
-This calls the L<prepare_components()> method to initialise all C<resources>
-defined in the merged configuration.
-
-=head2 prepare_components(\%components)
-
-This initialises the configuration data for a set of plugin components.
-
+This initialised the L<Badger::Config::Filesystem> object which manages the
+F<config> configuration directory.
 
 =head1 AUTHOR
 
@@ -398,6 +310,6 @@ Andy Wardley E<lt>abw@wardley.orgE<gt>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2008-2013 Andy Wardley.  All Rights Reserved.
+Copyright (C) 2008-2014 Andy Wardley.  All Rights Reserved.
 
 =cut
