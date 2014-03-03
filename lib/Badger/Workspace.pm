@@ -5,7 +5,7 @@ use Badger::Class
     debug       => 0,
     base        => 'Badger::Workplace',
     import      => 'class',
-    utils       => 'params Filter',
+    utils       => 'params self_params Filter',
     accessors   => 'config_dir',
     constants   => 'ARRAY HASH SLASH DELIMITER NONE BLANK',
     constant    => {
@@ -323,6 +323,30 @@ sub heritage {
     my $ancs = $self->ancestors;
     return [ reverse @$ancs ];
 }
+
+#-----------------------------------------------------------------------------
+# Methods to create a sub-workspace attached to the current one
+#-----------------------------------------------------------------------------
+
+sub subspace {
+    my ($self, $params) = self_params(@_);
+    my $class = $self->subspace_module($params);
+
+    $params->{ parent } = $self;
+
+    if ($DEBUG) {
+        $self->debug("subspace() class: $class");
+        $self->debug("subspace() params: ", $self->dump_data($params));
+    }
+
+    class($class)->load->instance($params);
+}
+
+sub subspace_module {
+    my ($self, $params) = self_params(@_);
+    return ref $self || $self;
+}
+
 
 #-----------------------------------------------------------------------------
 # Cleanup methods

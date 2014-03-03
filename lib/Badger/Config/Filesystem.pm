@@ -109,6 +109,9 @@ sub init_file {
     my $data = $self->get($file);
 
     if ($data) {
+        # must copy data so as not to damage cached version
+        $data = { %$data };
+
         $self->debug(
             "config file data from $file: ",
             $self->dump_data($data)
@@ -556,7 +559,7 @@ sub has_item {
         # Special case for B::C::Filesystem which looks to see if there's a
         # matching config file.  We cache the existence in $self->{ item }
         # so we know if it's there (or not) for next time
-        return $self->{ item }
+        return $self->{ item }->{ $name }
             =  $self->config_file($name);
     }
 }
