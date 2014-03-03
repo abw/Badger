@@ -286,7 +286,7 @@ sub attach {
 }
 
 sub detach {
-    my $self = @_;
+    my $self = shift;
     delete $self->{ parent };
 }
 

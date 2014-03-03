@@ -116,8 +116,8 @@ sub init_file {
 
         # file can contain 'items' or 'schemas' (I don't love this, but it'll do for now)
         $self->items(
-            $data->{ items   },
-            $data->{ schemas }
+            delete $data->{ items   },
+            delete $data->{ schemas }
         );
 
         # anything else is config data
