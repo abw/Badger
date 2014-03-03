@@ -18,7 +18,7 @@ use Badger::Class
     debug     => 0,
     import    => 'class',
     base      => 'Badger::Prototype',
-    utils     => 'blessed numlike',
+    utils     => 'blessed numlike extend',
     constants => 'HASH ARRAY CODE DELIMITER',
     auto_can  => 'can_configure',
     alias     => {
@@ -166,6 +166,13 @@ sub set {
     my $data = @_ == 1 ? shift : { @_ };
     $self->{ data }->{ $name } = $data;
     $self->{ item }->{ $name } = 1;
+    return $data;
+}
+
+sub data {
+    my $self = shift->prototype;
+    my $data = $self->{ data };
+    extend($data, @_) if @_;
     return $data;
 }
 

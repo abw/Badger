@@ -17,7 +17,7 @@ use lib qw( ../../lib );
 use Badger::Filesystem 'Bin';
 
 use Badger::Test 
-    tests => 20,
+    tests => 25,
     debug => 'Badger::Workspace',
     args  => \@ARGV;
 
@@ -87,4 +87,24 @@ is( $five->parent->name, 'four', 'charlie dir is actually five' );
 my $text2 = $five->text;
 chomp($text2);
 is( $text2, 'This is three/four/five', $text2 );
+
+
+#-----------------------------------------------------------------------------
+# Attach the second workspace to the first
+#-----------------------------------------------------------------------------
+
+$workspace2->attach($workspace);
+
+my $greets2 = $workspace2->parent_config('greetings');
+ok( $greets2, 'got greetings from parent config' );
+is( $greets2->{ hello }, 'Hello World!', 'got parent hello greeting' );
+
+my $greets3 = $workspace2->config('greetings');
+ok( $greets3, 'got greetings config inherited from parent' );
+is( $greets3->{ hello }, 'Hello World!', 'got hello greeting' );
+
+
+ok( ! $workspace2->config('fruit'), 'no local or inherited fruit' );
+
+#$workspace2->inherit(1);
 

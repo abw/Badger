@@ -5,15 +5,18 @@ use Badger::Class
     debug       => 0,
     base        => 'Badger::Workplace',
     import      => 'class',
-    utils       => 'params',
+    utils       => 'params Filter',
     accessors   => 'config_dir',
-    constants   => 'ARRAY HASH SLASH DELIMITER NONE',
+    constants   => 'ARRAY HASH SLASH DELIMITER NONE BLANK',
     constant    => {
         # configuration directory and file
         CONFIG_MODULE  => 'Badger::Config::Filesystem',
         CONFIG_DIR     => 'config',
         CONFIG_FILE    => 'workspace',
         DIRS           => 'dirs',
+        SHARE          => 'share',      # parent to child
+        INHERIT        => 'inherit',    # child from parent
+        MERGE          => 'merge',      # child from parent with merging
     };
 
 
@@ -30,8 +33,25 @@ sub init {
 
 sub init_workspace {
     my ($self, $config) = @_;
-    $self->init_config(@_);
-    $self->init_dirs(@_);
+
+    # Initialise any parent connection and bootstrap the configuration manager
+    $self->init_parent($config);
+    $self->init_config($config);
+
+    # Everything after this point reads configuration values from the config
+    # object which includes $config above and also allows local configuration
+    # files to provide further configuration data.
+    $self->init_inheritance;
+    $self->init_dirs;
+    return $self;
+}
+
+sub init_parent {
+    my ($self, $config) = @_;
+    $self->attach(
+        delete $config->{ parent }
+    );
+    return $self;
 }
 
 sub init_config {
@@ -58,6 +78,7 @@ sub init_config {
 
     # config directory manager
     $self->{ config } = $conf_mod->new(
+        data      => $config,
         directory => $conf_dir,
         file      => $conf_file,
     );
@@ -65,10 +86,104 @@ sub init_config {
     return $self;
 }
 
+sub init_inheritance {
+    my $self = shift;
+    $self->init_filter(SHARE);
+    $self->init_filter(INHERIT);
+    #$self->init_filter(MERGE);
+    return $self;
+}
+
+sub init_filter {
+    my ($self, $name) = @_;
+    my $config = $self->config($name);
+
+    if (! ref $config) {
+        # $config can be a single word like 'all' or 'none', or a shorthand
+        # specification string, e.g. foo +bar -baz
+        $config = { 
+            accept => $config
+        };
+    }
+    elsif (ref $config ne HASH) {
+        # $config can be a reference to a list of items to include
+        $config = { 
+            include => $config
+        };
+    }
+    # otherwise $config must be a HASH ref
+
+    $self->debug(
+        "$self->{ uri } $name filter spec: ", 
+        $self->dump_data($config),
+    ) if DEBUG;
+
+    $self->{ $name } = Filter($config);
+
+    return $self;
+}
+
+
 sub init_dirs {
-    my ($self, $config) = @_;
+    my $self = shift;
     my $dirs = $self->config(DIRS) || return;
     $self->dirs($dirs);
+    return $self;
+}
+
+
+
+#-----------------------------------------------------------------------------
+# Delegate method to fetch config data from the config object
+#-----------------------------------------------------------------------------
+
+sub config {
+    my $self   = shift;
+    my $config = $self->{ config };
+    return $config unless @_;
+    return $config->get(@_)
+        || $self->inherit_config(@_);
+}
+
+sub parent_config {
+    my $self   = shift;
+    my $parent = $self->{ parent } || return;
+    return $parent->config(@_);
+}
+
+sub share_config {
+    my $self   = shift;
+
+    if ($self->can_share(@_)) {
+        $self->debug("$self->{ uri } can share $_[0]") if DEBUG;
+        return $self->config(@_);
+    }
+    elsif (DEBUG) {
+        $self->debug("$self->{ uri } cannot share $_[0]");
+    }
+    return undef;
+}
+
+sub inherit_config {
+    my $self   = shift;
+    my $parent = $self->{ parent } || return undef;
+
+    if ($self->can_inherit(@_)) {
+        $self->debug("$self->{ uri } can inherit $_[0]") if DEBUG;
+        return $parent->share_config(@_);
+    }
+    elsif (DEBUG) {
+        $self->debug("$self->{ uri } cannot inherit $_[0]");
+    }
+    return undef;
+}
+
+sub can_share {
+    shift->{ share }->item_accepted(@_);
+}
+
+sub can_inherit {
+    shift->{ inherit }->item_accepted(@_);
 }
 
 
@@ -123,19 +238,25 @@ sub resolve_dir {
     my $tail = $pair[1];
     my $alias;
 
-    $self->debug("[HEAD:$head] [TAIL:$tail]") if DEBUG;
+    $self->debug(
+        "[HEAD:$head] [TAIL:", $tail // BLANK, "]"
+    ) if DEBUG;
 
     # the first element of a directory path can be an alias defined in dirs
     if ($alias = $dirs->{ $head }) {
         $self->debug(
-            "resolve_dir($path) => [HEAD:$head=$alias] + [TAIL:$tail]"
+            "resolve_dir($path) => [HEAD:$head=$alias] + [TAIL:",
+            $tail // BLANK, "]"
         ) if DEBUG;
         return defined($tail)
             ? $alias->dir($tail)
             : $alias;
     }
 
-    $self->debug("resolving: ", $self->dump_data(\@path)) if DEBUG;
+    $self->debug(
+        "resolving: ", $self->dump_data(\@path)
+    ) if DEBUG;
+
     return $self->root->dir(@path);
 }
 
@@ -156,51 +277,55 @@ sub file {
 
 
 #-----------------------------------------------------------------------------
-# fetch config data from the config object
+# Workspaces can be attached to parent workspaces.
 #-----------------------------------------------------------------------------
 
-sub config {
-    my $self   = shift;
-    my $config = $self->{ config };
-    return $config unless @_;
-    return $config->get(@_);    
+sub attach {
+    my ($self, $parent) = @_;
+    $self->{ parent } = $parent;
 }
 
+sub detach {
+    my $self = @_;
+    delete $self->{ parent };
+}
+
+sub parent {
+    my $self = shift;
+    my $n    = shift || 0;
+    my $rent = $self->{ parent } || return;
+    return $n
+        ? $rent->parent(--$n)
+        : $rent;
+}
+
+sub ancestors {
+    my $self = shift;
+    my $list = shift || [ ];
+    push(@$list, $self);
+    return $self->{ parent }
+        ?  $self->{ parent }->ancestors($list)
+        :  $list;
+}
+
+sub heritage {
+    my $self = shift;
+    my $ancs = $self->ancestors;
+    return [ reverse @$ancs ];
+}
 
 #-----------------------------------------------------------------------------
 # Cleanup methods
 #-----------------------------------------------------------------------------
 
 sub destroy {
-    # nothing to be done here - subclasses may need to do stuff
+    my $self = shift;
+    $self->detach;
 }
 
 sub DESTROY {
     shift->destroy;
 }
-
-1;
-
-__END__
-
-
-use Badger::Rainbow ANSI => 'cyan yellow magenta bold';
-our $DEBUG_FORMAT = 
-    cyan('[').
-    bold(magenta('<uri> ')).
-    bold(yellow('<where> ')).
-    bold(cyan('line <line>')).
-    cyan(']').
-    "\n<msg>";
-
-sub debug_magic {
-    my $self = shift;
-    return { 
-        format => $DEBUG_FORMAT,
-        uri    => $self->uri,
-    };
-}
-
 
 1;
 
@@ -262,14 +387,6 @@ configuration file name is C<workspace>.
 
 =head1 PUBLIC METHODS
 
-=head2 dir($name)
-
-=head2 dirs(\%dirmap)
-
-=head2 resolve_dir($name)
-
-=head2 file($path)
-
 =head2 config($item)
 
 When called without any arguments this returns a L<Badger::Config::Filesystem>
@@ -283,6 +400,53 @@ file, or in a file of the same name as the item, with an appropriate file
 extension added.
 
     my $name = $workspace->config('name');
+
+=head2 inherit_config($item)
+
+Attempts to fetch an inherited configuration from a parent namespace.
+The workspace must have a parent defined and must have the C<inherit>
+option set to any true value.
+
+=head2 parent_config($item)
+
+Attempts to fetch the configuration for a named item from a parent workspace.
+Obviously this requires the workspace to be attached to a parent.  Note that
+this method is not bound by the C<inherit> flag and will delegate to any
+parent regardless.
+
+=head2 dir($name)
+
+=head2 dirs(\%dirmap)
+
+=head2 resolve_dir($name)
+
+=head2 file($path)
+
+=head2 attach($parent)
+
+Attaches the workspace to a parent workspace.
+
+=head2 detach()
+
+Detaches the workspace from any parent workspace.
+
+=head2 parent($n)
+
+Returns the parent workspace if there is one.  If a numerical argument is
+passed then it indicates a number of parents to skip.  e.g. if C<$n> is C<1>
+then it bypasses the parent and returns the grandparent instead.  Thus, passing
+an argument of C<0> is the same as passing no argument at all.
+
+=head2 ancestors($list)
+
+Returns a list of the parent, grandparent, great-grandparent and so on, all 
+the way up as far as it can go.  A target list reference can be passed as an 
+argument.
+
+=head2 heritage()
+
+This returns the same items in the C<ancestors()> list but in reverse order,
+from most senior parent to most junior.
 
 =head1 PRIVATE METHODS
 
@@ -303,6 +467,14 @@ different.
 
 This initialised the L<Badger::Config::Filesystem> object which manages the
 F<config> configuration directory.
+
+=head2 init_dirs(\%config)
+
+=head2 init_parent(\%config)
+
+=head1 TODO
+
+Inheritance of configuration data between parent and child workspaces.
 
 =head1 AUTHOR
 

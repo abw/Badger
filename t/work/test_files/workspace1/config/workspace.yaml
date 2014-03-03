@@ -1,8 +1,20 @@
+# Some general configuration data
 name: Test Workspace
 more: Config Data
+
 example:
   foo: The Foo Item
   bar: The Bar Item
+
+fruit:
+  - apple
+  - banana
+
+# aliases to directories
 dirs:
   first: one
   second: two
+
+# The data we share with children
+share: example fruit greetings
+

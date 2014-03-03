@@ -1,1 +1,10 @@
 name: workspace2
+
+# The things we inherit from a parent (using a slightly different syntax
+# to the 'share' rule in workspace1/config/workspace.yaml, for the sake
+# of testing different ways of doing the same thing)
+inherit:
+  - example
+  - greetings
+
+
