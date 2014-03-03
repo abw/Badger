@@ -43,6 +43,7 @@ sub init_workspace {
     # files to provide further configuration data.
     $self->init_inheritance;
     $self->init_dirs;
+
     return $self;
 }
 
@@ -120,6 +121,8 @@ sub init_filter {
 
     $self->{ $name } = Filter($config);
 
+    $self->debug("$self $name filter: ", $self->{ $name }) if DEBUG;
+
     return $self;
 }
 
@@ -179,11 +182,18 @@ sub inherit_config {
 }
 
 sub can_share {
-    shift->{ share }->item_accepted(@_);
+    shift->can_filter(SHARE, @_);
 }
 
 sub can_inherit {
-    shift->{ inherit }->item_accepted(@_);
+    shift->can_filter(INHERIT, @_);
+}
+
+sub can_filter {
+    my ($self, $type, $name) = @_;
+    my $filter = $self->{ $type } || return;
+    $self->debug("$self filter for [$type] is $filter") if DEBUG;
+    return $filter->item_accepted($name);
 }
 
 
