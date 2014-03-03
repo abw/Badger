@@ -237,7 +237,8 @@ sub config_tree {
 
     if ($do_tree) {
         # merge file data using binder
-        $data ||= { };
+        $data   ||= { };
+        $binder ||= $self->tree_binder('nest');
         $binder->($self, $data, [ ], $file_data, $schema);
  
         if ($dir->exists) {
@@ -514,25 +515,42 @@ sub items {
 
 sub item {
     my ($self, $name, $schema) = @_;
-    return  $schema
-        || ($self->{ item }->{ $name }
-        ||= $self->lookup_item($name));
+
+    if ($schema) {
+        # force rebuild
+        delete $self->{ item }->{ $name };
+    }
+
+    return  $self->{ item }->{ $name }
+        ||= $self->lookup_item($name, $schema);
 }
 
 sub lookup_item {
-    my $self  = shift;
-    my $name  = shift;
+    my ($self, $name, $schema) = @_;
     my $items = $self->{ item };
     my $item  = $items->{ $name };
+    my $urn   = $name;
 
     while (! $item && length $name) {
         # keep chopping bits off the end of the name to find a more generic
         # schema, e.g. forms/user/login -> forms/user -> forms
         last unless $name =~ s/\W\w+\W?$//;
-        $self->debug("trying $name") if DEBUG;
+        $self->debug("trying [$name]") if DEBUG;
         $item = $items->{ $name };
     }
-    return $item;
+    $item ||= $items->{ $name = '*' };
+
+    my $merge = $schema
+        ? extend({ }, $item, $schema)
+        : $item;
+
+    if (DEBUG) {
+        $self->debug("schema arg for $urn is ", $self->dump_data($schema));
+        $self->debug("schema for $urn ($name) is ", $self->dump_data($item));
+        $self->debug("merged item schema for $urn (as $name): ", $self->dump_data($merge));
+    }
+
+    return $merge;
 }
 
 

@@ -1,0 +1,8 @@
+e: echo
+f: 
+  - foxtrot 1
+  - foxtrot 2
+
+
+schema:
+  tree_joint: '*'

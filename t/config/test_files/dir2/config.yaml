@@ -1,0 +1,11 @@
+# This isn't loaded by default.  The config_file option must be set
+schemas:
+    '*':
+        tree_type:  join
+        tree_joint: '-'
+        cache:      2 seconds
+    ten:
+        tree_type: uri
+        uri_paths: relative
+        cache:     5 seconds
+

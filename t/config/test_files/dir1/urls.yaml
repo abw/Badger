@@ -1,0 +1,3 @@
+schema:
+  tree_type: join
+  tree_joint: '.'

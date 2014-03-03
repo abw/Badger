@@ -1,0 +1,7 @@
+name:    Workspace Example 1
+version: 314
+
+schemas:
+  pages:
+    tree_type:  join
+    tree_joint: _
