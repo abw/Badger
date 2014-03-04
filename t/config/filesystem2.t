@@ -25,11 +25,29 @@ use Badger::Config::Filesystem;
 my $pkg  = 'Badger::Config::Filesystem';
 my $dir1 = Bin->dir('test_files/dir1');
 
-my $config = $pkg->new( directory => $dir1 );
+my $config = $pkg->new(
+    directory => $dir1,
+    schemas   => {
+        widgets => {
+            tree_type => 'flat',
+        },
+        nibbles => {
+            tree_type  => 'uri',
+            uri_paths  => 'relative',
+        },
+        ents => {
+            tree_type  => 'join',
+            tree_joint => '_',
+        },
+        urls => {
+            tree_type  => 'join',
+            tree_joint => '.',
+        },
+    },
+);
 ok( $config, "Created $pkg object" );
 
 
-# goto here;
 #-----------------------------------------------------------------------------
 # Simple configuration file
 #-----------------------------------------------------------------------------
@@ -47,7 +65,7 @@ main->debug(
 
 
 #-----------------------------------------------------------------------------
-# Nested configuration directory with no master config file
+# The 'nested' items have a sub-directory, but there's no main nested.yaml
 #-----------------------------------------------------------------------------
 
 my $nested = $config->get('nested');
@@ -59,6 +77,12 @@ main->debug(
 
 is( $nested->{ one }->{ one_a }, 'One A', 'got nested.one.one_a' );
 is( $nested->{ two }->{ three }->{ three_a }, 'Three A', 'got nested.two.three.three_a' );
+
+#-----------------------------------------------------------------------------
+# widgets have both a widgets.yaml and a widgets sub-directory.  The schema
+# defined for widgets above specifies the contents should be merged into a 
+# flat tree (tree_type => 'flat')
+#-----------------------------------------------------------------------------
 
 my $widgets = $config->get('widgets');
 ok( $widgets, 'got widgets config' );
@@ -220,18 +244,20 @@ is(
 # Directory config object with custom schema
 #-----------------------------------------------------------------------------
 
-here: 
-
 my $dir2 = Bin->dir('test_files/dir2');
 
 $config = $pkg->new( 
     directory  => $dir2,
     file       => 'config',
     schemas    => {
-        'one'    => {
-            tree_type  => 'join',
-            tree_joint => '-',
-        }    
+        one    => {
+            tree_type   => 'join',
+            tree_joint  => '-',
+        },
+        three => {
+            tree_type   => 'join',
+            tree_joint  => '*',
+        },
     }
 );
 ok( $config, "Created $pkg object" );
@@ -266,7 +292,7 @@ main->debug(
 $config = $pkg->new( 
     directory  => $dir2,
     schemas    => {
-        '*'    => {
+        one    => {
             tree_type  => 'join',
             tree_joint => '+',
         }
@@ -282,10 +308,6 @@ is( join(', ', sort keys %$one), 'a, b, two+c, two+d', 'got joined keys' );
 
 $config = $pkg->new( 
     directory   => $dir2,
-    schema      => {
-        tree_type  => 'join',
-        tree_joint => '+',
-    },
     schemas     => {
         ten     => {
             tree_type => 'uri',

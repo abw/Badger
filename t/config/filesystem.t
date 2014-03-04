@@ -27,9 +27,15 @@ use Badger::Config::Filesystem;
 my $pkg = 'Badger::Config::Filesystem';
 
 my $config = $pkg->new(
-    root  => Bin->dir( test_files => 'config1' ),
-    data  => { x => 10, y => 20 }, 
-    items => 'a b c',
+    root    => Bin->dir( test_files => 'config1' ),
+    data    => { x => 10, y => 20 }, 
+    items   => 'a b c',
+    schemas => {
+        pages => {
+            tree_type => 'uri',
+            uri_paths => 'relative',
+        }
+    }
 );
 
 is( $config->x, 10, 'x is 10' );
@@ -49,7 +55,7 @@ my $name = $config->get('site.name');
 is( $name, "example", "got name: $name" );
 
 my $pages = $config->get('pages');
-ok( $pages, "got pages" ); #. main->dump_data($pages) );
+ok( $pages, "got pages" ); 
 
 is( $pages->{ about }->{ name }, 'About Us', 'got "about" page' );
 is( $pages->{"auth/login"}->{ name }, 'Login', 'got "auth/login" page' );

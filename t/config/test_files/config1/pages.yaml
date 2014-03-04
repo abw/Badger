@@ -7,9 +7,3 @@ about:
   name:  About Us
   title: Further Information About Us
 
-# The scheme defines how the data should be merged with files in the pages/*
-# sub-directory
-
-schema:
-  tree_type: uri
-  uri_paths: relative

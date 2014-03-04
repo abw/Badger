@@ -514,43 +514,15 @@ sub items {
 }
 
 sub item {
-    my ($self, $name, $schema) = @_;
-
-    if ($schema) {
-        # force rebuild
-        delete $self->{ item }->{ $name };
-    }
+    my ($self, $name) = @_;
 
     return  $self->{ item }->{ $name }
-        ||= $self->lookup_item($name, $schema);
+        ||= $self->lookup_item($name);
 }
 
 sub lookup_item {
-    my ($self, $name, $schema) = @_;
-    my $items = $self->{ item };
-    my $item  = $items->{ $name };
-    my $urn   = $name;
-
-    while (! $item && length $name) {
-        # keep chopping bits off the end of the name to find a more generic
-        # schema, e.g. forms/user/login -> forms/user -> forms
-        last unless $name =~ s/\W\w+\W?$//;
-        $self->debug("trying [$name]") if DEBUG;
-        $item = $items->{ $name };
-    }
-    $item ||= $items->{ $name = '*' };
-
-    my $merge = $schema
-        ? extend({ }, $item, $schema)
-        : $item;
-
-    if (DEBUG) {
-        $self->debug("schema arg for $urn is ", $self->dump_data($schema));
-        $self->debug("schema for $urn ($name) is ", $self->dump_data($item));
-        $self->debug("merged item schema for $urn (as $name): ", $self->dump_data($merge));
-    }
-
-    return $merge;
+    # hook for subclasses
+    return undef;
 }
 
 

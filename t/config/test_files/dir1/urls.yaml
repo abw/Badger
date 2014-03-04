@@ -1,3 +1,2 @@
-schema:
-  tree_type: join
-  tree_joint: '.'
+one:    page_one.html
+/two:   page_two.html

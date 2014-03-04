@@ -2,7 +2,3 @@ foo:
   name: The foo widget
 bar:
   name: The bar widget
-
-schema:
-  tree_type: flat
-

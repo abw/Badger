@@ -9,3 +9,5 @@ schemas:
         uri_paths: relative
         cache:     5 seconds
 
+share: one
+
