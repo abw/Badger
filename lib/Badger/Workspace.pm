@@ -148,7 +148,8 @@ sub config {
     my $self   = shift;
     my $config = $self->{ config };
     return $config unless @_;
-    return $config->get(@_);
+    return $config->get(@_)
+        || $self->parent_config(@_);
 }
 
 sub parent_config {

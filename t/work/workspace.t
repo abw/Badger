@@ -104,7 +104,11 @@ ok( $greets3, 'got greetings config inherited from parent' );
 is( $greets3->{ hello }, 'Hello World!', 'got hello greeting' );
 
 
-ok( ! $workspace2->config('fruit'), 'no local or inherited fruit' );
+# I had some inheritance rules in for a while, but it made things too 
+# complicated.  For now we assume that all configuration data can be inherited
+# from a parent workspace
+#ok( ! $workspace2->config('fruit'), 'no local or inherited fruit' );
 
-#$workspace2->inherit(1);
+ok( $workspace2->config('fruit'), 'inherited fruit' );
+
 
