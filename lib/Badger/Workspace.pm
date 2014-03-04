@@ -41,7 +41,6 @@ sub init_workspace {
     # Everything after this point reads configuration values from the config
     # object which includes $config above and also allows local configuration
     # files to provide further configuration data.
-    $self->init_inheritance;
     $self->init_dirs;
 
     return $self;
@@ -87,15 +86,16 @@ sub init_config {
     return $self;
 }
 
-sub init_inheritance {
+sub init_inheritance_NOT_USED {
     my $self = shift;
-    $self->init_filter(SHARE);
-    $self->init_filter(INHERIT);
+    # Nope, I'm going to keep this simple for now.
+    #$self->init_filter(SHARE);
+    #$self->init_filter(INHERIT);
     #$self->init_filter(MERGE);
     return $self;
 }
 
-sub init_filter {
+sub init_filter_NOT_USED {
     my ($self, $name) = @_;
     my $config = $self->config($name);
 
@@ -144,8 +144,7 @@ sub config {
     my $self   = shift;
     my $config = $self->{ config };
     return $config unless @_;
-    return $config->get(@_)
-        || $self->inherit_config(@_);
+    return $config->get(@_);
 }
 
 sub parent_config {
@@ -154,7 +153,7 @@ sub parent_config {
     return $parent->config(@_);
 }
 
-sub share_config {
+sub share_config_NOT_USED {
     my $self   = shift;
 
     if ($self->can_share(@_)) {
@@ -167,7 +166,7 @@ sub share_config {
     return undef;
 }
 
-sub inherit_config {
+sub inherit_config_NOT_USED {
     my $self   = shift;
     my $parent = $self->{ parent } || return undef;
 
@@ -181,15 +180,15 @@ sub inherit_config {
     return undef;
 }
 
-sub can_share {
+sub can_share_NOT_USED {
     shift->can_filter(SHARE, @_);
 }
 
-sub can_inherit {
+sub can_inherit_NOT_USED {
     shift->can_filter(INHERIT, @_);
 }
 
-sub can_filter {
+sub can_filter_NOT_USED {
     my ($self, $type, $name) = @_;
     my $filter = $self->{ $type } || return;
     $self->debug("$self filter for [$type] is $filter") if DEBUG;
