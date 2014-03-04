@@ -48,9 +48,8 @@ sub init_workspace {
 
 sub init_parent {
     my ($self, $config) = @_;
-    $self->attach(
-        delete $config->{ parent }
-    );
+    $self->{ parent } = delete $config->{ parent };
+    #$self->attach(delete $config->{ parent });
     return $self;
 }
 
@@ -69,6 +68,10 @@ sub init_config {
             delete $config->{ config_file } 
         ||  $self->CONFIG_FILE
     );
+    my $parent  = $self->parent;
+    my $pconfig = $parent && $parent->config;
+
+    #$self->debug("parent config: ", $self->dump_data($pconfig));
 
     # load the configuration module
     class($conf_mod)->load;
@@ -81,6 +84,7 @@ sub init_config {
         data      => $config,
         directory => $conf_dir,
         file      => $conf_file,
+        parent    => $pconfig,
     );
 
     return $self;
