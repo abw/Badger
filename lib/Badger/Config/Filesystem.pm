@@ -8,14 +8,15 @@ use Badger::Class
     utils     => 'split_to_list extend VFS join_uri resolve_uri',
     accessors => 'root filespec encoding codecs extensions quiet',
     words     => 'ENCODING CODECS',
-    constants => 'DOT NONE TRUE FALSE YAML JSON UTF8',
+    constants => 'DOT NONE TRUE FALSE YAML JSON UTF8 ARRAY HASH SCALAR',
     constant  => {
         ABSOLUTE => 'absolute',
         RELATIVE => 'relative',
     },
     messages  => {
-        no_config => 'Missing configuration file: %s',
-        load_fail => 'Failed to load data from %s: %s',
+        no_config      => 'Missing configuration file: %s',
+        load_fail      => 'Failed to load data from %s: %s',
+        merge_mismatch => 'Cannot merge items for %s: %s and %s',
     };
 
 our $EXTENSIONS = [YAML, JSON];
@@ -313,6 +314,8 @@ sub scan_config_file {
     my $meta = $file->try->data;
     return $self->error_msg( load_fail => $file => $@ ) if $@;
 
+    $self->debug("Metadata: ", $self->dump_data($meta)) if DEBUG;
+
     if ($binder) {
         $path ||= [ ];
         push(@$path, $base);
@@ -344,13 +347,42 @@ sub tree_binder {
 sub nest_tree_binder {
     my ($self, $parent, $path, $child, $schema) = @_;
     my $data = $parent;
+    my $uri  = join('/', @$path);
+    my @bits = @$path;
+    my $last = pop @bits;
 
-    foreach my $key (@$path) {
+    $self->debug("Adding [$uri] as ", $self->dump_data($child))if DEBUG;
+
+    foreach my $key (@bits) {
         $data = $data->{ $key } ||= { };
     }
-    while (my ($key, $value) = each %$child) {
-        $data->{ $key } = $value;
+
+    if ($last) {
+        my $tail = $data->{ $last };
+
+        if ($tail) {
+            my $tref = ref $tail  || SCALAR;
+            my $cref = ref $child || SCALAR;
+
+            if ($tref eq HASH && $cref eq HASH) {
+                $self->debug("Merging into $last") if DEBUG;
+                @$tail{ keys %$child } = values %$tail;
+            }
+            else {
+                return $self->error_msg( merge_mismatch => $uri, $tref, $cref );
+            }
+        }
+        else {
+            $self->debug("setting $last in data to $child") if DEBUG;
+            $data->{ $last } = $child;
+        }
     }
+    else {
+        $self->debug("No path, simple merge of child into parent") if DEBUG;
+        @$data{ keys %$child } = values %$child;
+    }
+
+    $self->debug("New parent: ", $self->dump_data($parent)) if DEBUG;
 }
 
 sub flat_tree_binder {
