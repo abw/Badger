@@ -85,6 +85,7 @@ sub init_config {
         directory => $conf_dir,
         file      => $conf_file,
         parent    => $pconfig,
+        quiet     => $config->{ quiet },
     );
 
     return $self;

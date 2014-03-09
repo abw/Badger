@@ -92,7 +92,7 @@ sub init_filesystem {
     $self->{ codecs     } = $codecs;
     $self->{ encoding   } = $encoding;
     $self->{ filespec   } = $filespec;
-    $self->{ quiet      } = $config->{ quiet   } || 0;
+    $self->{ quiet      } = $config->{ quiet } || 0;
 
     # Add any item schemas
     $self->items( $config->{ schemas } )
