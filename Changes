@@ -27,7 +27,8 @@ CHANGES
     <http://github.com/abw/Template-TT3>.
 
   Version 0.10 - Not Yet released
-    Added Badger::Comparable, Badger::Duration and Badger::Filter.
+    Added Badger::Comparable, Badger::Duration, Badger::Filter,
+    Badger::Workplace, Badger::Workspace and Badger::Config::Filesystem.
 
     Refactored parts of Badger::Config.
 
@@ -41,7 +42,8 @@ CHANGES
     methods through $self.
 
     Added plurality(), inflect(), list_each(), hash_each(), extend(),
-    split_to_list(), join_uri() and resolve_uri(), to Badger::Utils.
+    merge(), split_to_list(), join_uri() and resolve_uri(), to
+    Badger::Utils.
 
     Added additional delegate hooks to Badger::Utils to load utility
     functions in Badger::Filesystem, Badger::Timestamp, Badger::Duration,

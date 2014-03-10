@@ -48,6 +48,7 @@ L<inflect()|Badger::Utils/inflect()>,
 L<list_each()|Badger::Utils/list_each()>,
 L<hash_each()|Badger::Utils/hash_each()>,
 L<extend()|Badger::Utils/extend()>,
+L<merge()|Badger::Utils/merge()>,
 L<split_to_list()|Badger::Utils/split_to_list()>,
 L<join_uri()|Badger::Utils/join_uri()> and
 L<resolve_uri()|Badger::Utils/resolve_uri()>,

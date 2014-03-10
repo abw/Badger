@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Debug modules => 'Badger::Utils';
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural permute_fragments';
 use Badger::Test 
-    tests => 102,
+    tests => 112,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -386,6 +386,50 @@ my $combo = extend(
 is( $combo->{ a }, 10, 'extend(...) a=10');
 is( $combo->{ b }, 20, 'extend(...) b=20');
 is( $combo->{ c }, 30, 'extend(...) c=30');
+
+#-----------------------------------------------------------------------------
+# test merge()
+#-----------------------------------------------------------------------------
+
+use Badger::Utils 'merge';
+
+my $merge_one = { a => 10, b => { c => 30, d => 31 }, e => 40 };
+my $merge_two = { b => { d => 40, e => 50 } };
+my $merge_tre = { f => { g => 60 }, h => 70 };
+merge($merge_one, $merge_two, $merge_tre);
+
+is( $merge_one->{ a },        10, 'merge a' );
+is( $merge_one->{ b }->{ c }, 30, 'merge b.c' );
+is( $merge_one->{ b }->{ d }, 40, 'merge b.d' );
+is( $merge_one->{ b }->{ e }, 50, 'merge b.e' );
+is( $merge_one->{ e },        40, 'merge e' );
+is( $merge_one->{ f }->{ g }, 60, 'merge f.g' );
+is( $merge_one->{ h },        70, 'merge h' );
+
+# example from the docs
+my $m2_one = {
+    a => 10,
+    b => {
+        c => 20,
+        d => {
+            e => 30,
+        }
+    },
+};
+my $m2_two = {
+    b => {
+        d => {
+            f => 40
+        },
+        g => 50,
+    },
+    h => 60
+};
+merge($m2_one, $m2_two);
+is( join(',', sort keys %{$m2_one}), 'a,b,h', 'merge level 0');
+is( join(',', sort keys %{$m2_one->{b}}), 'c,d,g', 'merge level 1');
+is( join(',', sort keys %{$m2_one->{b}->{d}}), 'e,f', 'merge level 2');
+
 
 #-----------------------------------------------------------------------------
 # uri methods

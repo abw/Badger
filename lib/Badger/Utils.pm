@@ -65,7 +65,7 @@ __PACKAGE__->export_any(qw(
     UTILS blessed is_object numlike textlike truelike falselike
     params self_params plural 
     odd_params xprintf dotid random_name camel_case CamelCase wrap
-    permute_fragments plurality inflect split_to_list extend
+    permute_fragments plurality inflect split_to_list extend merge merge_hash
     list_each hash_each join_uri resolve_uri
 ));
 
@@ -432,6 +432,46 @@ sub extend {
         @$hash{ keys %$more } = values %$more;
     }
     
+    return $hash;
+}
+
+sub merge {
+    my $hash = shift;
+    my $more;
+
+    while (@_) {
+        if (! $_[0]) {
+            # ignore undefined/false values
+            shift;
+            next;
+        }
+        elsif (ref $_[0] eq HASH) {
+            $more = shift;
+        }
+        else {
+            $more = params(@_);
+            @_    = ();
+        }
+        merge_hash($hash, $more);
+    }
+   
+    return $hash;
+}
+
+sub merge_hash {
+    my ($hash, $more) = @_;
+    my $into;
+
+    while (my ($key, $value) = each %$more) {
+        $into = $hash->{ $key };
+
+        if ($into && ref $into eq HASH && ref $value eq HASH) {
+            merge_hash($into, $value);
+        }
+        else {
+            $hash->{ $key } = $value;
+        };
+    }
     return $hash;
 }
 
@@ -878,6 +918,47 @@ references come first.
         c => 30,
         d => 40,
     );
+
+=head3 merge($hash, $another_hash, $yet_another_hash, ...)
+
+This function is a version of L<extend()> that merges nested hash arrays to 
+any depth.
+
+    my $one = {
+        a => 10,
+        b => {
+            c => 20,
+            d => {
+                e => 30,
+            }
+        },
+    };
+    my $two = {
+        b => {
+            d => {
+                f => 40
+            },
+            g => 50,
+        },
+        h => 60
+    };
+
+    merge($one, $two);
+
+After merging C<$one> will contain:
+
+    {
+        a => 10,
+        b => {
+            c => 20,
+            d => {
+                e => 30,
+                f => 40
+            }
+            g => 50,
+        },
+        h => 60
+    }
 
 =head3 hash_each($hash,$function)
 
