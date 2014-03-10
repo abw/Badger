@@ -52,7 +52,7 @@ our $HELPERS  = {       # keep this compact in case we don't need to use it
     'Badger::Duration'   => 'DURATION Duration',
     'Badger::URL'        => 'URL',
     'Badger::Filter'     => 'FILTER Filter',
-    'Badger::Filesystem' => 'FS File Dir Bin',
+    'Badger::Filesystem' => 'FS File Dir Bin Cwd',
     'Badger::Filesystem::Virtual' 
                          => 'VFS',
 };
@@ -559,6 +559,12 @@ A function for creating a L<Badger::Filesystem::Directory> object.
 
 Returns a L<Badger::Filesystem::Directory> object for the directory in 
 which the current script is located.  See L<Bin()|Badger::Filesystem/Bin>
+in L<Badger::Filesystem>.
+
+=head3 Cwd()
+
+Returns a L<Badger::Filesystem::Directory> object for the current working 
+directory.  See L<Cwd()|Badger::Filesystem/Cwd>
 in L<Badger::Filesystem>.
 
 =head2 L<Badger::Filter>
