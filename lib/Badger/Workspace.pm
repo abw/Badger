@@ -81,10 +81,10 @@ sub init_config {
 
     # config directory manager
     $self->{ config } = $conf_mod->new(
+        parent    => $pconfig,
         data      => $config,
         directory => $conf_dir,
         file      => $conf_file,
-        parent    => $pconfig,
         quiet     => $config->{ quiet },
     );
 
@@ -150,7 +150,7 @@ sub config {
     my $config = $self->{ config };
     return $config unless @_;
     return $config->get(@_)
-        || $self->parent_config(@_);
+        // $self->parent_config(@_);
 }
 
 sub parent_config {
