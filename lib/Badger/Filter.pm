@@ -88,9 +88,15 @@ sub init_filter_set {
         my $item = shift @items;
 
         if (! ref $item) {
-            $static->{ $item } = 1;
+            if ((my $copy = $item) =~ s/\*/.*/g) {
+                push(@$dynamic, sub { $_[0] =~ /^$copy$/ });
+                $self->debug("$name: set wildcard item: $item") if DEBUG;
+            }
+            else {
+                $static->{ $item } = 1;
+                $self->debug("$name: set static item: $item") if DEBUG;
+            }
             $n++;
-            $self->debug("$name: set static item: $item") if DEBUG;
         }
         elsif (ref $item eq ARRAY) {
             unshift(@items, @$item);
@@ -316,6 +322,11 @@ filter.  This can be any of:
 
 A simple string.  This should match a candidate string exactly for it
 to be included.
+
+=item *
+
+A string containing a '*' wilcard character, e.g. C<foo/*>.  The star is used
+to represent any sequence of characters.
 
 =item *
 

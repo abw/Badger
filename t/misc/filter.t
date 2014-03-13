@@ -16,7 +16,7 @@ use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Debug ':all';
 use Badger::Test 
-    tests => 6,
+    tests => 7,
     debug => 'Badger::Filter',
     args  => \@ARGV;
 
@@ -98,6 +98,13 @@ is (
     join(', ', $none->accept(qw( a b c d ))),
     '',
     'accept none',
+);
+
+my $star = Filter( include => 'foo*' );
+is (
+    join(', ', $star->accept(qw( foo food foodstuff notfood bar barbell ))),
+    'foo, food, foodstuff',
+    'accept star wildcard',
 );
 
 
