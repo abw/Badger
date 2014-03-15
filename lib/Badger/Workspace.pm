@@ -253,6 +253,8 @@ sub resolve_dir {
     my $tail = $pair[1];
     my $alias;
 
+    $self->debug_data( dirs => $dirs ) if DEBUG;
+
     $self->debug(
         "[HEAD:$head] [TAIL:", $tail // BLANK, "]"
     ) if DEBUG;
