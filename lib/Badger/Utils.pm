@@ -392,9 +392,16 @@ sub list_each {
 
 sub split_to_list {
     my $list = shift;
-    $list = [ split(DELIMITER, $list) ]
-        unless ref $list eq ARRAY;
-    return $list;
+
+    if (! ref $list) {
+        return [ split(DELIMITER, $list) ];
+    }
+    elsif (ref $list eq ARRAY) {
+        return $list;
+    }
+    else {
+        return [$list];
+    }
 }
 
 #-----------------------------------------------------------------------------
