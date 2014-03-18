@@ -84,7 +84,7 @@ sub init_config {
 
     # config directory manager
     $self->{ config } = $conf_mod->new(
-        uri       => $self->uri,
+        uri       => $self->config_uri,
         parent    => $pconfig,
         data      => $config,
         directory => $conf_dir,
@@ -162,6 +162,10 @@ sub parent_config {
     my $self   = shift;
     my $parent = $self->{ parent } || return;
     return $parent->config(@_);
+}
+
+sub config_uri {
+    shift->uri;
 }
 
 sub share_config_NOT_USED {
