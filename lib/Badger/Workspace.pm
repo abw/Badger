@@ -70,6 +70,9 @@ sub init_config {
     );
     my $parent  = $self->parent;
     my $pconfig = $parent && $parent->config;
+    my $schemas = $self->class->hash_vars(
+        SCHEMAS => $config->{ schemas }
+    );
 
     #$self->debug("parent config: ", $self->dump_data($pconfig));
 
@@ -86,6 +89,7 @@ sub init_config {
         directory => $conf_dir,
         file      => $conf_file,
         quiet     => $config->{ quiet },
+        schemas   => $schemas,
     );
 
     return $self;
