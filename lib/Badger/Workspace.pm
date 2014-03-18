@@ -84,6 +84,7 @@ sub init_config {
 
     # config directory manager
     $self->{ config } = $conf_mod->new(
+        uri       => $self->uri,
         parent    => $pconfig,
         data      => $config,
         directory => $conf_dir,
