@@ -92,7 +92,8 @@ sub init_filesystem {
     $self->{ codecs     } = $codecs;
     $self->{ encoding   } = $encoding;
     $self->{ filespec   } = $filespec;
-    $self->{ quiet      } = $config->{ quiet } || 0;
+    $self->{ quiet      } = $config->{ quiet    } || FALSE;
+    $self->{ dir_tree   } = $config->{ dir_tree } // TRUE;
 
     # Add any item schemas
     $self->items( $config->{ schemas } )
@@ -196,7 +197,7 @@ sub config_tree {
     my $name    = shift;
     my $file    = shift || $self->config_file($name);
     my $dir     = shift || $self->dir($name);
-    my $do_tree = TRUE;
+    my $do_tree = $self->{ dir_tree };
     my $data    = undef; #{ };
     my ($file_data, $binder, $more);
 
