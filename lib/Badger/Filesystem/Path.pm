@@ -25,8 +25,6 @@ use Badger::Class
     as_text      => 'path',
     is_true      => 1,
     constant     => {
-        is_file      => 0,
-        is_directory => 0,
         type         => 'Path',
         STAT_PATH    => 17,         # offset in extended stat fields
     },
@@ -151,6 +149,14 @@ sub is_absolute {
 
 sub is_relative {
     shift->is_absolute ? 0 : 1;
+}
+
+sub is_file {
+    return -f shift->definitive;
+}
+
+sub is_directory {
+    return -d shift->definitive;
 }
 
 sub absolute {
