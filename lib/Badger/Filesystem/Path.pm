@@ -152,11 +152,15 @@ sub is_relative {
 }
 
 sub is_file {
-    return -f shift->definitive;
+    my $self = shift;
+    my $defn = $self->filesystem->definitive_read($self->{ path }) || return;
+    return -f $defn;
 }
 
 sub is_directory {
-    return -d shift->definitive;
+    my $self = shift;
+    my $defn = $self->filesystem->definitive_read($self->{ path }) || return;
+    return -d $defn;
 }
 
 sub absolute {
