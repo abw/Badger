@@ -5,7 +5,7 @@
 # DESCRIPTION
 #   Subclass of Badger::Filesystem which implements a virtual filesystem
 #   composed from several source directories, conceptually layered on
-#   top of each other.  
+#   top of each other.
 #
 # AUTHOR
 #   Andy Wardley   <abw@wardley.org>
@@ -33,7 +33,7 @@ use Badger::Class
         any   => 'VFS',
     },
     messages => {
-        bad_root  => 'Invalid root directory: %s', 
+        bad_root  => 'Invalid root directory: %s',
         max_roots => 'The number of virtual filesystem roots exceeds the max_roots limit of %s',
     };
 
@@ -52,22 +52,22 @@ sub init {
     $root = [$root] unless ref $root eq ARRAY;
     $self->{ root } = $root;
 
-    # the dynamic flag indicates that the list of roots can change so we must 
-    # recompute them each time we use them.  max_roots sets a limit on the 
+    # the dynamic flag indicates that the list of roots can change so we must
+    # recompute them each time we use them.  max_roots sets a limit on the
     # expansion to prevent runaways
     $self->{ dynamic   } = $config->{ dynamic };
-    $self->{ max_roots } = 
-        defined $config->{ max_roots } 
+    $self->{ max_roots } =
+        defined $config->{ max_roots }
               ? $config->{ max_roots }
               : $MAX_ROOTS;
-    
+
     # we must set cwd to / so that the relative -> absolute path translation
-    # works as expected.  The concept of having a current working directory 
+    # works as expected.  The concept of having a current working directory
     # in a VFS is just a bit too weird to contemplate anyway.
     $self->{ cwd } = $self->{ rootdir };
-    
+
     $self->debug("Virtual root: ", join(', ', @$root), "\n" ) if $DEBUG;
-    
+
     return $self;
 }
 
@@ -84,7 +84,7 @@ sub roots {
     my @paths  = @{ $self->{ root } };
     my (@roots, $type, $paths, $dir, $code);
 
-    # If a positive max_roots is defined then we'll limit the number of 
+    # If a positive max_roots is defined then we'll limit the number of
     # roots we resolve.  If it's zero or negative then it will pre-decrement
     # before being tested so will always be true
     while (@paths && --$max) {
@@ -100,7 +100,7 @@ sub roots {
         # anything else can expand out to one or more paths, each of which
         # can expand recursively, so we push all new paths back onto the
         # candidate list and test each in turn.
-        
+
         if ($type eq CODE) {
             # call code ref
             $paths = $dir->();
@@ -122,15 +122,15 @@ sub roots {
         }
         elsif (blessed $dir) {
             # see if object has a path(), paths() or roots() method
-            # TODO: this is broken - we don't want to recompute paths 
-            # each time just because we're using an object that has a 
+            # TODO: this is broken - we don't want to recompute paths
+            # each time just because we're using an object that has a
             # path
             if ($code = $dir->can(PATH_METHOD)
                      || $dir->can(PATHS_METHOD)
                      || $dir->can(ROOTS_METHOD) ) {
                 $paths = $code->($dir);
                 $self->debug(
-                    "discovered root directories from $type object: $paths / ", 
+                    "discovered root directories from $type object: $paths / ",
                     $self->dump_data_inline($paths), "\n"
                 ) if DEBUG;
                 unshift(@paths, ref $paths eq ARRAY ? @$paths : $paths);
@@ -148,9 +148,9 @@ sub roots {
     # we can cache roots if all are static and the dynamic flag isn't set
     $self->{ roots } = \@roots
         unless $self->{ dynamic };
-    
+
     $self->debug("resolved roots: [\n  ", join("\n  ", @roots), "\n]\n") if DEBUG;
-    
+
     return wantarray
         ?  @roots
         : \@roots;
@@ -177,6 +177,8 @@ sub definitive_read {
     my $path = $self->absolute(@_);
     my ($base, $full);
 
+    $self->debug("definitive_read($path)") if DEBUG;
+
     foreach $base ($self->roots) {
         $full = $self->merge_paths($base, $path);
         $self->debug("looking for [$base] + [$path] => $full\n") if DEBUG;
@@ -202,6 +204,14 @@ sub read_directory {
 # Some directory may not exist, so ignore them
 #           || $self->error_msg( open_failed => directory => $full => $! );
         while (defined ($item = $dirh->read)) {
+            if (DEBUG) {
+                if ($seen{ $item }) {
+                    $self->debug("skipping $item (already seen)");
+                }
+                else {
+                    $self->debug("adding $item");
+                }
+            }
             push(@items, $item) unless $seen{ $item }++;
         }
         $dirh->close;
@@ -224,13 +234,13 @@ Badger::Filesystem::Virtual - virtual filesystem
 =head1 SYNOPSIS
 
     use Badger::Filesystem::Virtual;
-    
+
     my $fs = Badger::Filesystem::Virtual->new(
         root => ['/path/to/dir/one', '/path/to/dir/two'],
     );
     my $file = $fs->file('/example/file');
     my $dir  = $fs->dir('/example/directory');
-    
+
     if ($file->exists) {        # under either root directory
         print $file->text;      # loaded from correct location
     }
@@ -279,7 +289,7 @@ The module defines the exportable C<VFS> symbol as an alias for
 C<Badger::Filesystem::Virtual> to save on typing:
 
     use Badger::Filesystem::Virtual 'VFS';
-    
+
     my $vfs1 = VFS->new( root => '/path/to/virtual/root' );
 
 You can also access this via the L<Badger::Filesystem> module.
@@ -294,7 +304,7 @@ A filesystem object with a single virtual root directory works in a similar
 way to the C<chroot> command.
 
     use Badger::Filesystem::Virtual 'VFS';
-    
+
     my $vfs1 = VFS->new( root => '/my/web/site' );
 
 Any absolute paths specified for this file system are then assumed to be
@@ -311,7 +321,7 @@ The absolute path is C</index.html>.
 
     print $home->absolute;                     # /index.html
 
-However, the real, physical path to the file is relative to the 
+However, the real, physical path to the file is relative to the
 virtual root directory.  The L<definitive()> method returns this
 path.
 
@@ -322,7 +332,7 @@ file or directory in a virtual file system the same way as you would for a
 real file system (i.e. one without a virtual C<root> directory defined).
 Behind the scenes, the filesystem object handles the mapping of paths in the
 virtual file system to their physical counterparts via the L<definitive>
-method. 
+method.
 
     my $text = $home->read;                     # read file
     $home->write($text);                        # write file
@@ -335,14 +345,14 @@ Things get a little more interesting when you have a virtual filesystem
 with multiple root directories.
 
     use Badger::Filesystem::Virtual 'VFS';
-    
+
     my $vfs2 = VFS->new( root => [
         '/my/root/dir/one',
         '/my/root/dir/two'
     ] );
 
-The handling of relative and absolute paths is exactly the same as for a 
-single root virtual file system.  
+The handling of relative and absolute paths is exactly the same as for a
+single root virtual file system.
 
     my $home = $vfs2->file('index.html');
     print $home->relative;                     # index.html
@@ -363,7 +373,7 @@ of that directory under any and all virtual roots that contain it.
     print join "\n", $dir->children;
 
 The L<children()|Badger::Filesystem::Directory/children()> method in this
-example will returns all the files and sub-directories in both 
+example will returns all the files and sub-directories in both
 C</my/root/dir/one/foo> and C</my/root/dir/two>.
 
 The L<definitive_read()> and L<definitive_write()> methods are used to map
@@ -381,7 +391,7 @@ first root directory).
 
 TODO: we now support code refs and objects as root directories which are
 evaluated dynamically to generate a list of root directories.  An object
-should have a C<path()>, C<paths()> or C<roots()> method which returns a 
+should have a C<path()>, C<paths()> or C<roots()> method which returns a
 single path or refererence to a list of path.  Any of those can be further
 dynamic components which will be evaluated recursively until all have been
 resolved or the C<max_roots> limit has been reached.
@@ -401,7 +411,7 @@ directories to be specified as the base of the virtual filesystem.
 This method returns a list (in list context) or reference to a list (in
 scalar context) of the root directories for the virtual filesystem.  Any
 dynamic components in the roots will be evaluated and expanded.  This
-include subroutine references and objects implementing a C<path()>, 
+include subroutine references and objects implementing a C<path()>,
 C<paths()> or C<roots()> method.  Dynamic components can return a single
 items or reference to a list of items, any of which can be a static directory
 or dynamic component.
@@ -412,13 +422,13 @@ This is aliased to the L<definitive_write()> method.
 
 =head2 definitive_write($path)
 
-Maps a virtual file path to a definitive one for write operations.  The 
+Maps a virtual file path to a definitive one for write operations.  The
 path will be mapped to the first virtual root directory.
 
 =head2 definitive_read($path)
 
-Maps a virtual file path to a definitive one for read operations.  The 
-path will be mapped to the first virtual root directory in which the 
+Maps a virtual file path to a definitive one for read operations.  The
+path will be mapped to the first virtual root directory in which the
 item exists.  If it does not exists in any of the virtual root directories
 then an undefined value is returned.
 
@@ -432,18 +442,18 @@ directories.
 =head2 read_directory($path)
 
 Custom method to read a directory in a virtual filesystem.  This returns
-a composite index of all entries in a particular directory across all 
+a composite index of all entries in a particular directory across all
 roots of the virtual filesystem.
 
 =head1 OPTIONS
 
 =head2 root
 
-The root directory or directories of the virtual filesystem.  
+The root directory or directories of the virtual filesystem.
 
 =head2 max_roots
 
-A limit to the maximum number of root directories allowed.  This is used 
+A limit to the maximum number of root directories allowed.  This is used
 to prevent potential runaways when evaluating dynamic root components.
 See L<Dynamic Root Directories> for further information.
 
