@@ -178,14 +178,11 @@ sub fetch {
         $self->debug("Found file for $uri, loading file data") if DEBUG;
         my $data = $file->try->data;
         return $self->error_msg( load_fail => $file => $@ ) if $@;
-
-        # what about schema?
-        my $schema = $self->item_schema(
-            $uri,
-            delete $data->{_schema_} || delete $data->{ schema }
-        );
         return $self->tail(
-            $uri, $data, $schema
+            $uri, $data,
+            $self->item_schema_from_data(
+                $uri, $data
+            )
         );
     }
 
@@ -221,10 +218,8 @@ sub config_tree {
     # fetch a schema for this data item constructed from the default schema
     # specification, any named schema for this item, any arguments, then any
     # local schema defined in the data file
-    my $schema = $self->item_schema(
-        $name,
-        delete $file_data->{_schema_} || delete $file_data->{ schema }
-    );
+    my $schema = $self->item_schema_from_data($name, $file_data);
+
     $self->debug(
         "combined schema for $name: ",
         $self->dump_data($schema)
@@ -584,6 +579,21 @@ sub item_schema {
 
     return $data;
 }
+
+sub item_schema_from_data {
+    my ($self, $name, $data) = @_;
+    my $more;
+
+    if ($data && ref $data eq HASH) {
+        # In the event that someone needs to store a 'schema' item in the *real*
+        # configuration data, we look for '_schema_' first and delete that,
+        # leaving 'schema' untouched
+        $more = delete $data->{_schema_}
+             || delete $data->{ schema };
+    }
+    return$self->item_schema($name, $more);
+}
+
 
 
 sub has_item {
