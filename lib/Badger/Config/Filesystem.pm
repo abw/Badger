@@ -31,7 +31,7 @@ our $CODECS     = { };
 sub init {
     my ($self, $config) = @_;
 
-    # First call Badger::Config base class method to handle any 'items' 
+    # First call Badger::Config base class method to handle any 'items'
     # definitions and other general initialisation
     $self->init_config($config);
 
@@ -43,11 +43,11 @@ sub init_filesystem {
     my ($self, $config) = @_;
     my $class = $self->class;
 
-    # The filespec can be specified as a hash of options for file objects 
-    # created by the top-level directory object.  If unspecified, we construct 
-    # it using any encoding option, or falling back on a $ENCODING package 
+    # The filespec can be specified as a hash of options for file objects
+    # created by the top-level directory object.  If unspecified, we construct
+    # it using any encoding option, or falling back on a $ENCODING package
     # variable.  This is then passed to init_workplace().
-    my $encoding = $config->{ encoding } 
+    my $encoding = $config->{ encoding }
                 || $class->any_var(ENCODING);
 
     my $filespec = $config->{ filespec } ||= {
@@ -58,11 +58,11 @@ sub init_filesystem {
     $self->init_workplace($config);
 
     # Configuration files can be in any data format which Badger::Codecs can
-    # handle (e.g. JSON, YAML, etc).  The 'extensions' configuration option 
+    # handle (e.g. JSON, YAML, etc).  The 'extensions' configuration option
     # and any $EXTENSIONS defined in package variables (for the current class
     # and all base classes) will be tried in order
-    my $exts = $class->list_vars( 
-        EXTENSIONS => $config->{ extensions } 
+    my $exts = $class->list_vars(
+        EXTENSIONS => $config->{ extensions }
     );
     $exts = [
         map { @{ split_to_list($_) } }
@@ -80,8 +80,8 @@ sub init_filesystem {
 
     # The 'codecs' option can provide additional mapping from filename extension
     # to codec for any that Badger::Codecs can't grok automagically
-    my $codecs = $class->hash_vars( 
-        CODECS => $config->{ codecs } 
+    my $codecs = $class->hash_vars(
+        CODECS => $config->{ codecs }
     );
 
     my $data = $config->{ data } || { };
@@ -166,7 +166,7 @@ sub fetch {
     my $dok  = $dir  && $dir->exists;
 
     $self->debugf(
-        "fetch($uri)\n= [file:$fok:$file]\n= [dir:$dok:$dir]", 
+        "fetch($uri)\n= [file:$fok:$file]\n= [dir:$dok:$dir]",
     ) if DEBUG;
 
     if ($dok) {
@@ -178,8 +178,14 @@ sub fetch {
         $self->debug("Found file for $uri, loading file data") if DEBUG;
         my $data = $file->try->data;
         return $self->error_msg( load_fail => $file => $@ ) if $@;
+
+        # what about schema?
+        my $schema = $self->item_schema(
+            $uri,
+            delete $data->{_schema_} || delete $data->{ schema }
+        );
         return $self->tail(
-            $uri, $data
+            $uri, $data, $schema
         );
     }
 
@@ -213,23 +219,25 @@ sub config_tree {
     }
 
     # fetch a schema for this data item constructed from the default schema
-    # specification, any named schema for this item, any arguments, then any 
+    # specification, any named schema for this item, any arguments, then any
     # local schema defined in the data file
-    my $schema = $self->item(
-        $name, 
-        $file_data ? delete $file_data->{ schema } : ()
+    my $schema = $self->item_schema(
+        $name,
+        delete $file_data->{_schema_} || delete $file_data->{ schema }
     );
     $self->debug(
-        "combined schema for $name: ", 
+        "combined schema for $name: ",
         $self->dump_data($schema)
     ) if DEBUG;
 
     if ($more = $schema->{ tree_type }) {
         $self->debug("schema.tree_type: $more") if DEBUG;
         if ($more eq NONE) {
+            $self->debug("schema rules indicate we shouldn't descend into the tree") if DEBUG;
             $do_tree = FALSE;
         }
         elsif ($binder = $self->tree_binder($more)) {
+            $self->debug("schema rules indicate a $more tree tree") if DEBUG;
             $do_tree = TRUE;
         }
         else {
@@ -242,7 +250,7 @@ sub config_tree {
         $data   ||= { };
         $binder ||= $self->tree_binder('nest');
         $binder->($self, $data, [ ], $file_data, $schema);
- 
+
         if ($dir->exists) {
             # create a virtual file system rooted on the metadata directory
             # so that all file paths are resolved relative to it
@@ -270,9 +278,9 @@ sub scan_config_dir {
     $binder ||= $self->tree_binder;
 
     $self->debug(
-        "scan_config_dir($dir, $data, ", 
+        "scan_config_dir($dir, $data, ",
         $self->dump_data_inline($path), ", ",
-        $self->dump_data_inline($schema), ", ", 
+        $self->dump_data_inline($schema), ", ",
         $binder, ")"
     ) if DEBUG;
 
@@ -301,9 +309,9 @@ sub scan_config_file {
     my $ext  = $file->extension;
 
     $self->debug(
-        "scan_config_file($file, $data, ", 
+        "scan_config_file($file, $data, ",
         $self->dump_data_inline($path), ", ",
-        $self->dump_data_inline($schema), ", ", 
+        $self->dump_data_inline($schema), ", ",
         $binder, ")"
     ) if DEBUG;
 
@@ -337,8 +345,8 @@ sub scan_config_file {
 
 sub tree_binder {
     my $self = shift;
-    my $name = shift 
-        || $self->{ tree_type } 
+    my $name = shift
+        || $self->{ tree_type }
         || return $self->error_msg( missing => 'tree_type' );
 
     return $self->can("${name}_tree_binder")
@@ -400,7 +408,7 @@ sub join_tree_binder {
     my $base  = join($joint, @$path);
 
     $self->debug(
-        "join_binder path is set: ", 
+        "join_binder path is set: ",
         $self->dump_data($path),
         "\nnew base is $base"
     ) if DEBUG;
@@ -409,7 +417,7 @@ sub join_tree_binder {
     # e.g. an entry "foo" in site/bar.yaml will become "bar_foo"
     while (my ($key, $value) = each %$child) {
         if ($key =~ s/^\///) {
-            # if the child item has a leading '/' then we want to put it in 
+            # if the child item has a leading '/' then we want to put it in
             # the root so we leave $key unchanged
         }
         elsif (length $base) {
@@ -428,14 +436,14 @@ sub uri_tree_binder {
     $self->debug("uri_paths option: $opt") if DEBUG;
 
     $self->debug(
-        "uri_binder path is set: ", 
+        "uri_binder path is set: ",
         $self->dump_data($path),
         "\nnew base is $base"
     ) if DEBUG;
 
     # This resolves base items as URIs relative to the parent
-    # e.g. an entry "foo" in the site/bar.yaml file will be stored in the parent 
-    # site as "bar/foo", but an entry "/bam" will be stored as "/bam" because 
+    # e.g. an entry "foo" in the site/bar.yaml file will be stored in the parent
+    # site as "bar/foo", but an entry "/bam" will be stored as "/bam" because
     # it's an absolute URI rather than a relative one (relative to the $base)
     while (my ($key, $value) = each %$child) {
         my $uri = $base ? resolve_uri($base, $key) : $key;
@@ -476,7 +484,7 @@ sub fix_uri_path {
 sub config_file {
     my ($self, $name) = @_;
 
-    return  $self->{ config_file }->{ $name } 
+    return  $self->{ config_file }->{ $name }
         ||= $self->find_config_file($name);
 }
 
@@ -492,7 +500,7 @@ sub config_filespec {
     my $self     = shift;
     my $defaults = $self->{ filespec };
 
-    return @_ 
+    return @_
         ? extend({ }, $defaults, @_)
         : { %$defaults };
 }
@@ -530,7 +538,7 @@ sub write_config_file {
 
 sub codec {
     my ($self, $name) = @_;
-    return $self->codecs->{ $name } 
+    return $self->codecs->{ $name }
         || $name;
 }
 
@@ -541,7 +549,7 @@ sub codec {
 
 sub items {
     return extend(
-        shift->{ item }, 
+        shift->{ item },
         @_
     );
 }
@@ -558,23 +566,42 @@ sub lookup_item {
     return undef;
 }
 
+sub item_schema {
+    my ($self, $name, $schema) = @_;
+    my $data = $self->item($name);
+
+    if ($DEBUG) {
+        $self->debug_data("$name item schema data: ", $data);
+        $self->debug_data("$name file schema: ", $schema);
+    }
+
+    if ($schema) {
+        $data = extend({ }, $data, $schema);
+    }
+
+    # the schema we got may have been for a parent via lookup_item.
+    $self->{ item }->{ $name } = $data;
+
+    return $data;
+}
+
 
 sub has_item {
     my $self = shift->prototype;
     my $name = shift;
     my $item = $self->{ item }->{ $name };
 
-    # This is all the same as in the base class up to the final test which 
+    # This is all the same as in the base class up to the final test which
     # looks for $self->config_file($name) as a last-ditch attempt
 
     if (defined $item) {
         # A 1/0 entry in the item tells us if an item categorically does or
-        # doesn't exist in the config data set (or allowable set - it might 
+        # doesn't exist in the config data set (or allowable set - it might
         # be a valid configuration option that simply hasn't been set yet)
         return $item;
     }
     else {
-        # Otherwise the existence (or not) of an item in the data set is 
+        # Otherwise the existence (or not) of an item in the data set is
         # enough to satisfy us one way or another
         return 1
             if exists $self->{ data }->{ $name };
@@ -599,7 +626,7 @@ Badger::Config::Filesystem - reads configuration files in a directory
 =head1 SYNOPSIS
 
     use Badger::Config::Filesystem;
-    
+
     my $config = Badger::Config::Filesystem->new(
         root => 'path/to/some/dir'
     );
@@ -614,7 +641,7 @@ Badger::Config::Filesystem - reads configuration files in a directory
 
 =head1 DESCRIPTION
 
-This module is a subclass of L<Badger::Config> for reading data from 
+This module is a subclass of L<Badger::Config> for reading data from
 configuration files in a directory.
 
 Consider a directory that contains the following files and sub-directories:
@@ -638,8 +665,8 @@ Reading the data from C<site.yaml> is as simple as this:
 
     my $site = $config->get('site');
 
-Note that the file extension is B<not> required.  You can have either a 
-C<site.yaml> or a C<site.json> file in the directory and the module will 
+Note that the file extension is B<not> required.  You can have either a
+C<site.yaml> or a C<site.json> file in the directory and the module will
 load whichever one it finds first.  It's possible to add other data codecs
 if you want to use something other than YAML or JSON.
 
@@ -658,8 +685,8 @@ Then we can read the version and author name like so:
     print $config->get('author.name');
 
 If the configuration directory contains a sub-directory with the same name
-as the data file being loaded (minus the extension) then any files under 
-that directory will also be loaded.  Going back to our earlier example, 
+as the data file being loaded (minus the extension) then any files under
+that directory will also be loaded.  Going back to our earlier example,
 the C<pages> item is such a case:
 
     config/
@@ -709,8 +736,8 @@ Note how the C<admin> and C<developer> items have been nested into the data.
 The filename base (e.g. C<admin>, C<developer>) is used to define an entry
 in the "parent" hash array containing the data in the "child" data file.
 
-The C<tree_type> option can be used to change the way that this data is merged. 
-To use this option, put it in a C<schema> section in the top level 
+The C<tree_type> option can be used to change the way that this data is merged.
+To use this option, put it in a C<schema> section in the top level
 configuration file, e.g. the C<pages.yaml>:
 
 F<pages.yaml>:
@@ -742,7 +769,7 @@ The C<join> type collapses the nested data files by joining the file path
         developer_five  => 'Page Five',
     }
 
-You can specify a different character sequence to join paths via the 
+You can specify a different character sequence to join paths via the
 C<tree_joint> option, e.g.
 
     schema:
@@ -783,7 +810,7 @@ F<pages/admin.yaml>:
 
 The C<three> entry is considered to be relative to the C<admin> file so results
 in a final path of C<admin/three> as before.  However, C</four> is an absolute
-path so the C<admin> path is ignored.  The end result is a data structure like 
+path so the C<admin> path is ignored.  The end result is a data structure like
 this:
 
     {
@@ -795,7 +822,7 @@ this:
     }
 
 In this example we've ended up with an annoying inconsistency in that our
-C</four> path has a leading slash when the other items don't.  The 
+C</four> path has a leading slash when the other items don't.  The
 C<uri_paths> option can be set to C<relative> or C<absolute> to remove or add
 leading slashes respectively, effectively standardising all paths as one or
 the other.
@@ -819,7 +846,7 @@ The data would then be returned like so:
 =head2 root / directory / dir
 
 The C<root> (or C<directory> or C<dir> if you prefer) option must be provided
-to specify the directory that the module should load configuration files 
+to specify the directory that the module should load configuration files
 from.  Directories can be specified as absolute paths or relative to the
 current working directory.
 
@@ -829,7 +856,7 @@ current working directory.
 
 =head2 data
 
-Any additional configuration data can be provided via the C<data> named 
+Any additional configuration data can be provided via the C<data> named
 parameter:
 
     my $config = Badger::Config::Filesystem->new(
@@ -847,7 +874,7 @@ The character encoding of the configuration files.  Defaults to C<utf8>.
 =head2 extensions
 
 A list of file extensions to try in addition to C<yaml> and C<json>.
-Note that you may also need to define a C<codecs> entry to map the 
+Note that you may also need to define a C<codecs> entry to map the
 file extension to a data encoder/decoder module.
 
     my $config = Badger::Config::Filesystem->new(
@@ -862,8 +889,8 @@ file extension to a data encoder/decoder module.
 
 File extensions like C<.yaml> and C<.json> are recognised by L<Badger::Codecs>
 which can then provide the appropriate L<Badger::Codec> module to handle the
-encoding and decoding of data in the file.  The L<codecs> options can be used 
-to provide mapping from other file extensions to L<Badger::Codec> modules.  
+encoding and decoding of data in the file.  The L<codecs> options can be used
+to provide mapping from other file extensions to L<Badger::Codec> modules.
 
     my $config = Badger::Config::Filesystem->new(
         dir        => 'path/to/config/dir'
@@ -873,22 +900,22 @@ to provide mapping from other file extensions to L<Badger::Codec> modules.
         }
     );
 
-You may need to write a simple codec module yourself if there isn't one for 
-the data format you want, but it's usually just a few lines of code that are 
-required to provide the L<Badger::Codec> wrapper module around whatever other 
+You may need to write a simple codec module yourself if there isn't one for
+the data format you want, but it's usually just a few lines of code that are
+required to provide the L<Badger::Codec> wrapper module around whatever other
 Perl module or custom code you've using to load and save the data format.
 
 =head2 schemas
 
-TODO: document specification of item schemas.  The items below (tree_type 
+TODO: document specification of item schemas.  The items below (tree_type
 through uri_paths) must now be defined in a schema.  Support for a default
 schema has temporarily been disabled/broken.
 
 =head2 tree_type
 
-This option can be used to sets the default tree type for any configuration 
+This option can be used to sets the default tree type for any configuration
 items that don't explicitly declare it by other means.  The default tree
-type is C<nest>.  
+type is C<nest>.
 
 NOTE: this has been changed.  Don't trust these docs.
 
@@ -931,12 +958,12 @@ paths
 =head2 uri_paths
 
 This option can be used to set the default C<uri_paths> option for joining
-paths as URIs.  It should be set to C<relative> or C<absolute>.  It can 
+paths as URIs.  It should be set to C<relative> or C<absolute>.  It can
 be over-ridden in a C<schema> section of a top-level configuration file.
 
 =head1 METHODS
 
-The module inherits all methods defined in the L<Badger::Config> and 
+The module inherits all methods defined in the L<Badger::Config> and
 L<Badger::Workplace> base classes.
 
 =head1 INTERNAL METHODS
@@ -945,24 +972,24 @@ The following methods are defined for internal use.
 
 =head2 init($config)
 
-This overrides the default initialisation method inherited from 
+This overrides the default initialisation method inherited from
 L<Badger::Config>.  It calls the L<init_config()|Badger::Config/init_config()>
-method to perform the base class L<Badger::Config> initialisation and then 
-the L<init_filesystem()> method to perform initialisation specific to the 
+method to perform the base class L<Badger::Config> initialisation and then
+the L<init_filesystem()> method to perform initialisation specific to the
 L<Badger::Config::Filesystem> module.
 
 =head2 init_filesystem($config)
 
-This performs the initialisation of the object specific to the filesystem 
+This performs the initialisation of the object specific to the filesystem
 object.
 
 =head2 head($item)
 
-This redefines the L<head()|Badger::Config/head()> method in the 
-L<Badger::Config> base class.  The method is called by 
+This redefines the L<head()|Badger::Config/head()> method in the
+L<Badger::Config> base class.  The method is called by
 L<get()|Badger::Config/get()> to fetch a top-level data item
-(e.g. C<user> in C<$config-E<gt>get('user.name')>).  This implementation 
-looks for existing data items as usual, but additionally falls back on a 
+(e.g. C<user> in C<$config-E<gt>get('user.name')>).  This implementation
+looks for existing data items as usual, but additionally falls back on a
 call to L<fetch($item)> to load additional data (or attempt to load it).
 
 =head2 tail($item, $data)
@@ -972,12 +999,12 @@ a successful call to L<fetch()>.
 
 =head2 fetch($item)
 
-This is the main method called to load a configuration file (or tree of 
-files) from the filesystem.  It looks to see if a configuration file 
-(with one of the known L<extensions> appended, e.g. C<"$item.yaml">, 
+This is the main method called to load a configuration file (or tree of
+files) from the filesystem.  It looks to see if a configuration file
+(with one of the known L<extensions> appended, e.g. C<"$item.yaml">,
 C<"$item.json">, etc) exists and/or a directory named C<$item>.
 
-If the file exists but the directory doesn't then the configuration data 
+If the file exists but the directory doesn't then the configuration data
 is read from the file.  If the directory exists
 
 =head2 config_tree($item, $file, $dir)
@@ -985,16 +1012,16 @@ is read from the file.  If the directory exists
 This scans a configuration tree comprising of a configuration file and/or
 a directory.  The C<$file> and C<$dir> arguments are optional and are only
 supported as an internal optimisation.  The method can safely be called with
-a single C<$item> argument and the relevant file and directory will be 
+a single C<$item> argument and the relevant file and directory will be
 determined automatically.
 
-The configuration file is loaded (via L<scan_config_file()>).  If the 
+The configuration file is loaded (via L<scan_config_file()>).  If the
 directory exists then it is also scanned (via L<scan_config_dir()>) and the
 files contained therein are loaded.
 
 =head2 scan_config_file($file, $data, $path, $schema, $binder)
 
-Loads the data in a configuration C<$file> and merges it into the common 
+Loads the data in a configuration C<$file> and merges it into the common
 C<$data> hash under the C<$path> prefix (a reference to an array).  The
 C<$schema> contains any schema rules for this data item.  The C<$binder>
 is a reference to a L<tree_binder()> method to handle the data merge.
@@ -1034,11 +1061,11 @@ This handles the merging of data for the L<join> L<tree_type>.
 
 =head2 config_file($name)
 
-This method returns a L<Badger::Filesystem::File> object representing a 
+This method returns a L<Badger::Filesystem::File> object representing a
 configuration file in the configuration directory.  It will automatically
 have the correct filename extension added (via a call to L<config_filename>)
-and the correct C<codec> and C<encoding> parameters set (via a call to 
-L<config_filespec>) so that the data in the configuration file can be 
+and the correct C<codec> and C<encoding> parameters set (via a call to
+L<config_filespec>) so that the data in the configuration file can be
 automatically loaded (see L<config_data($name)>).
 
 =head2 config_file_data($name)
@@ -1051,7 +1078,7 @@ and then returns the data contained therein.
 Returns a reference to a hash array containing appropriate initialisation
 parameters for L<Badger::Filesystem::File> objects created to read general
 and resource-specific configuration files.  The parameters are  constructed
-from the C<codecs> (default: C<yaml>) and C<encoding> (default: C<utf8>) 
+from the C<codecs> (default: C<yaml>) and C<encoding> (default: C<utf8>)
 configuration options.  These can be overridden or augmented by extra
 parameters passed as arguments.
 
@@ -1068,4 +1095,3 @@ This module is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
 =cut
-
