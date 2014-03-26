@@ -56,7 +56,7 @@ sub init_parent {
 sub init_config {
     my ($self, $config) = @_;
     my $conf_mod  = (
-            delete $config->{ config_module } 
+            delete $config->{ config_module }
         ||  $self->CONFIG_MODULE
     );
     my $conf_dir  = $self->dir(
@@ -65,7 +65,7 @@ sub init_config {
         ||  $self->CONFIG_DIR
     );
     my $conf_file = (
-            delete $config->{ config_file } 
+            delete $config->{ config_file }
         ||  $self->CONFIG_FILE
     );
     my $parent  = $self->parent;
@@ -79,7 +79,7 @@ sub init_config {
     # load the configuration module
     class($conf_mod)->load;
 
-    # config directory 
+    # config directory
     $self->{ config_dir } = $conf_dir;
 
     # config directory manager
@@ -112,20 +112,20 @@ sub init_filter_NOT_USED {
     if (! ref $config) {
         # $config can be a single word like 'all' or 'none', or a shorthand
         # specification string, e.g. foo +bar -baz
-        $config = { 
+        $config = {
             accept => $config
         };
     }
     elsif (ref $config ne HASH) {
         # $config can be a reference to a list of items to include
-        $config = { 
+        $config = {
             include => $config
         };
     }
     # otherwise $config must be a HASH ref
 
     $self->debug(
-        "$self->{ uri } $name filter spec: ", 
+        "$self->{ uri } $name filter spec: ",
         $self->dump_data($config),
     ) if DEBUG;
 
@@ -235,17 +235,22 @@ sub dirs {
 
         while (my ($key, $value) = each %$addin) {
             my $subdir = $root->dir($value);
-            if ($subdir->exists) {
-                $dirs->{ $key } = $subdir;
-            }
-            else {
-                return $self->error_msg( 
-                    invalid => "directory for $key" => $value 
-                );
-            }
+            # I think for now we're just going to store the directory...
+            $dirs->{ $key } = $subdir;
+            # ...it's becoming really difficult to work with inheritance because
+            # child workspaces must always have all directories specifed by a
+            # parent
+            #if ($subdir->exists) {
+            #    $dirs->{ $key } = $subdir;
+            #}
+            #else {
+            #    return $self->error_msg(
+            #        invalid => "directory for $key" => $value
+            #    );
+            #}
         }
         $self->debug(
-            "set dirs: ", 
+            "set dirs: ",
             $self->dump_data($dirs)
         ) if DEBUG;
     }
@@ -257,7 +262,7 @@ sub resolve_dir {
     my ($self, @path) = @_;
     my $dirs = $self->dirs;
     my $path = join(SLASH, @path);
-    my @pair = split(SLASH, $path, 2); 
+    my @pair = split(SLASH, $path, 2);
     my $head = $pair[0];
     my $tail = $pair[1];
     my $alias;
@@ -392,7 +397,7 @@ the directory containing the source, configuration, resources and other files
 for a web site or some other project.  It is a subclass of L<Badger::Workplace>
 which implements the base functionality.
 
-The root directory for a workspace is expected to contain a configuration 
+The root directory for a workspace is expected to contain a configuration
 directory, called F<config> by default, containing configuration files for
 the workspace.  This is managed by delegation to a L<Badger::Config::Filesystem>
 object.
@@ -404,14 +409,14 @@ object.
 This is the constructor method to create a new C<Badger::Workspace> object.
 
     use Badger::Workspace;
-    
+
     my $space = Badger::Workspace->new(
         directory => '/path/to/workspace',
     );
 
 =head3 CONFIGURATION OPTIONS
 
-=head4 root / dir / directory 
+=head4 root / dir / directory
 
 This mandatory parameter must be provided to indicate the filesystem path
 to the project directory.  It can be also specified using any of the names
@@ -425,14 +430,14 @@ directory.  This defaults to L<Badger::Config::Filesystem>.
 =head4 config_dir / config_directory
 
 This optional parameter can be used to specify the name of the configuration
-direction under the L<root> project directory.  The default configuration 
+direction under the L<root> project directory.  The default configuration
 directory name is C<config>.
 
 =head4 config_file
 
-This optional parameter can be used to specify the name of the main 
-configuration file (without file extension) that should reside in the 
-L<config_dir> directory under the C<root> project directory.  The default 
+This optional parameter can be used to specify the name of the main
+configuration file (without file extension) that should reside in the
+L<config_dir> directory under the C<root> project directory.  The default
 configuration file name is C<workspace>.
 
 =head1 PUBLIC METHODS
@@ -445,8 +450,8 @@ object which manages the configuration directory for the project.
     my $cfg = $workspace->config;
 
 When called with a named item it returns the configuration data associated
-with that item.  This will typically be defined in a master configuration 
-file, or in a file of the same name as the item, with an appropriate file 
+with that item.  This will typically be defined in a master configuration
+file, or in a file of the same name as the item, with an appropriate file
 extension added.
 
     my $name = $workspace->config('name');
@@ -489,8 +494,8 @@ an argument of C<0> is the same as passing no argument at all.
 
 =head2 ancestors($list)
 
-Returns a list of the parent, grandparent, great-grandparent and so on, all 
-the way up as far as it can go.  A target list reference can be passed as an 
+Returns a list of the parent, grandparent, great-grandparent and so on, all
+the way up as far as it can go.  A target list reference can be passed as an
 argument.
 
 =head2 heritage()
@@ -502,7 +507,7 @@ from most senior parent to most junior.
 
 =head2 init(\%config)
 
-This method redefines the default initialisation method.  It calls the 
+This method redefines the default initialisation method.  It calls the
 L<init_workplace()|Badger::Workplace/init_workplace()> method inherited
 from L<Badger::Workplace> and then calls the L<init_workspace()> method
 to perform any workspace-specific initialisation.
@@ -510,7 +515,7 @@ to perform any workspace-specific initialisation.
 =head2 init_workspace(\%config)
 
 This method performs workspace-specific initialisation.  In this module it
-simply calls L<init_config()>.  Subclasses may redefine it to do something 
+simply calls L<init_config()>.  Subclasses may redefine it to do something
 different.
 
 =head2 init_config(\%config)
