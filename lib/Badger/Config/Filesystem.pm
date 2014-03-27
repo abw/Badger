@@ -552,6 +552,8 @@ sub items {
 sub item {
     my ($self, $name) = @_;
 
+    $self->debug_data("looking for $name in items: ", $self->{ item }) if DEBUG;
+
     return  $self->{ item }->{ $name }
         ||= $self->lookup_item($name);
 }
@@ -565,7 +567,7 @@ sub item_schema {
     my ($self, $name, $schema) = @_;
     my $data = $self->item($name);
 
-    if ($DEBUG) {
+    if (DEBUG) {
         $self->debug_data("$name item schema data: ", $data);
         $self->debug_data("$name file schema: ", $schema);
     }
@@ -576,6 +578,7 @@ sub item_schema {
 
     # the schema we got may have been for a parent via lookup_item.
     $self->{ item }->{ $name } = $data;
+    $self->debug_data("set new item $name data", $data) if DEBUG;
 
     return $data;
 }
