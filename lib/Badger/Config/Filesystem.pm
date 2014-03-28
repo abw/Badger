@@ -14,8 +14,8 @@ use Badger::Class
         RELATIVE => 'relative',
     },
     messages  => {
-        no_config      => 'Missing configuration file: %s',
         load_fail      => 'Failed to load data from %s: %s',
+        no_config_file => 'Missing configuration file: %s',
         merge_mismatch => 'Cannot merge items for %s: %s and %s',
     };
 
@@ -131,10 +131,14 @@ sub init_file {
         $self->debug("merged data: ", $self->dump_data($self->{ data })) if DEBUG;
     }
     elsif (! $self->{ quiet }) {
-        $self->warn_msg( no_config => $file );
+        return $self->no_config_file($file);
     }
 
     return $self;
+}
+
+sub no_config_file {
+    shift->warn_msg( no_config_file => @_ );
 }
 
 
