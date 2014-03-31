@@ -112,7 +112,7 @@ sub textlike($) {
 }
 
 sub truelike($) {
-    ($_[0] && $_[0] =~ /^(1|on|yes|true)$/i) ? TRUE : FALSE;
+    falselike($_[0]) ? FALSE : TRUE;
 }
 
 sub falselike($) {
