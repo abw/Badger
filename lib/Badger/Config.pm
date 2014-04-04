@@ -35,10 +35,10 @@ sub init_config {
     my ($self, $config) = @_;
     my $data  = $self->{ data } = $config->{ data } || { %$config };
     my $class = $self->class;
-    
-    # merge all $ITEMS in package variables with those listed in 
+
+    # merge all $ITEMS in package variables with those listed in
     # $config->{ items } and all other $config keys.
-    my $items = $class->list_vars( 
+    my $items = $class->list_vars(
         ITEMS => delete($config->{ items }), keys %$data
     );
 
@@ -46,13 +46,13 @@ sub init_config {
         $self->debug("[$self] $class ITEMS: ", $self->dump_data($items));
         $self->debug("[$self] $class DATA: ", $self->dump_data($data));
     }
-    
+
     # store hash lookup table marking valid items
     $items = $self->{ item } = {
-        map { $_ => 1 } 
+        map { $_ => 1 }
         keys %$data,
-        map { split DELIMITER } 
-        @$items 
+        map { split DELIMITER }
+        @$items
     };
 
     # load up all the configuration items from package variables
@@ -66,7 +66,7 @@ sub init_config {
             || $class->any_var( uc $item );
         $self->debug("config set $item => ", $data->{ $item }, "\n") if DEBUG;
     }
-    
+
     if (DEBUG) {
         $self->debug("config items: ", $self->dump_data($self->{ item }));
         $self->debug("config data: ", $self->dump_data($self->{ data }));
@@ -82,16 +82,16 @@ sub get {
     my $name  = shift @names;
 
     $self->debug(
-        "get: [", 
+        "get: [",
         join('].[', $name, @names),
         "]"
     ) if DEBUG;
-    
+
     # fetch the head item
     my $data = $self->head($name);
 
     if (! defined $data) {
-        return $self->decline_msg( 
+        return $self->decline_msg(
             no_config => $name
         );
     }
@@ -107,11 +107,11 @@ sub dot {
     my ($dot, $last, $method);
 
     $self->debug(
-        "dot: [", 
+        "dot: [",
         join('].[', $name, @$dots),
         "]"
     ) if DEBUG;
-    
+
 
     # resolve any dotted paths after the head
     foreach $dot (@$dots) {
@@ -138,13 +138,13 @@ sub dot {
                     last CHECK;
                 }
             }
-            return $self->decline_msg( 
+            return $self->decline_msg(
                 no_config => join('.', @done, $dot)
             );
         }
 
         if (! defined $data) {
-            return $self->decline_msg( 
+            return $self->decline_msg(
                 no_config => join('.', @done, $dot)
             );
         }
@@ -164,8 +164,8 @@ sub set {
     my $self = shift->prototype;
     my $name = shift;
     my $data = @_ == 1 ? shift : { @_ };
-    $self->{ data }->{ $name } = $data;
-    $self->{ item }->{ $name } = 1;
+    $self->{ data }->{ $name }   = $data;
+    $self->{ item }->{ $name } ||= 1;
     return $data;
 }
 
@@ -183,7 +183,7 @@ sub can_configure {
 
     $self->debug("can_configure($name)") if DEBUG;
 
-    return 
+    return
         unless $name && $self->has_item($name);
 
     return sub {
@@ -199,12 +199,12 @@ sub has_item {
     my $item = $self->{ item }->{ $name };
     if (defined $item) {
         # A 1/0 entry in the item tells us if an item categorically does or
-        # doesn't exist in the config data set (or allowable set - it might 
+        # doesn't exist in the config data set (or allowable set - it might
         # be a valid configuration option that simply hasn't been set yet)
         return $item;
     }
     else {
-        # Otherwise the existence (or not) of an item in the data set is 
+        # Otherwise the existence (or not) of an item in the data set is
         # enough to satisfy us one way or another
         return exists $self->{ data }->{ $name };
     }
@@ -222,7 +222,7 @@ Badger::Config - configuration module
 =head1 SYNOPSIS
 
     use Badger::Config;
-    
+
     my $config = Badger::Config->new(
         user => {
             name => {
@@ -239,11 +239,11 @@ Badger::Config - configuration module
             description => 'Mostly Harmless',
         },
     );
-    
+
     # fetch top-level data item - these both do the same thing
     my $user = $config->user;                       # shortcut method
     my $user = $config->get('user');                # generic get() method
-    
+
     # fetch nested data item - these all do the same thing
     print $config->get('user', 'name', 'given');    # Arthur
     print $config->get('user.name.family');         # Dent
@@ -263,7 +263,7 @@ still incomplete, but it's being worked on.
 
 =head2 new()
 
-Constructor method to create a new L<Badger::Config> object.  Configuration 
+Constructor method to create a new L<Badger::Config> object.  Configuration
 data can be specified as the C<data> named parameter:
 
     my $config = Badger::Config->new(
@@ -273,7 +273,7 @@ data can be specified as the C<data> named parameter:
         },
     );
 
-The C<items> parameter can be used to specify the names of other 
+The C<items> parameter can be used to specify the names of other
 valid configuration values that this object supports.
 
     my $config = Badger::Config->new(
@@ -338,11 +338,11 @@ example:
     # a trivial object class
     package Example;
     use base 'Badger::Base';
-    
+
     sub wibble {
         return 'wobble';
     }
-    
+
     package main;
 
     # a config with a function that returns a hash containing an object
@@ -357,7 +357,7 @@ example:
 
 =head2 set($name,$value)
 
-Method to store a value in the configuration.  
+Method to store a value in the configuration.
 
     $config->set( friend  => 'Ford Prefect' );
     $config->set( friends => ['Ford Prefect','Trillian','Marvin'] );
@@ -369,8 +369,8 @@ the L<get()> method does.
 
 =head2 can_configure($name)
 
-Internal method used to generate accessor methods on demand.  This is 
-installed using the L<auto_can|Badger::Class/auto_can> hook in 
+Internal method used to generate accessor methods on demand.  This is
+installed using the L<auto_can|Badger::Class/auto_can> hook in
 L<Badger::Class>.
 
 =head1 AUTHOR
