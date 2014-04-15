@@ -2,7 +2,7 @@
 #
 # t/base.t
 #
-# Test the Badger::Base module.  Run with -d for debugging info, 
+# Test the Badger::Base module.  Run with -d for debugging info,
 # and/or -c for colour output.
 #
 # Written by Andy Wardley <abw@wardley.org>
@@ -17,8 +17,8 @@ use warnings;
 
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Base;
-use Badger::Test 
-    tests => 111,
+use Badger::Test
+    tests => 112,
     debug => 'Badger::Exporter',
     args  => \@ARGV;
 
@@ -67,7 +67,7 @@ $SIG{__WARN__} = sub {
 $obj->warn("Strange things are afoot at the Circle-K\n");
 is( $warning, "Strange things are afoot at the Circle-K\n", 'got warning' );
 
-$obj = $pkg->new( on_warn => sub { 
+$obj = $pkg->new( on_warn => sub {
     my $msg = shift;
     chomp $msg;
     $warning = "WARN[$msg]";
@@ -206,7 +206,7 @@ use vars qw( $ERROR );
 
 sub init {
     my ($self, $params) = @_;
-    $self->{ NAME } = $params->{ name } 
+    $self->{ NAME } = $params->{ name }
         || return $self->error("No name!");
     return $self;
 }
@@ -329,7 +329,7 @@ package Another::SubClass;
 use Badger::Class
     base    => 'Another::Thrower',
     version => 3.00;
-    
+
 package main;
 
 is( Another::Thrower->throws, 'frisbee', 'Another::Thrower throws frisbee' );
@@ -341,14 +341,14 @@ is( Another::SubClass->throws, 'frisbee', 'Another::SubClass throws frisbee' );
 #------------------------------------------------------------------------
 
 my $base = Badger::Base->new();
-my $ee = Badger::Exception->new( type => 'engine', 
+my $ee = Badger::Exception->new( type => 'engine',
                                    info => 'warp drive offline' );
 
 eval { $base->throw( engine => $ee ) };
 is( "$@", 'engine error - warp drive offline', 'warp drive is offline' );
 
 eval { $base->throw( propulsion => $ee ) };
-is( "$@", 'propulsion error - engine error - warp drive offline', 
+is( "$@", 'propulsion error - engine error - warp drive offline',
     'propulsion system is NFG' );
 
 
@@ -482,23 +482,23 @@ package main;
 my $incomplete = My::Incomplete->new();
 
 eval { $incomplete->foo };
-like( $@, 
-    qr/my.incomplete error - foo\(\) is not implemented .*?base.t at line $foo_line/, 
+like( $@,
+    qr/my.incomplete error - foo\(\) is not implemented .*?base.t at line $foo_line/,
     'foo not implemented' );
 
 eval { $incomplete->bar };
-like( $@, 
-    qr/my.incomplete error - bar\(\) first test case is not implemented .*?base.t at line $bar_line/, 
+like( $@,
+    qr/my.incomplete error - bar\(\) first test case is not implemented .*?base.t at line $bar_line/,
     'bar not implemented' );
 
 eval { $incomplete->wam };
-like( $@, 
-      qr/my\.incomplete error - wam\(\) is TODO for My::Incomplete in .*? at line $wam_line/, 
+like( $@,
+      qr/my\.incomplete error - wam\(\) is TODO for My::Incomplete in .*? at line $wam_line/,
       'wam todo' );
 
 eval { $incomplete->bam };
-like( $@, 
-      qr/my\.incomplete error - bam\(\) second test case is TODO for My::Incomplete in .*? at line $bam_line/, 
+like( $@,
+      qr/my\.incomplete error - bam\(\) second test case is TODO for My::Incomplete in .*? at line $bam_line/,
       'bam not implemented' );
 
 
@@ -511,7 +511,7 @@ use base 'Badger::Base';
 
 sub barf {
     shift->error("failed in a miserable way");
-}    
+}
 
 sub yelp {
     shift->decline("decline in a wishy-washy way");
@@ -528,7 +528,7 @@ ok( $dec->declined, 'declined flag set' );
 eval { $dec->barf };
 is( $dec->reason, 'failed in a miserable way', 'barfed error' );
 ok( ! $dec->declined, 'declined flag cleared' );
-    
+
 
 
 #-----------------------------------------------------------------------
@@ -625,7 +625,30 @@ Your::Badger::Module->throws('BadgerMod');
 eval { Your::Badger::Module->error('Fail!') };
 is( $@, 'BadgerMod error - Fail!', 'BadgerMod Fail!' );
 
-    
+
+#-----------------------------------------------------------------------------
+# test messages
+#-----------------------------------------------------------------------------
+
+package Badger::Testing::Messages;
+use base 'Badger::Base';
+
+sub init {
+    my ($self, $config) = @_;
+    $self->{ messages } = $config->{ messages };
+    return $self;
+}
+
+package main;
+
+my $btm = Badger::Testing::Messages->new(
+    messages => {
+        hello => "Hello %s!",
+    }
+);
+
+is( $btm->message( hello => 'World' ), 'Hello World!', 'got custom message' );
+
 __END__
 
 # Local Variables:
