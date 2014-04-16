@@ -319,10 +319,11 @@ sub message {
     my $self   = shift;
     my $name   = shift
         || $self->fatal("message() called without format name");
+    my $ref    = $self && reftype $self;
     my $format;
 
     # allow $self object to have an internal messages hash
-    if (reftype $self eq HASH && $self->{ messages }) {
+    if ($self && $ref && $ref eq HASH && $self->{ messages }) {
         $format = $self->{ messages }->{ $name }
             if reftype $self->{ messages } eq HASH;
     }
