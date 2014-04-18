@@ -5,12 +5,13 @@ use Badger::Class
     debug        => 0,
     base         => 'Badger::Base',
     import       => 'class',
-    config       => 'verbose=0 quiet=0 dryrun=0 colour|color=1',
+    config       => 'verbose=0 quiet=0 dryrun=0 colour|color=1 progress_module|method:PROGRESS_MODULE',
     utils        => 'self_params params xprintf',
     auto_can     => 'auto_can',
     constants    => 'ARRAY HASH BLANK DELIMITER',
     constant     => {
-        NO_REASON   => 'no reason given',
+        NO_REASON       => 'no reason given',
+        PROGRESS_MODULE => 'Badger::Progress',
     },
     messages     => {
         bad_colour => 'Invalid colour specified for %s event: %s',
@@ -18,10 +19,12 @@ use Badger::Class
 
 use Badger::Debug ':dump';
 use Badger::Rainbow
-    ANSI   => 'black white red green blue cyan magenta yellow',
+    ANSI   => 'all',
     import => 'strip_ANSI_escapes';
 
 our $COLOURS = {
+    bold      => \&bold,
+    dark      => \&dark,
     black     => \&black,
     red       => \&red,
     green     => \&green,
@@ -29,8 +32,10 @@ our $COLOURS = {
     cyan      => \&cyan,
     magenta   => \&magenta,
     yellow    => \&yellow,
+    grey      => \&grey,
     white     => \&white,
 };
+
 
 
 #-----------------------------------------------------------------------
@@ -61,34 +66,34 @@ sub init_events {
         unless ref $evspec eq ARRAY;
 
     $self->debug("event spec: $evspec ==> ", $self->dump_data($evspec)) if DEBUG;
-    
+
     # now merge it with any events specifed in $EVENTS class variable(s)
     $evspec = $self->class->list_vars( EVENTS => $evspec );
-    
+
     $self->debug("event spec: ", $self->dump_data($evspec)) if DEBUG;
 
     foreach (@$evspec) {
         $self->debug("event: $_") if DEBUG;
         $event = $_;            # avoid aliasing
-        $event = { name => $event } 
+        $event = { name => $event }
             unless ref $event eq HASH;
         $name  = $event->{ name }
             || return $self->error_msg( missing => 'event name' );
-        
+
         # set some defaults
         $event->{ message } = '%s'    unless defined $event->{ message };
         $event->{ summary } = '%s %s' unless defined $event->{ summary };
-        
+
         # TODO: is ignoring duplicates the right thing to do?
         next if $lookup->{ $name };
-        
+
         push(@$names, $name);
         push(@$events, $event);
         $lookup->{ $name } = $event;
     }
-    
+
     $self->debug("initalised events: ", $self->dump_data($lookup)) if DEBUG;
-    
+
     return $self;
 }
 
@@ -116,7 +121,7 @@ sub init_output {
     my ($event, $cols, $col, $colname);
 
     # fetch a hash table for all the colo(u)rs we know about
-    $cols = $self->{ colours } ||= $self->class->hash_vars( 
+    $cols = $self->{ colours } ||= $self->class->hash_vars(
         COLOURS => $config->{ colours } || $config->{ colors }
     );
 
@@ -140,10 +145,17 @@ sub init_output {
             $event->{ summary } = strip_ANSI_escapes($event->{ summary });
         }
     }
-    
+
     return $self;
 }
 
+
+sub init_progress {
+    my ($self, $params) = self_params(@_);
+    my $module = $self->{ progress_module };
+    class($module)->load;
+    return $module->new($params);
+}
 
 #-----------------------------------------------------------------------
 # accessor methods
@@ -154,7 +166,7 @@ sub event {
     # TODO: If we allow events to be added then we should also add them to
     # the events/name list.  That suggests that init_events() needs to be
     # cleaved in twain so that we can re-used the event adding code without
-    # having to go through the full configuration process which expects a 
+    # having to go through the full configuration process which expects a
     # config and merges events from the $EVENTS package variable(s).
     return @_
         ? $self->{ event }->{ $_[0] }
@@ -186,23 +198,23 @@ sub event_names {
 
 sub report {
     my $self  = shift;
-    my $type  = shift 
+    my $type  = shift
         || return $self->error_msg( missing => 'event type' );
     my $event = $self->{ event }->{ $type }
         || return $self->error_msg( invalid => 'event type' => $type );
-    
-    # TODO: Why don't we store the stats in the event?  Saves splitting 
+
+    # TODO: Why don't we store the stats in the event?  Saves splitting
     # things up...
     $self->{ stats }->{ $type }++;
     $self->{ count }++;
 
-    # If we're running in quiet mode, or if the event describes itself as 
+    # If we're running in quiet mode, or if the event describes itself as
     # being verbose and we're not running in verbose mode, then we return
     # now.  We also return if the event doesn't have a message format.
     return if $self->{ quiet };
     return if $event->{ verbose } && ! $self->{ verbose };
     return unless $event->{ message };
-        
+
     $self->say( xprintf($event->{ message }, @_) );
 
     return $event->{ return };      # usually undef
@@ -232,7 +244,7 @@ sub auto_can {
     my $event;
 
     $self->debug("auto_can($name)") if DEBUG;
-    
+
     if ($name =~ s/_msg$// && ($event = $self->{ event }->{ $name })) {
         return sub {
             my $self = shift;
@@ -260,7 +272,7 @@ sub summary {
     my $self  = shift;
     my $stats = $self->{ stats };
     my ($event, $name, $format, $count, @output);
- 
+
     $self->debug("summary of stats: ", $self->dump_data($stats)) if DEBUG;
 
     # TODO: no point worrying about being quiet if we're going to say it
@@ -272,11 +284,11 @@ sub summary {
             push(@output, xprintf($format, $count, $count == 1 ? '' : 's', $name) );
         }
     }
-    
+
 #    $self->init_stats;
-    
+
     return join("\n", @output);
-}     
+}
 
 
 
@@ -287,22 +299,23 @@ sub summary {
 
 sub configure_args {
     my $self = shift;
-    my @args = @_ == 1 && ref $_[0] eq ARRAY ? @{$_[0]} 
+    my @args = @_ == 1 && ref $_[0] eq ARRAY ? @{$_[0]}
              : @_ ? @_
              : @ARGV;
 
     $self->debug("configure_args(", $self->dump_data(\@args)) if DEBUG;
-    
-    return $self->usage    if grep(/--?h(elp)?/, @args);
-    $self->{ dryrun  } = 1 if grep(/--?(n(othing)?|dry[-_]?run)/, @args);
-    $self->{ verbose } = 1 if grep(/--?v(erbose)?/, @args);
-    $self->{ quiet   } = 1 if grep(/--?q(uiet)?/, @args);
-    $self->{ colour  } = 1 if grep(/--?c(olou?r)?/, @args);
+
+    return $self->usage     if grep(/--?h(elp)?/, @args);
+    $self->{ dryrun   } = 1 if grep(/--?(n(othing)?|dry[-_]?run)/, @args);
+    $self->{ verbose  } = 1 if grep(/--?v(erbose)?/, @args);
+    $self->{ quiet    } = 1 if grep(/--?q(uiet)?/, @args);
+    $self->{ colour   } = 1 if grep(/--?c(olou?r)?/, @args);
+    $self->{ progress } = 1 if grep(/--?p(rogress)?/, @args);
 
     # Get any extra configuration from the subclass scheme definition
-    # NOTE: This only works in immediate subclasses. A more thorough 
+    # NOTE: This only works in immediate subclasses. A more thorough
     # implementation should call list_vars() and deal with everything,
-    # thereby eliminating the above code.  However, that's something for 
+    # thereby eliminating the above code.  However, that's something for
     # Badger::Config
     my $config = $self->class->list_vars('CONFIG');     # may overwrite above
     if ($config) {
@@ -319,7 +332,7 @@ sub configure_args {
     $self->{ colour  } = 0 if grep(/--?white/, @args);
 
     $self->init_output;
-    
+
     return $self;
 }
 

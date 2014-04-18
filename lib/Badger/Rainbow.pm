@@ -17,7 +17,7 @@ use Carp;
 use Badger::Class
     version   => 0.01,
     base      => 'Badger::Exporter',
-    constants => 'DELIMITER ARRAY REFS PKG',
+    constants => 'DELIMITER ARRAY REFS PKG ALL',
     exports   => {
         any   => 'ANSI_escape ANSI_colours strip_ANSI_escapes',
         hooks => {
@@ -34,7 +34,7 @@ use Badger::Class
             yellow  => 33,
             blue    => 34,
             magenta => 35,
-            cyan    => 36, 
+            cyan    => 36,
             grey    => 37,
             white   => 38,
         },
@@ -50,7 +50,10 @@ sub _export_ANSI_colours {
         || croak "You didn't specify any ANSI colours to import";
 
     no strict REFS;
-        
+
+    $cols = [ keys %$ansi ]
+        if $cols eq ALL;
+
     $cols = [ split(DELIMITER, $cols) ]
         unless ref $cols eq ARRAY;
 
@@ -59,7 +62,7 @@ sub _export_ANSI_colours {
         my $val = $ansi->{ $col }
             || croak "Invalid ANSI colour specified to import: $col";
         *{ $target.PKG.$col } = sub(@) {
-            ANSI_escape($val, @_) 
+            ANSI_escape($val, @_)
         };
     }
 }
@@ -74,11 +77,11 @@ sub _export_ANSI_colours {
 sub ANSI_escape {
     my $attr = shift;
     my $text = join('', grep { defined $_ } @_);
-    return join("\n", 
+    return join("\n",
         map {
-            # look for an existing escape start sequence and add new 
+            # look for an existing escape start sequence and add new
             # attribute to it, otherwise add escape start/end sequences
-            s/ \e \[ ([1-9][\d;]*) m/\e[$1;${attr}m/gx 
+            s/ \e \[ ([1-9][\d;]*) m/\e[$1;${attr}m/gx
                 ? $_
                 : "\e[${attr}m" . $_ . "\e[0m";
         }
@@ -107,7 +110,7 @@ Badger::Rainbow - colour functionality
 =head1 SYNOPSIS
 
     use Badger::Rainbow ANSI => 'red green blue';
-    
+
     print red("This is red");
     print green("This is green");
     print blue("This is blue");
@@ -121,7 +124,7 @@ only used for debugging purposes but may be extended in the future.
 
 =head2 ANSI_escape($code, $line1, $line2, ...)
 
-This function applies an ANSI escape code to each line of text, with the 
+This function applies an ANSI escape code to each line of text, with the
 effect of colouring output on compatible terminals.
 
     use Badger::Rainbow 'ANSI_escape';
@@ -133,22 +136,22 @@ This function removes any ANSI escapes from the text passed as an argument.
 
 =head2 ANSI
 
-This is an export hook which allows you to import subroutines which 
+This is an export hook which allows you to import subroutines which
 apply the correct ANSI escape codes to render text in colour on compatible
 terminals.
 
     use Badger::Rainbox ANSI => 'red green blue';
-    
+
     print red("This is red");
     print green("This is green");
     print blue("This is blue");
 
 Available colours are: C<black>, C<red>, C<green>, C<yellow>, C<blue>,
-C<magenta>, C<cyan> and C<white>.  The C<bold> and C<dark> styles can 
+C<magenta>, C<cyan>, C<white> and C<grey>.  The C<bold> and C<dark> styles can
 also be specified.
 
     use Badger::Rainbox ANSI => 'dark bold red green blue';
-    
+
     print bold red "Hello World\n";
     print dark blue "Hello Badger\n";
 
@@ -157,6 +160,10 @@ or as a reference to a list of individual items.
 
     use Badger::Rainbox ANSI => 'red green blue';
     use Badger::Rainbox ANSI => ['red', 'green', 'blue'];
+
+All ANSI colours can be loaded by specifying C<all>.
+
+    use Badger::Rainbox ANSI => 'all';
 
 =head1 AUTHOR
 
