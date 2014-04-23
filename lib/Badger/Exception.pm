@@ -5,7 +5,7 @@
 # DESCRIPTION
 #   Module implementing an exception class for reporting structured
 #   errors.
-# 
+#
 # AUTHOR
 #   Andy Wardley <abw@wardley.org>
 #
@@ -25,11 +25,11 @@ use Badger::Class
     is_true     => 1,           # always evaluates to a true value
     exports     => {
         hooks => {
-            trace  => [ 
+            trace  => [
                 # args are ($self, $target, $symbol, $value)
-                sub { $TRACE = $_[3] }, 
+                sub { $TRACE = $_[3] },
                 # expects one value argument
-                1 
+                1
             ],
         },
     },
@@ -51,9 +51,9 @@ sub init {
     $self->{ file  } = $config->{ file  };
     $self->{ line  } = $config->{ line  };
     # watch out for the case where 'trace' is set explicitly to 0
-    $self->{ trace } = 
-        exists $config->{ trace } 
-             ? $config->{ trace } 
+    $self->{ trace } =
+        exists $config->{ trace }
+             ? $config->{ trace }
              : $TRACE;
 
     return $self;
@@ -62,24 +62,24 @@ sub init {
 
 sub info {
     my $self = shift;
-    return @_ 
-        ? ($self->{ info }  = shift) 
+    return @_
+        ? ($self->{ info }  = shift)
         : ($self->{ info } || $INFO);
 }
 
 
 sub file {
     my $self = shift;
-    return @_ 
-        ? ($self->{ file }  = shift) 
+    return @_
+        ? ($self->{ file }  = shift)
         : ($self->{ file } || $ANON);
 }
 
 
 sub line {
     my $self = shift;
-    return @_ 
-        ? ($self->{ line }  = shift) 
+    return @_
+        ? ($self->{ line }  = shift)
         : ($self->{ line } || $ANON);
 }
 
@@ -90,12 +90,12 @@ sub text {
 
     # TODO: extend Badger::Utils::xprintf to handle this
     $text  =~ s/<(\w+)>/defined $self->{ $1 } ? $self->{ $1 } : "(no $1)"/eg;
-    
-    # TODO: not sure we should add file and line automatically - better to 
+
+    # TODO: not sure we should add file and line automatically - better to
     # leave it up to the $FORMAT
     $text .= " in $self->{ file }"      if $self->{ file };
     $text .= " at line $self->{ line }" if $self->{ line };
-    
+
     if ($self->{ trace } && (my $trace = $self->stack_trace)) {
         $text .= "\n" . $trace;
     }
@@ -113,7 +113,7 @@ sub stack_trace {
             push(@lines, $self->message( caller => @$caller ));
         }
     }
-    
+
     return join("\n", @lines);
 }
 
@@ -121,7 +121,7 @@ sub stack_trace {
 sub trace {
     my $self = shift;
     if (ref $self) {
-        return @_ 
+        return @_
             ? ($self->{ trace } = shift )
             :  $self->{ trace };
     }
@@ -151,15 +151,15 @@ sub throw {
     die $self;
 }
 
-    
+
 
 
 #------------------------------------------------------------------------
 # match_type(@types)
-# 
-# Selects the most appropriate handler for the current exception type, 
+#
+# Selects the most appropriate handler for the current exception type,
 # from the list of types passed in as arguments.  The method returns the
-# item which is an exact match for type or the closest, more 
+# item which is an exact match for type or the closest, more
 # generic handler (e.g. foo being more generic than foo.bar, etc.)
 #------------------------------------------------------------------------
 
@@ -167,25 +167,25 @@ sub match_type {
     my $self  = shift;
     my $types = @_ == 1 ? shift :  [@_];
     my $type  = $self->{ type };
-    
+
     $types = [ split(DELIMITER, $types) ]
         unless ref $types;
-        
+
     $types = { map { $_ => $_ } @$types }
         if ref $types eq ARRAY;
-    
+
     return $self->error( invalid => 'type match' => $types )
         unless ref $types eq HASH;
-        
+
     while ($type) {
         return $types->{ $type }
             if $types->{ $type };
 
-        # strip .element from the end of the exception type to find a 
+        # strip .element from the end of the exception type to find a
         # more generic handler
         $type =~ s/\.?[^\.]*$//;
     }
-    
+
     return undef;
 }
 
@@ -201,31 +201,31 @@ Badger::Exception - structured exception for error handling
 =head1 SYNOPSIS
 
     use Badger::Exception;
-    
+
     # create exception object
     my $exception = Badger::Exception->new({
         type => $type,
         info => $info,
     });
-    
+
     # query exception type and info fields
     $type = $exception->type();
     $info = $exception->info();
     ($type, $info) = $exception->type_info();
-    
+
     # print string summarising exception
     print $exception->text();
-    
-    # use automagic stringification 
+
+    # use automagic stringification
     print $exception;
-    
+
     # throw exception
     $exception->throw;
 
 =head1 DESCRIPTION
 
 This module defines an object class for representing exceptions.  These are
-simple objects that store various bits of information about an error 
+simple objects that store various bits of information about an error
 condition.
 
 The C<type> denotes what kind of error occurred (e.g. 'C<file>', 'C<parser>',
@@ -235,27 +235,27 @@ error (e.g. 'C<foo/bar.html not found>', 'C<parser error at line 42>',
 C<line> for specifying the location of the error.
 
 In most cases you wouldn't generate and/or throw an exception object directly
-from your code.  A better approach is to define a C<throw()> method in a 
-base class which does this for you.  
+from your code.  A better approach is to define a C<throw()> method in a
+base class which does this for you.
 
 The L<Badger::Base> module is an example of just such a module. You can use
 this as a base class for your modules to inherit the
 L<throw()|Badger::Base/throw()> method.
 
-Here's an example of a module that implements a method which expects an 
+Here's an example of a module that implements a method which expects an
 argument.  If if doesn't get the argument it's looking for then it throws
 an exception via the inherited L<throw()|Badger::Base/throw()> method.
-The exception type is C<example> and the additional information is 
+The exception type is C<example> and the additional information is
 C<No argument specified>.
 
     package Your::Module;
     use base 'Badger::Base';
-    
+
     sub example_method {
         my $self = shift;
         my $arg  = shift
             || self->throw( example => 'No argument specified' );
-        
+
         # ...do something with ...
     }
 
@@ -265,17 +265,17 @@ will generate an exception type based on the package name of your module.
 
     package Your::Module;
     use base 'Badger::Base';
-    
+
     sub example_method {
         my $self = shift;
         my $arg  = shift
             || self->error('No argument specified' );
-        
+
         # ...do something with ...
     }
 
 In the example above, an exception will be thrown with a C<type> defined
-as C<your.module>.  The module name is converted to lower case and the 
+as C<your.module>.  The module name is converted to lower case and the
 package delimiters are replaced with dots.  There are configuration options
 that allow you to define other exceptions types.  Consult the L<Badger::Base>
 documentation for further information.
@@ -290,7 +290,7 @@ kind of C<example> error. The L<match_type()> method takes this into account
 when matching exception types.
 
     eval {
-        # some code that throws an exception 
+        # some code that throws an exception
     };
     if ($@) {
         if ($@->match_type('example')) {
@@ -325,7 +325,7 @@ will then append a stack track to the end of the generated message.
 
     # high up in your calling code:
     eval { $object->do_something_gnarly };
-    
+
     if ($err = $@) {
         print $err;
         exit;
@@ -348,12 +348,12 @@ The L<trace> import hook is provided as a short-cut for this.
 
 =head2 trace
 
-This import hook can be used to set the C<$TRACE> package variable to 
+This import hook can be used to set the C<$TRACE> package variable to
 enable stack tracing for the L<Badger::Exception>  module.
 
     use Badger::Exception trace => 1
 
-When stack tracing is enabled, the exception will store information 
+When stack tracing is enabled, the exception will store information
 about the calling stack at the point at which it is thrown.  This information
 will be displayed by the L<text()> method.  It is also available in raw form
 via the L<stack()> method.
@@ -362,7 +362,7 @@ via the L<stack()> method.
 
 =head2 new()
 
-Constructor method for creating a new exception.  
+Constructor method for creating a new exception.
 
     my $exception = Badger::Exception->new(
         type => 'database',
@@ -373,7 +373,7 @@ Constructor method for creating a new exception.
 
 =head2 type()
 
-When called without arguments, this method returns the exception type, 
+When called without arguments, this method returns the exception type,
 as defined by the first argument passed to the C<new()> constructor method.
 
     my $type = $exception->type();
@@ -426,32 +426,32 @@ C<text()> explicitly.
 Method to get or set the flag which determines if the exception captures
 a stack backtrace at the point at which it is thrown.  It can be called
 as an object method to affect an individual exception object, or as a class
-method to get or set the C<$TRACE> package variable which provides the 
+method to get or set the C<$TRACE> package variable which provides the
 default value for any exceptions created from then on.
 
     $exception->trace(1);               # object method
     print $exception->trace;            # 1
-    
+
     Badger::Exception->trace(1);        # class method - sets $TRACE
     print Badger::Exception->trace;     # 1
 
 =head2 match_type()
 
-This method selects and returns a type string from the arguments passed 
+This method selects and returns a type string from the arguments passed
 that is the nearest correct match for the current exception type.  This
 is used to select the most appropriate handler for the exception.
 
     my $match = $exception->match_type('file', 'parser', 'database')
         || die "no match for exception\n";
 
-In this example, the exception will return one of the values C<file>, 
+In this example, the exception will return one of the values C<file>,
 C<parser> or C<database>, if and only if its type is one of those
 values.  Otherwise it will return undef;
 
-Exception types can be organised into a hierarchical structure by 
-delimiting each part of the type with a period.  For example, the 
+Exception types can be organised into a hierarchical structure by
+delimiting each part of the type with a period.  For example, the
 C<database> exception type might be further divided into the more
-specific C<database.connection>, C<database.query> and 
+specific C<database.connection>, C<database.query> and
 C<database.server_on_fire> exception types.
 
 An exception of type C<database.connection> will match a handler type
@@ -460,10 +460,10 @@ of C<database.connection> or more generally, C<database>.  The longer
 (more general) handler as shown in the next example:
 
     $exception->type('database.connection');
-    
+
     my $match = $exception->match_type('database', 'database.connection')
         || die "no match for exception\n";
-        
+
     print $match;    # database.connection
 
 When there is no exact match, the C<match_type()> method will return
@@ -472,10 +472,10 @@ is no specific handler type for C<database.exploded>, but the more
 general C<database> type still matches.
 
     $exception->type('database.exploded');
-    
+
     my $match = $exception->match_type('database', 'database.connection')
         || die "no match for exception\n";
-        
+
     print $match;    # database
 
 You can also specify multiple exception types using a reference to a list.
@@ -499,7 +499,7 @@ types.  The corresponding value for a matching type will be returned.
         'shields'       => 'defence',
         'phasers'       => 'defence'
     };
-    
+
     if ($exception->match_type($type_map)) {
         ...
     }
@@ -516,25 +516,25 @@ exception object before throwing it.
 If stack tracing is enabled then this method will return a reference to a list
 of information from the caller stack at the point at which the exception was
 thrown. Each item in the list is a reference to a list containing the
-information returned by the inbuilt C<caller()> method. See 
-C<perldoc -f caller> for further information. 
+information returned by the inbuilt C<caller()> method. See
+C<perldoc -f caller> for further information.
 
     use Badger::Exception trace => 1;
-    
+
     eval {
         # some code that throws an exception object
         $exception->throw();
     };
-    
+
     my $catch = $@;                 # exception object
     my $stack = $catch->stack;
-    
+
     foreach my $caller (@$stack) {
         my ($pkg, $file, $line, @other_stuff) = @$caller;
         # do something
     }
 
-The first set of information relates to the immediate caller of the 
+The first set of information relates to the immediate caller of the
 L<throw()> method.  The next item is the caller of that method, and so
 on.
 
@@ -544,7 +544,7 @@ If stack tracing is enabled then this method returns a text string summarising
 the caller stack at the point at which the exception was thrown.
 
     use Badger::Exception trace => 1;
-    
+
     eval {
         # some code that throws an exception object
         $exception->throw();

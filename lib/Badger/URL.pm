@@ -38,18 +38,18 @@ use Badger::Class
 #      __     ___________________  _________   _________   __
 #     /  \   /                   \/         \ /         \ /  \
 #     http://user@example.com:8042/over/there?name=ferret#nose
-#            \__/ \_________/ \__/  
+#            \__/ \_________/ \__/
 #            user    host     port
 #
 #------------------------------------------------------------------------
 
-our @ELEMENTS = qw( 
-    scheme authority user host port path query fragment params 
+our @ELEMENTS = qw(
+    scheme authority user host port path query fragment params
 );
 our $N_ELEMS  = 1;      # slot 0 holds source text, so slot 1 is first field
 our $ELEMENT  = {
-    map { $_ => $N_ELEMS++ } 
-    @ELEMENTS 
+    map { $_ => $N_ELEMS++ }
+    @ELEMENTS
 };
 
 # regexen to match basic tokens
@@ -61,8 +61,8 @@ our $MATCH_PATH      = qr{ ( [^ \? \#]* ) }x;
 our $MATCH_QUERY     = qr{ \? ( [^ \#]* ) }x;
 our $MATCH_FRAGMENT  = qr{ \# ( .* ) }x;
 
-# compound regexen to match authority 
-our $MATCH_AUTHORITY = qr{ 
+# compound regexen to match authority
+our $MATCH_AUTHORITY = qr{
     // (                            # $1 - authority
         (?: $MATCH_USER )?          # $2 - user
             $MATCH_HOST             # $3 - host
@@ -86,7 +86,7 @@ our $MATCH_URL = qr{
 #------------------------------------------------------------------------
 
 sub URL {
-    return CLASS unless @_; 
+    return CLASS unless @_;
     return @_ == 1 && is_object(CLASS, $_[0])
         ? $_[0]->copy                           # copy existing URL object
         : CLASS->new(@_);                       # or construct a new one
@@ -94,12 +94,12 @@ sub URL {
 
 
 sub new {
-    my $class = shift;  
+    my $class = shift;
     my $args  = @_ == 1 ? shift : { @_ };
     my $self;
-    
+
     $class = ref $class || $class;
-  
+
     if (textlike $args) {
         $self = bless [$args, $args =~ $MATCH_URL], $class;
     }
@@ -135,22 +135,22 @@ sub set {
         $self->[$n] = $v;
     }
 
-    # The authority is comprised of the user, host and port fields.  
+    # The authority is comprised of the user, host and port fields.
     # We need to split any authority specified, or merge together the user,
     # host and port if any of them have been changed
-    $self->split_authority 
+    $self->split_authority
         if exists $args->{ authority };
-        
-    $self->join_authority  
-        if exists $args->{ user } 
-        or exists $args->{ host } 
+
+    $self->join_authority
+        if exists $args->{ user }
+        or exists $args->{ host }
         or exists $args->{ port };
-    
+
     # similar thing for query/params
-    $self->split_query 
+    $self->split_query
         if exists $args->{ query };
 
-    $self->join_query 
+    $self->join_query
         if exists $args->{ params };
 
     # finally reconstruct the complete url
@@ -166,11 +166,11 @@ sub set {
 
 sub split_authority {
     my $self = shift;
-    $self->[AUTHORITY] = BLANK 
+    $self->[AUTHORITY] = BLANK
         unless defined $self->[AUTHORITY];
 
     # this regex shouldn't ever fail as everything is optional
-    @$self[AUTHORITY,USER,HOST,PORT] 
+    @$self[AUTHORITY,USER,HOST,PORT]
         = $self->[AUTHORITY] =~ $MATCH_AUTHORITY;
 }
 
@@ -182,21 +182,21 @@ sub join_authority {
     $user = (defined $user && length $user) ? $user . '@' : BLANK;
     $port = (defined $port && length $port) ? ':' . $port : BLANK;
     $host = BLANK unless defined $host;
-    
+
     return ($self->[AUTHORITY] = $user.$host.$port);
 }
 
 
 sub split_query {
     my $self = shift;
-    $self->[QUERY] = '' 
+    $self->[QUERY] = ''
         unless defined $self->[QUERY];
 
     return ($self->[PARAMS] = {
-        map { 
-            map { decode($_) } 
-            split(/=/, $_, 2) 
-        } 
+        map {
+            map { decode($_) }
+            split(/=/, $_, 2)
+        }
         split(/[&;]/, $self->[QUERY])
     });
 }
@@ -206,9 +206,9 @@ sub join_query {
     my $self   = shift;
     my $params = $self->[PARAMS] || { } ;       # should we call split_query()?
 
-    return ($self->[QUERY] = join( 
-        '&', 
-        map { $_ . '=' . encode( $params->{ $_ } ) } 
+    return ($self->[QUERY] = join(
+        '&',
+        map { $_ . '=' . encode( $params->{ $_ } ) }
         sort keys %$params                      # sorted makes debugging easier
     ));
 }
@@ -345,7 +345,7 @@ sub dump {
     return '[URL:' . join('|', map { defined($_) ? $_ : '' } @$self) . ']';
 }
 
-    
+
 
 #-----------------------------------------------------------------------
 # generated accessor/mutator methods for those with similar functionality
@@ -405,7 +405,7 @@ Badger::URL - representation of a Uniform Resource Locator (URL)
     my $url = Badger::URL->new(
         'http://abw@badgerpower.com:8080/under/ground?animal=badger#stripe'
     );
-    
+
     # named parameters
     my $url = Badger::URL->new(
         scheme      => 'http',
@@ -416,7 +416,7 @@ Badger::URL - representation of a Uniform Resource Locator (URL)
         query       => 'animal=badger',
         fragment    => 'stripe',
     );
-    
+
     # methods to access standard W3C parts of URL
     print $url->scheme;     # http
     print $url->authority;  # abw@badgerpower.com:8080
@@ -426,23 +426,23 @@ Badger::URL - representation of a Uniform Resource Locator (URL)
     print $url->path;       # /under/ground
     print $url->query;      # animal=badger
     print $uri->fragment;   # stripe
-    
+
     # additional composite methods:
-    print $url->server;     
+    print $url->server;
         # http://abw@badgerpower.com:8080
-    
-    print $url->service;    
+
+    print $url->service;
         # http://abw@badgerpower.com:8080/under/ground
-    
-    print $url->request;    
+
+    print $url->request;
         # http://abw@badgerpower.com:8080/under/ground?animal=badger
-    
+
     # method to return the whole URL
     print $url->url();
         # http://abw@badgerpower.com:8080/under/ground?animal=badger#stripe
-    
+
     # overloaded stringification operator calls url() method
-    print $url;     
+    print $url;
         # http://abw@badgerpower.com:8080/under/ground?animal=badger#stripe
 
 =head1 DESCRIPTION
@@ -453,7 +453,7 @@ new or modified URLs.
 
 The emphasis is on simplicity and convenience for tasks related to web
 programming (e.g. dispatching web applications based on the URL, generating
-URLs for redirects or embedding as links in HTML pages).  If you want more 
+URLs for redirects or embedding as links in HTML pages).  If you want more
 generic URI functionality then you should consider using the L<URI> module.
 
 A URL looks like this:
@@ -506,7 +506,7 @@ You can also specify the individual parts of the URL using named paramters.
 
 =head2 copy()
 
-This method creates and returns a new C<Badger::URL> object as a copy of 
+This method creates and returns a new C<Badger::URL> object as a copy of
 the current one.
 
     my $copy = $url->copy;
@@ -519,7 +519,7 @@ Method to return the complete URL.
         # http://abw@badgerpower.com:8080/under/ground?animal=badger#stripe
 
 This method is called automatically whenever the URL object is
-stringified.  
+stringified.
 
     print $url;                 # same as above
 
@@ -545,7 +545,7 @@ host with optional user and/or port.
     $url->authority('abw@badgerpower.com');
     $url->authority('badgerpower.com:8080');
     $url->authority('abw@badgerpower.com:8080');
-  
+
     print $url->authority();    # abw@badgerpower.com:8080
 
 =head2 user()
@@ -609,27 +609,27 @@ when setting a new fragment.
     $url->fragment('feet');
     print $url->fragment();     # feet
 
-=head2 server() 
+=head2 server()
 
 Returns a composite of the scheme and authority.
 
-    print $url->server();       
+    print $url->server();
         # http://fred@example.org:1234
 
-=head2 service() 
+=head2 service()
 
 Returns a composite of the server (scheme and authority) and path
 (in other words, everything up to the query or fragment).
 
-    print $url->server();       
+    print $url->server();
         # http://fred@example.org:1234/right/here
 
-=head2 request() 
+=head2 request()
 
 Returns a composite of the service (scheme, authority and path) and
 query (in other words, everything except the fragment).
 
-    print $url->request();       
+    print $url->request();
         # http://fred@example.org:1234/right/here?animal=badger
 
 =head2 relative($path)
@@ -643,8 +643,8 @@ Returns a new URL with the relative path specified.
 
 =head2 absolute($path)
 
-Returns a new URL with the absolute path specified.  The leading C</> on 
-the path provided as an argument is option.  It will be assumed if not 
+Returns a new URL with the absolute path specified.  The leading C</> on
+the path provided as an argument is option.  It will be assumed if not
 present.
 
     my $base = Badger::URL->new('http://badgerpower.com/example');
@@ -681,7 +681,7 @@ This method splits the C<query> string into query parameters.
 
 =head2 dump()
 
-Return a text representation of the structure of the URL object, for 
+Return a text representation of the structure of the URL object, for
 debugging purposes.
 
 =head1 EXPORTABLE SUBROUTINES
