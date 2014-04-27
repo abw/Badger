@@ -5,7 +5,7 @@ use Badger::Class
     debug        => 0,
     base         => 'Badger::Base',
     import       => 'class',
-    config       => 'verbose=0 quiet=0 dryrun=0 colour|color=1 progress_module|method:PROGRESS_MODULE',
+    config       => 'verbose=0 quiet=0 nothing|dryrun=0 progress=0 colour|color=1 progress_module|method:PROGRESS_MODULE',
     utils        => 'self_params params xprintf',
     auto_can     => 'auto_can',
     constants    => 'ARRAY HASH BLANK DELIMITER',
@@ -154,7 +154,27 @@ sub init_progress {
     my ($self, $params) = self_params(@_);
     my $module = $self->{ progress_module };
     class($module)->load;
-    return $module->new($params);
+    return $self->{ progress_counter } = $module->new($params);
+}
+
+sub progress {
+    my $self = shift;
+    return  $self->{ progress_counter }
+        ||= $self->init_progress(@_);
+}
+
+sub tick {
+    my $self     = shift;
+    my $progress = $self->{ progress_counter } || return;
+    return if $self->{ verbose };
+    print $progress->pixel;
+}
+
+sub tock {
+    my $self     = shift;
+    my $progress = $self->{ progress_counter } || return;
+    return if $self->{ verbose };
+    print $progress->remains;
 }
 
 #-----------------------------------------------------------------------
@@ -212,6 +232,7 @@ sub report {
     # being verbose and we're not running in verbose mode, then we return
     # now.  We also return if the event doesn't have a message format.
     return if $self->{ quiet };
+    $self->tick;
     return if $event->{ verbose } && ! $self->{ verbose };
     return unless $event->{ message };
 
@@ -353,6 +374,7 @@ sub options_summary {
     return <<EOF;
   -h  --help                    This help
   -v  --verbose                 Verbose mode (extra output)
+  -p  --progress                Progress mode
   -q  --quiet                   Quiet mode (no output)
   -n  --nothing --dry-run       Dry run - no action performed
   -c  --colour --color          Colourful output
