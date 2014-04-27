@@ -193,7 +193,7 @@ sub definitive {
 }
 
 sub collapse {
-    my $self = shift->absolute;
+    my $self = shift;
     my $fs   = $self->filesystem;
     $self->{ directory } = $fs->collapse_directory( $self->{ directory } );
     $self->{ path      } = $fs->join_path( @$self{ @VDN_FIELDS } );
