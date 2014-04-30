@@ -31,17 +31,25 @@ use Badger::Class
                 # expects one value argument
                 1
             ],
+            colour  => [
+                # args are ($self, $target, $symbol, $value)
+                sub { $COLOUR = $_[3] },
+                # expects one value argument
+                1
+            ],
         },
     },
     messages => {
         caller => "<4> called from <1>\n  in <2> at line <3>",
     };
 
+use Badger::Rainbow ANSI => 'cyan yellow green';
 our $FORMAT  = '<type> error - <info>' unless defined $FORMAT;
 our $TYPE    = 'undef'                 unless defined $TYPE;
 our $INFO    = 'no information'        unless defined $INFO;
 our $ANON    = 'unknown'               unless defined $ANON;
 our $TRACE   = 0                       unless defined $TRACE;
+our $COLOUR  = 0                       unless defined $COLOUR;
 
 
 sub init {
@@ -110,7 +118,15 @@ sub stack_trace {
 
     if (my $stack = $self->{ stack }) {
         foreach my $caller (@$stack) {
-            push(@lines, $self->message( caller => @$caller ));
+            my @args = $COLOUR
+                ? (
+                    cyan($caller->[0]),
+                    cyan($caller->[1]),
+                    yellow($caller->[2]),
+                    yellow($caller->[3]),
+                  )
+                : @$caller;
+            push(@lines, $self->message( caller => @args ));
         }
     }
 
