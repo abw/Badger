@@ -13,7 +13,7 @@
 package Badger::Debug;
 
 use Carp;
-use Badger::Rainbow 
+use Badger::Rainbow
     ANSI => 'bold red yellow green cyan white';
 use Scalar::Util qw( blessed refaddr );
 use Badger::Class
@@ -27,7 +27,7 @@ use Badger::Class
     },
     exports   => {
         tags  => {
-            debug => 'debugging debug debugf debug_up debug_at debug_caller 
+            debug => 'debugging debug debugf debug_up debug_at debug_caller
                       debug_callers debug_args',
             dump  => 'dump dump_data dump_data_inline
                       dump_ref dump_hash dump_list dump_text'
@@ -42,19 +42,20 @@ use Badger::Class
             '$DEBUG' => [\&_export_debug_variable, 1],
         },
     };
-    
-our $PAD       = '    ';
-our $MAX_TEXT  = 48;
-our $MAX_DEPTH = 3;     # prevent runaways in debug/dump
-our $FORMAT    = "[<where> line <line>]\n<msg>"  
+
+our $PAD        = '    ';
+our $MAX_TEXT   = 48;
+our $MAX_DEPTH  = 3;     # prevent runaways in debug/dump
+our $FORMAT     = "[<where> line <line>]\n<msg>"
     unless defined $FORMAT;
-our $PROMPT    = '> ' 
+our $PROMPT     = '> '
     unless defined $PROMPT;
-our $MESSAGE   = "$PROMPT%s";
-our $CALLER_UP = 0;      # hackola to allow debug() to use a different caller
-our $CALLER_AT = { };    # ditto
-our $DUMPING   = { };
-our $DEBUG     = 0 unless defined $DEBUG;
+our $MESSAGE    = "$PROMPT%s";
+our $HIDE_UNDER = 1;
+our $CALLER_UP  = 0;      # hackola to allow debug() to use a different caller
+our $CALLER_AT  = { };    # ditto
+our $DUMPING    = { };
+our $DEBUG      = 0 unless defined $DEBUG;
 
 
 #-----------------------------------------------------------------------
@@ -74,10 +75,10 @@ sub _export_debug_dumps {
 sub _export_debug_default {
     my ($self, $target, $symbol, $value, $symbols) = @_;
     unshift(
-        @$symbols, 
-        '$DEBUG' => $value, 
+        @$symbols,
+        '$DEBUG' => $value,
         'DEBUG' => $value,
-        'debug', 
+        'debug',
         'debugging'
     );
     return $self;
@@ -91,7 +92,7 @@ sub _export_debug_variable {
     # use any existing value in $DEBUG
     $value = ${ $target.PKG.DEBUG }
         if defined ${ $target.PKG.DEBUG };
-        
+
     $self->debug("$symbol option setting $target \$DEBUG to $value\n") if $DEBUG;
     *{ $target.PKG.DEBUG } = \$value;
 }
@@ -104,7 +105,7 @@ sub _export_debug_constant {
     # use any existing value in $DEBUG
     $value = ${ $target.PKG.DEBUG }
         if defined ${ $target.PKG.DEBUG };
-    
+
     $self->debug("$symbol option setting $target DEBUG to $value\n") if $DEBUG;
     *{ $target.PKG.DEBUG } = sub () { $value };
 }
@@ -128,15 +129,15 @@ sub debugging {
     # return current $DEBUG value when called without args
     return ${ $pkg.PKG.DEBUG } || 0
         unless @_;
-    
+
     # set new debug value when called with an argument
     my $debug = shift;
     $debug = 0 if $debug =~ /^off$/i;
 
-    # TODO: consider setting different parts of the flag, like TT2, 
+    # TODO: consider setting different parts of the flag, like TT2,
 
     $self->debug("debugging() Setting $pkg debug to $debug\n") if $DEBUG;
-    
+
     if (defined ${ $pkg.PKG.DEBUG }) {
         # update existing variable
         ${ $pkg.PKG.DEBUG } = $debug;
@@ -148,7 +149,7 @@ sub debugging {
         *{ $pkg.PKG.DEBUG } = \$debug;
     }
     return $debug;
-} 
+}
 
 
 sub debug {
@@ -164,7 +165,7 @@ sub debug {
     else {
         $sub = '';
     }
-    my $where  = ($class eq $pkg) 
+    my $where  = ($class eq $pkg)
         ? $class . $sub
         : $pkg   . $sub . " ($class)";
 
@@ -172,7 +173,7 @@ sub debug {
 #    $msg =~ s/^/$PROMPT/gm;
 
     # We load this dynamically because it uses Badger::Debug and we don't
-    # want to end up in a gruesome birth spiral 
+    # want to end up in a gruesome birth spiral
     require Badger::Timestamp;
     my $now  = Badger::Timestamp->now;
     my $data = {
@@ -189,7 +190,7 @@ sub debug {
     };
     $format  =~ s/<(\w+)>/defined $data->{ $1 } ? $data->{ $1 } : "<$1 undef>"/eg;
     $format .= "\n" unless $format =~ /\n$/;
-    
+
     print STDERR $format;
 }
 
@@ -229,7 +230,7 @@ sub debug_callers {
     my $self = shift;
     my $msg  = '';
     my $i    = 1;
-    
+
     while (1) {
         my @info = caller($i);
         last unless @info;
@@ -245,8 +246,8 @@ sub debug_callers {
 
 sub debug_args {
     my $self = shift;
-    $self->debug_up( 
-        2, "args: ",  
+    $self->debug_up(
+        2, "args: ",
         join(', ', map { $self->dump_data_inline($_) } @_),
         "\n"
     );
@@ -258,9 +259,9 @@ sub debug_modules {
     my $modules = @_ == 1 ? shift : [ @_ ];
     my $debug   = 1;
 
-    $modules = [ split(DELIMITER, $modules) ] 
+    $modules = [ split(DELIMITER, $modules) ]
         unless ref $modules eq ARRAY;
-        
+
     # TODO: handle other refs?
 
     foreach my $pkg (@$modules) {
@@ -277,7 +278,7 @@ sub debug_modules {
 sub dump {
     my $self = shift;
     my $code = $self->can('dumper');
-    return $code 
+    return $code
          ? $code->($self, @_)
          : $self->dump_ref($self, @_);
 }
@@ -288,7 +289,7 @@ sub dump_data {
     _dump_data(@_);
 }
 
-    
+
 sub _dump_data {
     if (! defined $_[1]) {
         return UNDEF;
@@ -309,7 +310,7 @@ sub _dump_data {
 sub dump_ref {
     my ($self, $data, $indent) = @_;
     return "<$data>" if $DUMPING->{ $data }++;
-    
+
     # TODO: change these to reftype
     if (UNIVERSAL::isa($data, HASH)) {
         return dump_hash($self, $data, $indent);
@@ -344,7 +345,7 @@ sub dump_hash {
     my $pad = $PAD x $indent;
 
     return '{ }' unless $hash && %$hash;
-    
+
     if ($keys) {
         $keys = [ split(DELIMITER, $keys) ]
             unless ref $keys;
@@ -352,18 +353,18 @@ sub dump_hash {
             if ref $keys eq ARRAY;
         return $self->error("Invalid keys passed to dump_hash(): $keys")
             unless ref $keys eq HASH;
-            
+
         $self->debug("constructed hash keys: ", join(', ', %$keys)) if $DEBUG;
     }
-    
-    return "\{\n" 
-        . join( ",\n", 
+
+    return "\{\n"
+        . join( ",\n",
                 map { "$pad$PAD$_ => " . _dump_data($self, $hash->{$_}, $indent + 1) }
-                sort 
-                grep { $keys ? $keys->{ $_ } : 1 } 
-            #   grep { ! /^_/ }
-                keys %$hash 
-           ) 
+                sort
+                grep { $keys ? $keys->{ $_ } : 1 }
+                grep { (/^_/ && $HIDE_UNDER) ? 0 : 1 }
+                keys %$hash
+           )
         . "\n$pad}";
 }
 
@@ -374,9 +375,9 @@ sub dump_list {
     my $pad = $PAD x $indent;
 
     return '[ ]' unless @$list;
-    return "\[\n$pad$PAD" 
-        . ( @$list 
-            ? join(",\n$pad$PAD", map { _dump_data($self, $_, $indent + 1) } @$list) 
+    return "\[\n$pad$PAD"
+        . ( @$list
+            ? join(",\n$pad$PAD", map { _dump_data($self, $_, $indent + 1) } @$list)
             : '' )
         . "\n$pad]";
 }
@@ -397,7 +398,7 @@ sub dump_text {
 #-----------------------------------------------------------------------
 # enable_colour()
 #
-# Export hook which gets called when the Badger::Debug module is 
+# Export hook which gets called when the Badger::Debug module is
 # used with the 'colour' or 'color' option.  It redefines the formats
 # for $Badger::Base::DEBUG_FORMAT and $Badger::Exception::FORMAT
 # to display in glorious ANSI technicolor.
@@ -412,15 +413,15 @@ sub enable_colour {
 
     # colour the debug format
     $MESSAGE = cyan($PROMPT) . yellow('%s');
-    $FORMAT 
+    $FORMAT
          = cyan('[<where> line <line>]')
          . "\n<msg>";
 
     # exceptions are in red
-    $Badger::Exception::FORMAT 
+    $Badger::Exception::FORMAT
         = bold red $Badger::Exception::FORMAT;
 
-    $Badger::Exception::MESSAGES->{ caller } 
+    $Badger::Exception::MESSAGES->{ caller }
         = yellow('<4>')   . cyan(' called from ')
         . yellow("<1>\n") . cyan('  in ')
         . white('<2>')   . cyan(' at line ')
@@ -440,23 +441,23 @@ Badger::Debug - base class mixin module implement debugging methods
 =head1 SYNOPSIS
 
     package Your::Module;
-    
-    use Badger::Debug 
+
+    use Badger::Debug
         default => 0;   # default value for $DEBUG and DEBUG
-    
+
     sub some_method {
         my $self = shift;
-        
+
         # DEBUG is a compile-time constant, so very efficient
         $self->debug("First Message") if DEBUG;
-        
+
         # $DEBUG is a runtime variable, so more flexible
         $self->debug("Second Message") if $DEBUG;
     }
 
     package main;
     use Your::Module;
-    
+
     Your::Module->some_method;      # no output, debugging off by default
     Your::Module->debugging(1);     # turns runtime debugging on
     Your::Module->some_method;      # [Your::Module line 13] Second Message
@@ -474,7 +475,7 @@ used both ways.
 
     # class method
     Your::Module->debug('called as a class method');
-    
+
     # object method
     my $object = Your::Module->new;
     $object->debug('called as an object method');
@@ -487,12 +488,12 @@ debugging status. Use C<0> if you want debugging off by default, or any true
 value if you want it on.
 
     package Your::Module;
-    
-    use Badger::Debug 
+
+    use Badger::Debug
         default => 0;
 
 The L<default> option imports the L<debug()> and L<debugging()> methods,
-the L<$DEBUG> package variable (set to the default value you specified 
+the L<$DEBUG> package variable (set to the default value you specified
 unless it's already defined to be something else), and the L<DEBUG>
 constant subroutine (defined to have the same value as the L<$DEBUG>
 variable).
@@ -504,10 +505,10 @@ enbled.
 
     sub some_method {
         my $self = shift;
-        
+
         # DEBUG is a compile-time constant, so very efficient
         $self->debug("First Message") if DEBUG;
-        
+
         # $DEBUG is a runtime variable, so more flexible
         $self->debug("Second Message") if $DEBUG;
     }
@@ -533,7 +534,7 @@ efficient than using the L<DEBUG> compile time constant. Unless you're working
 on performance critical code, it's probably not something that you should
 worry about.
 
-However, if you are the worrying type then you can use C<Badger::Debug> 
+However, if you are the worrying type then you can use C<Badger::Debug>
 to get some of the best bits of both worlds.  When your module is loaded,
 both L<DEBUG> and L<$DEBUG> will be set to the default value you specified
 I<< unless C<$DEBUG> is already defined >>.  If it is defined then the
@@ -546,12 +547,12 @@ having to go and edit the source code of your module.
     require Your::Module;
 
 Alternately, you can let C<Badger::Debug> do it for you.  The L<modules>
-import option allows you to specify one or more modules that you want 
-debugging enabled for.  
+import option allows you to specify one or more modules that you want
+debugging enabled for.
 
-    use Badger::Debug 
+    use Badger::Debug
         modules => 'My::Module::One My::Module::Two';
-    
+
     use My::Module::One;        # both runtime and compile time
     use My::Module::Two;        # debugging enabled in both modules
 
@@ -573,7 +574,7 @@ module for generating debugging messages.
 
     package Your::Module;
     use Badger::Debug 'debug';
-    
+
     sub some_method {
         my $self = shift;
         $self->debug("Hello from some_method()");
@@ -584,7 +585,7 @@ You could do something like this:
 
     # initialise $DEBUG if it's not already set
     our $DEBUG = 0 unless defined $DEBUG;
-    
+
     sub some_method {
         my $self = shift;
         $self->debug("Hello from some_method()") if $DEBUG;
@@ -597,7 +598,7 @@ another module or your own code.
 
     # set $DEBUG flag for your module
     $Your::Module::DEBUG = 1;
-    
+
     # later...
     require Your::Module;       # debugging is enabled
 
@@ -615,10 +616,10 @@ bug then you can write something like this:
 
     sub gnarly_method {
         my $self = shift;
-        
+
         local $DEBUG = 1;
         $self->debug("Trying to track down the cause bug 666");
-        
+
         # the rest of your code...
         $self->some_method;
     }
@@ -626,7 +627,7 @@ bug then you can write something like this:
 Making the change to C<$DEBUG> C<local> means that it'll only stay set to C<1>
 until the end of the C<gnarly_method()>. It's a good idea to add a debugging
 message any time you make temporary changes like this. The message generated
-will contain the file and line number so that you can easily find it later 
+will contain the file and line number so that you can easily find it later
 when the bug has been squashed and either comment it out (for next time) or
 remove it.
 
@@ -635,11 +636,11 @@ the C<$DEBUG> variable for you.  The value you provide will be used as the
 default for C<$DEBUG> if it isn't already defined.
 
     package Your::Module;
-    
-    use Badger::Debug 
+
+    use Badger::Debug
         'debug',
         '$DEBUG' => 0;
-    
+
     sub some_method {
         my $self = shift;
         $self->debug("Hello from some_method()") if $DEBUG;
@@ -654,7 +655,7 @@ provides a simple way to set the L<$DEBUG> variable.
 The downside to using a package variable is that it slows your code down
 every time you check the L<$DEBUG> flag.  In all but the most extreme cases,
 this should be of no concern to you whatsoever.  Write your code in the way
-that is most convenient for you, not the machine.  
+that is most convenient for you, not the machine.
 
 B<WARNING:> Do not even begin to consider entertaining the merest thought of
 optimising your code to make it run faster until your company is on the verge
@@ -666,10 +667,10 @@ unless you make the code run faster I<RIGHT NOW>.
 Another approach is to define a constant L<DEBUG> value.
 
     package Your::Module;
-    
+
     use Badger::Debug 'debug';
     use constant DEBUG => 0;
-    
+
     sub some_method {
         my $self = shift;
         $self->debug("Hello from some_method()") if DEBUG;
@@ -684,15 +685,15 @@ line at compile time because it's based on a premise (C<if DEBUG>) that
 is known to be false.  The end result is that there's no runtime performance
 penalty whatsoever.
 
-C<Badger::Debug> also provides the L<DEBUG> hook if this is the kind of 
+C<Badger::Debug> also provides the L<DEBUG> hook if this is the kind of
 thing you want.
 
     package Your::Module;
-    
-    use Badger::Debug 
+
+    use Badger::Debug
         'debug',
         'DEBUG' => 0;
-    
+
     sub some_method {
         my $self = shift;
         $self->debug("Hello from some_method()") if DEBUG;
@@ -707,7 +708,7 @@ C<$DEBUG> package variable before loading it.
 
     # set $DEBUG flag for your module
     $Your::Module::DEBUG = 1;
-    
+
     # later...
     require Your::Module;       # debugging is enabled
 
@@ -747,32 +748,32 @@ and flags.
     use Badger::Debug
         default => 0;           # debugging off by default
 
-It imports the L<debug()> and L<debugging()> methods along with the 
+It imports the L<debug()> and L<debugging()> methods along with the
 L<$DEBUG> package variable and L<DEBUG> constant.
 
 See L<The Whole Caboodle> for further discussion on using it.
 
 =head2 $DEBUG
 
-Used to define a C<$DEBUG> variable in your module.  A default value 
+Used to define a C<$DEBUG> variable in your module.  A default value
 should be specified which will be used to set the C<$DEBUG> value if
 it isn't already defined.
 
     use Badger::Debug
         '$DEBUG' => 0;           # debugging off by default
-        
+
     print $DEBUG;                # 0
 
 =head2 DEBUG
 
 Used to define a C<DEBUG> constant in your module.  If the C<$DEBUG>
 package variable is defined then the C<DEBUG> constant will be set to
-whatever value it contains.  Otherwise it will be set to the default 
+whatever value it contains.  Otherwise it will be set to the default
 value you provide.
 
     use Badger::Debug
         'DEBUG' => 0;            # debugging off by default
-        
+
     print DEBUG;                 # 0
 
 =head2 modules
@@ -782,7 +783,7 @@ packages.  This ensures that any debugging will be enabled in those modules.
 
     use Badger::Debug
         modules => 'My::Module::One My::Module::Two';
-        
+
     use My::Module::One;        # debugging enabled in both modules
     use My::Module::Two;
 
@@ -794,7 +795,7 @@ loaded will only have run time debugging enabled.
 
 This option can be used to construct a specialised L<dump()> method for
 your module.  The method is used to display nested data in serialised
-text form for debugging purposes.  The default L<dump()> method for an 
+text form for debugging purposes.  The default L<dump()> method for an
 object will display all items stored within the object.  The C<dumps>
 import option can be used to limit the dump to only display the fields
 specified.
@@ -802,25 +803,25 @@ specified.
     package Your::Module;
     use Badger::Debug dumps => 'foo bar baz';
     # ...more code...
-    
+
     package main;
     my $object = Your::Module->new;
     print $object->dump;            # dumps foo, bar and baz
 
 =head2 colour / color
 
-Either of these (depending on your spelling preference) can be used to 
+Either of these (depending on your spelling preference) can be used to
 enable colourful (or colorful) debugging.
 
     use Badger::Debug 'colour';
 
-Debugging messages will then appear in colour (on a terminal supporting 
+Debugging messages will then appear in colour (on a terminal supporting
 ANSI escape sequences).  See the L<Badger::Test> module for an example
 of this in use.
 
 =head2 :debug
 
-Imports all of the L<debug()>, L<debugging()>, L<debug_up()>, 
+Imports all of the L<debug()>, L<debugging()>, L<debug_up()>,
 L<debug_caller()>, L<debug_callers> and L<debug_args()> methods.
 
 =head2 :dump
@@ -836,7 +837,7 @@ This method can be used to generate debugging messages.
 
     $object->debug("Hello ", "World\n");
 
-It prints all argument to STDERR with a prefix indicating the 
+It prints all argument to STDERR with a prefix indicating the
 class name, file name and line number from where the C<debug()> method
 was called.
 
@@ -861,13 +862,13 @@ example.
 
     sub parse {
         my $self = shift;
-        
+
         while (my ($foo, $bar) = $self->get_foo_bar) {
             $self->trace($foo, $bar);               # report line here
             # do something
         }
     }
-    
+
     sub trace {
         my ($self, $foo, $bar) = @_;
         $self->debug_up(2, "foo: $foo  bar: $bar"); # not here
@@ -875,10 +876,10 @@ example.
 
 The C<trace()> method calls the L<debug_up()> method telling it to look I<two>
 levels up in the caller stack instead of the usual I<one> (thus
-C<debug_up(1,...)> has the same effect as C<debug(...)>).  So instead of 
+C<debug_up(1,...)> has the same effect as C<debug(...)>).  So instead of
 reporting the line number in the C<trace()> subroutine (which would be the
 case if we called C<debug(...)> or C<debug_up(1,...)>), it will correctly
-reporting the line number of the call to C<trace()> in the C<parse()> 
+reporting the line number of the call to C<trace()> in the C<parse()>
 method.
 
 =head2 debug_at($info, $message)
@@ -887,10 +888,10 @@ This method is a wrapper around L<debug()> that allows you to specify a
 different location to be added to the message generated.
 
     $at->debug_at(
-        { 
-            where => 'At the edge of time', 
-            line  => 420 
-        }, 
+        {
+            where => 'At the edge of time',
+            line  => 420
+        },
         'Flying sideways'
     );
 
@@ -901,7 +902,7 @@ This generates the following debug message:
 Far out, man!
 
 You can change the L<$FORMAT> package variable to define a different message
-structure.  As well as the pre-defined placeholders (see the L<$FORMAT> 
+structure.  As well as the pre-defined placeholders (see the L<$FORMAT>
 documentation) you can also define your own custom placeholders like
 C<E<lt>serverE<gt>> in the following example.
 
@@ -918,7 +919,7 @@ hash array when you call the L<debug_at()> method.
 You can also specify a custom format in the C<$info> hash array.
 
     $at->debug_at(
-        { format => '<msg> at line <line> of <file>' }, 
+        { format => '<msg> at line <line> of <file>' },
         'Normality is resumed'
     );
 
@@ -951,7 +952,7 @@ Prints debugging information about the arguments passed.
 
 =head2 debugging($flag)
 
-This method of convenience can be used to set the C<$DEBUG> variable for 
+This method of convenience can be used to set the C<$DEBUG> variable for
 a module.  It can be called as a class or object method.
 
     Your::Module->debugging(1);     # turn debugging on
@@ -981,7 +982,7 @@ recursion is deliberately limited to no more than L<$MAX_DEPTH> levels deep
 of the data you're dealing with, neatly formatted for debugging purposes,
 rather than being overwhelmed with the big picture.
 
-If any of the methods encounter an object then they will call its 
+If any of the methods encounter an object then they will call its
 L<dump()> method if it has one.  Otherwise they fall back on L<dump_ref()>
 to expose the internals of the underlying data type.  You can create your
 own custom L<dump()> method for you objects or use the L<dumps> import
@@ -993,7 +994,7 @@ Debugging method which returns a text representation of the object internals.
 
     print STDERR $object->dump();
 
-You can define your own C<dump()> for an object and this will be called 
+You can define your own C<dump()> for an object and this will be called
 whenever your object is dumped.  The L<dumps> import option can be used
 to generate a custom C<dump()> method.
 
@@ -1018,7 +1019,7 @@ passed by reference as the first argument.
 
 =head2 dump_text($text)
 
-Debugging method which returns a truncated and sanitised representation of the 
+Debugging method which returns a truncated and sanitised representation of the
 text string passed (directly or by reference) as the first argument.
 
     print STDERR $object->dump_text($text);
@@ -1031,7 +1032,7 @@ will be converted to C<\n> representations.
 Debugging method which calls the appropriate dump method for the item passed
 as the first argument.  If it is an object with a L<dump()> method then that
 will be called, otherwise it will fall back on L<dump_ref()>, as it will
-for any other non-object references.  Non-references are passed to the 
+for any other non-object references.  Non-references are passed to the
 L<dump_text()> method.
 
     print STDERR $object->dump_data($item);
@@ -1061,8 +1062,8 @@ package variable to generate debugging messages.  The default value is:
     [<where> line <line>] <msg>
 
 The C<E<lt>where<gt>>, C<E<lt>lineE<gt>> and C<E<lt>msgE<gt>> markers
-denote the positions where the class name, line number and debugging 
-message are inserted.  You can embed any of the following placeholders 
+denote the positions where the class name, line number and debugging
+message are inserted.  You can embed any of the following placeholders
 into the message format:
 
     msg     The debugging message
@@ -1078,7 +1079,7 @@ If the C<class> is the same as the C<pkg> then C<where> will contain the same
 value. If they are different then C<where> will be set equivalent to "<pkg>
 (<class>)". This is the case when the L<debug()> method is called from a base
 class method (C<pkg> will be the base class name from where the call was made)
-against a subclass object (C<class> will be the subclass name). 
+against a subclass object (C<class> will be the subclass name).
 
 See also the L<debug_at()> method which allows you to specify a custom format
 and/or additional placeholder values.
