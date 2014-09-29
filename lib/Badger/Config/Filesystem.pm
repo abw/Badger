@@ -532,6 +532,7 @@ sub write_config_file {
 
     $file->codec($self->codec($ext));
     $file->data($data);
+    return $file;
 }
 
 
