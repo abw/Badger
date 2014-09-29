@@ -210,6 +210,9 @@ sub can_filter_NOT_USED {
     return $filter->item_accepted($name);
 }
 
+sub write_config_file {
+    shift->config->write_config_file(@_);
+}
 
 #-----------------------------------------------------------------------------
 # A 'dirs' config file can provide mappings for local workspace directories in
@@ -526,6 +529,11 @@ F<config> configuration directory.
 =head2 init_dirs(\%config)
 
 =head2 init_parent(\%config)
+
+=head2 write_config_file($uri, $data)
+
+Delegates to the method of the same name provided by the filesystem config
+object - see L<Badger::Config::Filesystem>.
 
 =head1 TODO
 
