@@ -331,6 +331,7 @@ sub configure_args {
     $self->{ verbose  } = 1 if grep(/--?v(erbose)?/, @args);
     $self->{ quiet    } = 1 if grep(/--?q(uiet)?/, @args);
     $self->{ colour   } = 1 if grep(/--?c(olou?r)?/, @args);
+    $self->{ summary  } = 1 if grep(/--?s(ummary)?/, @args);
     $self->{ progress } = 1 if grep(/--?p(rogress)?/, @args);
 
     # Get any extra configuration from the subclass scheme definition
@@ -376,6 +377,7 @@ sub options_summary {
   -v  --verbose                 Verbose mode (extra output)
   -p  --progress                Progress mode
   -q  --quiet                   Quiet mode (no output)
+  -s  --summary                 Print summary at end
   -n  --nothing --dry-run       Dry run - no action performed
   -c  --colour --color          Colourful output
   -nc --no-colour --no-color    Uncolourful output
