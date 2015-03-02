@@ -17,7 +17,7 @@ use Badger::Debug ':dump';
 use Badger::Config::Schema;
 use Badger::Class
     version   => 0.01,
-    debug     => 1,
+    debug     => 0,
     base      => 'Badger::Exporter Badger::Base',
     import    => 'class CLASS',
     words     => 'CONFIG_SCHEMA CONFIG_ITEMS',
