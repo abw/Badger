@@ -17,7 +17,7 @@ use Badger::Debug ':dump';
 use Badger::Config::Schema;
 use Badger::Class
     version   => 0.01,
-    debug     => 0,
+    debug     => 1,
     base      => 'Badger::Exporter Badger::Base',
     import    => 'class CLASS',
     words     => 'CONFIG_SCHEMA CONFIG_ITEMS',
@@ -41,11 +41,11 @@ sub export {
     my $params = @_ == 1 ? shift : { @_ };
     my $schema = $class->schema($target, $params);
     my $items  = $schema->items;
-    
+
     $class->debug(
         "exporting CONFIG_SCHEMA to $target: $schema"
     ) if DEBUG;
-    
+
     $class->export_symbol(
         $target,
         CONFIG_SCHEMA,
@@ -53,19 +53,19 @@ sub export {
     );
 
     $class->debug(
-        "export CONFIG_ITEMS to $target: ", 
+        "export CONFIG_ITEMS to $target: ",
         $class->dump_data($items)
     ) if DEBUG;
-    
+
     $class->export_symbol(
         $target,
         CONFIG_ITEMS,
         \$items,
     );
-    
+
     $class->export_symbol(
-        $target, 
-        CONFIG_METHOD, 
+        $target,
+        CONFIG_METHOD,
         $class->can(CONFIG_METHOD)    # subclass might redefine method
     );
 }
@@ -77,13 +77,13 @@ sub schema {
 
     $class->debug("Generating schema from config: ", $class->dump_data($config))
         if DEBUG;
-    
+
     $config = [ split(DELIMITER, $config) ]
         unless ref $config;
 
     # inherit any other items define in base classes
     my $items = class($target)->list_vars(CONFIG_ITEMS);
-    
+
     $class->SCHEMA->new(
         class    => $target,
         schema   => $config,
@@ -109,20 +109,21 @@ sub configure {
     my $schema = $class->any_var(CONFIG_SCHEMA);
 
     # if a specific $target isn't defined then we default to updating $self
-    $schema->configure($config, $target || $self, $self);
-    
+    $schema->configure($config, $target || $self, $self)
+        || return $self->error($schema->reason->info);
+
     return $self;
 }
-    
+
 
 #-----------------------------------------------------------------------
-# These handlers implement the various fallback types for providing 
+# These handlers implement the various fallback types for providing
 # configuration data.  The schema() method maps fallacks specified as
-# 'pkg:FOO' and 'class:BAR', for example, to the configure_pkg() and 
-# configure_class() handlers, passing the token following the colon as 
-# an argument.  They are called as code refs, but the class of the 
-# object that they're configuring is passed as the first argument, $class. 
-# So they look like class methods, but they're not exported into the 
+# 'pkg:FOO' and 'class:BAR', for example, to the configure_pkg() and
+# configure_class() handlers, passing the token following the colon as
+# an argument.  They are called as code refs, but the class of the
+# object that they're configuring is passed as the first argument, $class.
+# So they look like class methods, but they're not exported into the
 # object's namespace.  The $target is usually the object that's being
 # configured, e.g. when $self->configure($config) is called, but it might
 # also be a bare hash, e.g. $target = { }; $self->configure($config, $target)
@@ -135,7 +136,7 @@ sub configure_pkg {
     my $value = class($class)->var($var);
 
     $class->debug(
-        "Looking for \$$var package variable in $class to set $name: ", 
+        "Looking for \$$var package variable in $class to set $name: ",
         defined $value ? $value : '<undef>'
     ) if DEBUG;
 
@@ -149,7 +150,7 @@ sub configure_class {
     my $value = class($class)->any_var_in( split(':', $var) );
 
     $class->debug(
-        "Looking for \$$var class variable in $class to set $name: ", 
+        "Looking for \$$var class variable in $class to set $name: ",
         defined $value ? $value : '<undef>'
     ) if DEBUG;
 
@@ -175,7 +176,7 @@ sub configure_env {
 sub configure_method {
     my ($class, $name, $config, $target, $method) = @_;
 
-    # see if the object has the required method - note we must call 
+    # see if the object has the required method - note we must call
     # error_msg against CLASS (Badger::Class::Config) to use the 'bad_method'
     # message defined above.
     my $code = $class->can($method)
@@ -198,9 +199,9 @@ sub configure_target {
     my ($class, $name, $config, $target, $var) = @_;
 
     my $value = $target->{ $var };
-    
+
     $class->debug(
-        "Looking for $var in $class target $target to set $name: ", 
+        "Looking for $var in $class target $target to set $name: ",
         defined $value ? $value : '<undef>'
     ) if DEBUG;
 
@@ -222,7 +223,7 @@ Badger::Class::Config - class mixin for configuration
 =head1 SYNOPSIS
 
     package Your::Module;
-    
+
     # via Badger::Class
     use Badger::Class
         base      => 'Badger::Base',
@@ -237,13 +238,13 @@ Badger::Class::Config - class mixin for configuration
             'zoot|method:ZOOT',         # fallback to ZOOT() method/constant
             'zing|zang|pkg:ZING=99',    # combination of above
         ];
-    
+
     sub init {
         my ($self, $config) = @_;
-        
+
         # call the configure() method provided by the above
         $self->configure($config);
-        
+
         return $self;
     }
 
@@ -253,19 +254,19 @@ This class mixin module allows you to define configuration parameters
 for an object class.  It exports a L<configure()> method which can be used
 to initialise your object instances.
 
-Please note that the scope of this module is intentionally limited at present. 
+Please note that the scope of this module is intentionally limited at present.
 It should be considered experimental and subject to change.
 
 =head2 Configuration Options
 
-Configuration options for a module can be defined as import options to 
+Configuration options for a module can be defined as import options to
 C<Badger::Class::Config>.
 
     package Your::Module;
     use base 'Badger::Base';
     use Badger::Class::Config 'foo', 'bar';
 
-For convenience, multiple items can be specified in a single whitespace 
+For convenience, multiple items can be specified in a single whitespace
 delimited string.
 
     use Badger::Class::Config 'foo bar';
@@ -290,13 +291,13 @@ your own construction or initialisation methods.
     }
 
 The L<configure()> method is intentionally simple, although flexible.  It
-doesn't attempt to assert that any configuration items are of the correct 
+doesn't attempt to assert that any configuration items are of the correct
 type or validate the values in any way.  If the relevant values are defined
 in the C<$config> hash then they will be copied into C<$self>.  Otherwise
 they are ignored.
 
 If a configuration item is mandatory then add a C<!> at the end of the name.
-If no value is defined for this item then the L<configure()> method will 
+If no value is defined for this item then the L<configure()> method will
 throw an exception.
 
     use Badger::Class::Config 'foo! bar!';      # mandatory items
@@ -310,7 +311,7 @@ Aliases for the configuration item can be provided using C<|>
     use Badger::Class::Config 'foo|Foo|FOO';    # aliases for 'foo'
 
 As well as looking for items in the C<$config> hash array, you can search
-for package variables (in the current package), class variables (in the 
+for package variables (in the current package), class variables (in the
 current package or those of all base class), environment variables, and
 call object methods.
 
@@ -324,7 +325,7 @@ call object methods.
 Bear in mind that Perl implements constants using subroutines.  Thus, you
 can access a constant defined in a package/class by calling it as a
 method.  So if you have a constant defined in the module that you want
-to use then specify it using the C<method:> prefix. 
+to use then specify it using the C<method:> prefix.
 
 TODO: more on that
 
@@ -335,7 +336,7 @@ to the more detailed specification used to generate a configuration scheme for
 the L<configure()> method to use.  You can use the more detailed specification
 if you prefer:
 
-    use Badger::Class::Config 
+    use Badger::Class::Config
         {
             foo => {
                 required => 1,
@@ -347,7 +348,7 @@ if you prefer:
                 default  => 20,
                 fallback => ['class:BAR', 'env:BAR'],
             },
-            
+
         };
 
 You can mix and match simple and detailed specifications by specifying them as
@@ -357,7 +358,7 @@ delimited string). Simple definitions are specified using strings, complex
 definitions using hash reference.  Note that the name of the option must
 be specified explicitly in the hash array when used this way.
 
-    use Badger::Class::Config 
+    use Badger::Class::Config
         [
             'foo|class:FOO!',
             {
@@ -366,7 +367,7 @@ be specified explicitly in the hash array when used this way.
                 default  => 20,
                 fallback => ['class:BAR', 'env:BAR'],
             },
-            
+
         ];
 
 =head2 Badger::Class Hook
@@ -429,7 +430,7 @@ those of any of its base classes.
 
 =head2 configure_env()
 
-This method is used internally to look up environment variables for 
+This method is used internally to look up environment variables for
 configuration options.
 
 =head2 configure_method()
@@ -444,7 +445,7 @@ to return default configuration values.
 
 =head2 fallback()
 
-This method is used internally to generate fallbacks for configuration 
+This method is used internally to generate fallbacks for configuration
 values.
 
 =head1 AUTHOR

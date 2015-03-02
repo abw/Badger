@@ -38,33 +38,33 @@ sub init_schema {
     my $fall = $config->{ fallback } || $self;
     my $list = $self->{ items } = [ ];
     my $hash = $self->{ item  } = { };
-    
+
     my $schema = $config->{ schema };
     my $extend = $config->{ extend };
-    
+
     $self->debug("fallback is $fall") if DEBUG;
     # allow target class to be specified so we can resolve things like
     # package variables later
 #    $self->{ class } = $config->{ class } || $config->{ target };
-    
+
 #    $self->debug("extending on from ", $self->dump_data($extend));
 
     $self->debug("Generating schema from config: ", $self->dump_data($config))
         if DEBUG;
 
-    # We allow a scheme to be specified as a list reference in case the 
+    # We allow a scheme to be specified as a list reference in case the
     # order of evaluation is important.  For convenience, we also accept
     # a hash ref for a schema specification where the order isn't important.
-    # The values in the hash array can themselves be hash references or 
+    # The values in the hash array can themselves be hash references or
     # simple values which we assume is the default value.
-    $schema = [ 
-        map { 
+    $schema = [
+        map {
             my $k = $_;
             my $v = $schema->{ $k };
             ref $v eq HASH
-                ? { name => $k, %$v } 
+                ? { name => $k, %$v }
                 : { name => $k, default => $v }
-        } 
+        }
         keys %$schema
     ] if ref $schema eq HASH;
 
@@ -77,10 +77,10 @@ sub init_schema {
         $name = shift @$schema;
         $item = undef;
         $info = undef;
-        
+
         # TODO: not sure about this - we change the name....
-        # skip anything we've already done  
-        
+        # skip anything we've already done
+
         $self->debug("schema item: $name\n") if DEBUG;
 
         if (ref $name eq HASH) {
@@ -101,9 +101,9 @@ sub init_schema {
 
         $item ||= $self->CONFIG_ITEM->new($info);
         $name = $item->name;
-        
+
         next if $hash->{ $name };
-        
+
         $self->debug("generated item: $item") if DEBUG;
 
         foreach my $alias ($item->names) {
@@ -114,7 +114,7 @@ sub init_schema {
         $self->debug("adding $name => $item to schema") if DEBUG;
         push(@$list, $item);
     }
-    
+
     $self->debug("created schema: ", $self->dump_data($self->{ items }))
         if DEBUG;
 
@@ -132,17 +132,17 @@ sub configure {
     my ($self, $config, $target, $class) = @_;
     my $items = $self->{ items };
     my ($element, $name, $alias, $code, @args, $ok, $value);
-    
+
     $class ||= $target;
-    
+
     $self->debug("configure(", CLASS->dump_data_inline($config), ')') if DEBUG;
     $self->debug("configure element: ", CLASS->dump_data($items)) if DEBUG;
-    
+
     ELEMENT: foreach $element (@$items) {
-#        $name = $element->{ name };
-        $element->configure($config, $target, $class);
+        $element->try->configure($config, $target, $class)
+            || return $self->decline($element->reason);
     }
-    
+
     return $self;
 }
 
@@ -162,7 +162,7 @@ sub items {
         ? @$items
         :  $items;
 
-    
+
 }
 
 1;

@@ -43,7 +43,7 @@ sub init_item {
 
     $name = $config->{ name }
         || return $self->error_msg( missing => 'name' );
-    
+
     # A '!' at the end of the name indicates it's mandatory.
     # A '=value' at the end indicates a default value.
     $self->{ required } = ($name =~ s/!$//)        ?  1 : $config->{ required };
@@ -62,7 +62,7 @@ sub init_item {
     # name can be 'name|alias1|alias2|...'
     ($name, @aka) = split(/\|/, $name);
 
-    # alias can be specified as hash ref or string 
+    # alias can be specified as hash ref or string
     $alias = $config->{ alias } || { };
     $alias = [ split(DELIMITER, $alias) ]
         unless ref $alias;
@@ -70,16 +70,16 @@ sub init_item {
         if ref $alias eq ARRAY;
     return $self->error_msg( invalid => alias => $alias )
         unless ref $alias eq HASH;
-    
-    # aliases, and more generally, fallbacks, can be specified as a list ref 
+
+    # aliases, and more generally, fallbacks, can be specified as a list ref
     # or string which we split
     $self->debug("fallback: ", $self->dump_data($config->{ fallback })) if DEBUG;
 
     $fallback = $config->{ fallback } || [ ];
-    $fallback = [ split(DELIMITER, $fallback) ] 
+    $fallback = [ split(DELIMITER, $fallback) ]
         unless ref $fallback eq ARRAY;
     push(@$fallback, @aka);
-    
+
     $self->debug("fallbacks: ", $self->dump_data($fallback)) if DEBUG;
 
     foreach my $item (@$fallback) {
@@ -91,8 +91,8 @@ sub init_item {
         $item = $fall->fallback($name, $type, $data)
             || return $self->error_msg( bad_type => $name, $type );
     }
-        
-    # add any aliases specified as part of the name and bind them 
+
+    # add any aliases specified as part of the name and bind them
     # back into the field info hash
     $self->{ fallback } = $fallback;
 
@@ -110,7 +110,7 @@ sub init_item {
     $self->debug(
         "Configured configuration item: ", $self->dump
     ) if DEBUG;
-    
+
     return $self;
 }
 
@@ -131,20 +131,20 @@ sub names {
 sub configure {
     my ($self, $config, $target, $class) = @_;
     my ($name, $alias, $code, @args, $ok, $value);
-    
+
     $class ||= $target;
-    
+
     $self->debug("configure(", CLASS->dump_data_inline($config), ')') if DEBUG;
     $self->debug("item is ", $self->dump_data($self)) if DEBUG;
 #    $self->debug("items: ", CLASS->dump_data($items)) if DEBUG;
-    
+
     $name = $self->{ name };
-        
+
     # TODO: abstract out action calls.
-    
+
     FALLBACK: foreach $alias ($name, @{ $self->{ fallback } || [ ] }) {
         next unless defined $alias;
-        
+
         if (ref $alias eq ARRAY) {
             ($code, @args) = @$alias;
             #$self->todo('calling code');
@@ -161,17 +161,17 @@ sub configure {
             $self->debug("Nothing found for $alias to set $name\n") if DEBUG;
         }
     }
-        
+
     if (defined $self->{ default }) {
         $self->debug("setting to default value: $self->{ default }\n") if DEBUG;
         return $self->set($target, $name, $self->{ default }, $class);
     }
-        
+
     if ($self->{ required }) {
         $self->debug("$name is required, throwing error\n") if DEBUG;
         return $self->error_msg( $self->{ message } || missing => $name );
     }
-    
+
     return $self;
 }
 
@@ -179,7 +179,7 @@ sub configure {
 sub set {
     my ($self, $target, $name, $value, $object) = @_;
     my $method;
-    
+
     $object ||= $target;
 
     $self->debug("set($target, $name, $value)") if DEBUG;
@@ -205,7 +205,7 @@ sub set {
         $self->debug("calling method $method on object $object\n") if DEBUG;
         $object->$method($name, $value);
     }
-        
+
     return $self;
 }
 
@@ -216,7 +216,7 @@ sub args {
     my $self = shift;
     my $args = shift;
     my $value;
-    
+
     if ($self->{ args }) {
         $self->debug("looking for $self->{ name } arg in ", $self->dump_data($args)) if DEBUG;
 
@@ -266,6 +266,6 @@ sub summary {
         ? $reporter->option( $name.$args, $about )
         : sprintf('--%-20s %s', $name.$args, $about);
 }
-    
+
 
 1;
