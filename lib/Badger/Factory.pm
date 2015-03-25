@@ -209,7 +209,7 @@ sub type_args {
         @args = @_;
     }
 
-    return ($type, @_);
+    return ($type, @args);
 }
 
 sub find {
