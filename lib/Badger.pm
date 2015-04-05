@@ -103,7 +103,7 @@ Badger - Perl Application Programming Toolkit
         lib        => '../lib',     # like 'use lib' but relative to $Bin
         Filesystem => 'File Dir',   # import from Badger::Filesystem
 
-    use Badger 
+    use Badger
         Filesystem => 'Dir File',
         Utils      => 'numlike textlike',
         Constants  => 'ARRAY HASH',
@@ -122,7 +122,7 @@ This is equivalent to:
 The Badger toolkit is a collection of Perl modules designed to simplify the
 process of building object-oriented Perl applications. It provides a set of
 I<foundation classes> upon which you can quickly build robust and reliable
-systems that are simple, sexy and scalable.  See C<Badger::Intro> for 
+systems that are simple, sexy and scalable.  See C<Badger::Intro> for
 further information.
 
 The C<Badger> module is a front-end to other C<Badger> modules.  You can use
@@ -131,7 +131,7 @@ Simply specify the module name, minus the C<Badger::> prefix as a load option.
 
 For example:
 
-    use Badger 
+    use Badger
         Filesystem => 'Dir File',
         Utils      => 'numlike textlike',
         Constants  => 'ARRAY HASH',
@@ -145,10 +145,10 @@ This is equivalent to:
     use Badger::Constants  'ARRAY HASH',
     use Badger::Codecs      codec => 'base64';
 
-Note that multiple arguments for a module should be defined as a list 
+Note that multiple arguments for a module should be defined as a list
 reference.
 
-    use Badger 
+    use Badger
         ...etc...
         Codecs => [codec => 'base64'];
 
@@ -189,18 +189,18 @@ For example, consider a directory layout like this:
 The F<my_project/example_script.pl> can be written like so:
 
     #!/usr/bin/perl
-    
+
     use Badger lib => '../perl/lib';
     use My::Module;
-    
+
     # your code here...
 
-This adds F<my_project/perl/lib> to the include path so that the 
+This adds F<my_project/perl/lib> to the include path so that the
 C<My::Module> module can be correctly located.  It is equivalent to
 the following code using the L<FindBin> module.
 
     #!/usr/bin/perl
-    
+
     use FindBin '$Bin';
     use lib "$Bin/../perl/lib";
     use My::Module;
@@ -213,7 +213,7 @@ Returns a L<Badger::Hub> object.
 
 =head2 codec()
 
-Delegates to the L<Badger::Hub> L<codec()|Badger::Hub/codec()> method to 
+Delegates to the L<Badger::Hub> L<codec()|Badger::Hub/codec()> method to
 return a L<Badger::Codec> object.
 
     my $base64  = Badger->codec('base64');
@@ -222,7 +222,7 @@ return a L<Badger::Codec> object.
 
 =head2 config()
 
-Delegates to the L<Badger::Hub> L<codec()|Badger::Hub/codec()> method to 
+Delegates to the L<Badger::Hub> L<codec()|Badger::Hub/codec()> method to
 return a L<Badger::Config> object.  This is still experimental.
 
 =head1 TODO
