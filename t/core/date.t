@@ -14,12 +14,12 @@
 use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
-use Badger::Test 
-    skip   => 'Still in development',
-    tests  => 16, 
+use Badger::Test
+    #skip   => 'Still in development',
+    tests  => 15,
     debug  => 'Badger::Date',
     args   => \@ARGV;
-    
+
 use Badger::Date 'Date Today';
 
 
@@ -38,8 +38,8 @@ my $n = 1;
 
 my $today = Today;
 ok( $today, 'created a day today' );
-print "today: ", $today->text, "\n";
-print "today: ", $today->uri, "\n";
+#print "today: ", $today->text, "\n";
+#print "today: ", $today->uri, "\n";
 
 my ($second, $minute, $hour, $day, $month, $year ) = localtime(time());
 $year += 1900;
@@ -50,7 +50,7 @@ is($today->year, $year, 'year today' );
 
 
 my $tomorrow = $today->copy->adjust( days => 1 );
-print "tomorrow: $tomorrow\n";
+#print "tomorrow: $tomorrow\n";
 
 ok( $tomorrow->after($today), "tomorrow is after today" );
 ok( $today->before($tomorrow), "today is before tomorrow" );
@@ -65,3 +65,5 @@ ok( $today < $tomorrow, "today < tomorrow" );
 ok( !( $tomorrow < $today ), "not tomorrow < today" );
 ok( !( $today > $tomorrow ), "not today > tomorrow" );
 
+print $today->date, "\n";
+print $today->format('%d-%b-%y');

@@ -47,6 +47,7 @@ our $HELPERS  = {       # keep this compact in case we don't need to use it
                              natatime mesh zip uniq minmax',
     'Hash::Util'         => 'lock_keys unlock_keys lock_value unlock_value
                              lock_hash unlock_hash hash_seed',
+    'Badger::Date'       => 'DATE Date Today',
     'Badger::Timestamp'  => 'TIMESTAMP TS Timestamp Now',
     'Badger::Logic'      => 'LOGIC Logic',
     'Badger::Duration'   => 'DURATION Duration',

@@ -17,8 +17,8 @@ use warnings;
 use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Debug modules => 'Badger::Utils';
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural permute_fragments';
-use Badger::Test 
-    tests => 112,
+use Badger::Test
+    tests => 117,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -92,29 +92,29 @@ sub foo { bar(@_) }
 sub bar { baz(@_) }
 sub baz { params(@_) }
 
-{ 
+{
     my @warnings;
     local $Badger::Utils::WARN = sub {
         push(@warnings, join('', @_));
     };
     foo(1, 2, 3);
-    is( 
-        $warnings[0], 
+    is(
+        $warnings[0],
         "Badger::Utils::params() called with an odd number of arguments: 1, 2, 3\n",
         'got odd number of arguments warning'
     );
-    like( 
-        $warnings[1], 
+    like(
+        $warnings[1],
         qr/#1: Called from main::baz/,
         'got baz() in stack trace'
     );
-    like( 
-        $warnings[2], 
+    like(
+        $warnings[2],
         qr/#2: Called from main::bar/,
         'got bar() in stack trace'
     );
-    like( 
-        $warnings[3], 
+    like(
+        $warnings[3],
         qr/#3: Called from main::foo/,
         'got foo() in stack trace'
     );
@@ -214,6 +214,21 @@ is( $ts->year, 2009, 'got timestamp year' );
 is( $ts->month, 5, 'got timestamp month' );
 is( $ts->day, 25, 'got timestamp day' );
 
+#-----------------------------------------------------------------------
+# Import from Badger::Date
+#-----------------------------------------------------------------------
+
+use Badger::Utils 'Date Today';
+
+my $date = Today;
+is( ref $date, 'Badger::Date', 'Today is a Badger::Date' );
+
+$date = Date('2015/04/05');
+is( ref $date, 'Badger::Date', 'Date returned a Badger::Date' );
+is( $date->year, 2015, 'got date year' );
+is( $date->month, 4, 'got date month' );
+is( $date->day, 5, 'got date day' );
+
 
 #-----------------------------------------------------------------------
 # Import from Badger::Logic
@@ -250,7 +265,7 @@ is( plural('fairy'), 'fairies', 'pluralised fairy/fairies' );
 
 use Badger::Utils 'random_name';
 
-is( length random_name(), $Badger::Utils::RANDOM_NAME_LENGTH, 
+is( length random_name(), $Badger::Utils::RANDOM_NAME_LENGTH,
     "default random_name() length is $Badger::Utils::RANDOM_NAME_LENGTH" );
 is( length random_name(16), 16, 'random_name(16) length is 16');
 is( length random_name(32), 32, 'random_name(16) length is 32');
@@ -264,15 +279,15 @@ is( length random_name(64), 64, 'random_name(16) length is 64');
 
 use Badger::Utils 'camel_case CamelCase';
 
-is( camel_case('hello_world'), 'HelloWorld', 
-   "camel_case('hello_world') => 'HelloWorld'" 
+is( camel_case('hello_world'), 'HelloWorld',
+   "camel_case('hello_world') => 'HelloWorld'"
 );
-is( camel_case('FOO_bar'), 'FOOBar', 
+is( camel_case('FOO_bar'), 'FOOBar',
    "camel_case('FOO_bar') => 'FOOBar'"
 );
 
-is( CamelCase('hello_world'), 'HelloWorld', 
-   "CamelCase('hello_world') => 'HelloWorld'" 
+is( CamelCase('hello_world'), 'HelloWorld',
+   "CamelCase('hello_world') => 'HelloWorld'"
 );
 
 
@@ -285,10 +300,10 @@ test_permute('foo', 'foo');
 test_permute('Template(X)', 'Template', 'TemplateX');
 test_permute('Template(X|)', 'TemplateX', 'Template');
 test_permute(
-    'Template(X)::(XS::TT3|TT3)::Foo', 
-    'Template::XS::TT3::Foo', 
+    'Template(X)::(XS::TT3|TT3)::Foo',
+    'Template::XS::TT3::Foo',
     'Template::TT3::Foo',
-    'TemplateX::XS::TT3::Foo', 
+    'TemplateX::XS::TT3::Foo',
     'TemplateX::TT3::Foo',
 );
 
@@ -297,7 +312,7 @@ sub test_permute {
     my @outputs = permute_fragments($input);
 #    print("  INPUT: $input\n");
 #    print("OUTPUTS: ", join(', ', @outputs), "\n");
-    
+
     foreach my $output (@outputs) {
         if (@_) {
             my $expect = shift;
@@ -347,21 +362,21 @@ is( join(', ', sort @each), "0:30, 1:40, 2:50", 'list_each()' );
 
 use Badger::Utils 'split_to_list';
 
-is( 
-    join(', ', @{ split_to_list('a b c') }), 
-    'a, b, c', 
+is(
+    join(', ', @{ split_to_list('a b c') }),
+    'a, b, c',
     'split_to_list("a b c")'
 );
 
-is( 
-    join(' + ', @{ split_to_list('a, b,c') }), 
-    'a + b + c', 
+is(
+    join(' + ', @{ split_to_list('a, b,c') }),
+    'a + b + c',
     'split_to_list("a, b,c")'
 );
 
-is( 
-    join(', ', @{ split_to_list([qw(a b c)]) }), 
-    'a, b, c', 
+is(
+    join(', ', @{ split_to_list([qw(a b c)]) }),
+    'a, b, c',
     'split_to_list([qw(a b c)])'
 );
 
@@ -482,7 +497,7 @@ __END__
 # Hmmm... I didn't realise that List::MoreUtils wasn't a core Perl module.
 
 use Badger::Utils 'any all';
-    
+
 my $any = any { $_ % 11 == 0 } @items;      # divisible by 11
 ok( $any, 'any list imported' );
 
@@ -502,4 +517,3 @@ __END__
 # End:
 #
 # vim: expandtab shiftwidth=4:
-
