@@ -3,7 +3,7 @@
 # Badger::Timestamp
 #
 # DESCRIPTION
-#   Simple object representing a date/time and providing methods for 
+#   Simple object representing a date/time and providing methods for
 #   accessing and manipulating various parts of it.
 #
 # AUTHOR
@@ -107,13 +107,13 @@ class->methods(
 # Constructor subroutines
 #-----------------------------------------------------------------------
 
-sub Timestamp { 
-    return @_ 
+sub Timestamp {
+    return @_
         ? TS->new(@_)
         : TS
 }
 
-sub Now { 
+sub Now {
     TS->now;
 }
 
@@ -123,10 +123,10 @@ sub Now {
 #-----------------------------------------------------------------------
 
 sub new {
-    my $class = shift; 
+    my $class = shift;
     my $self  = bless { map { ($_, 0) } @YMDHMS }, ref $class || $class;
     my ($config, $time);
-    
+
     if (@_ > 1) {
         # multiple arguments are named params
         $config = { @_ };
@@ -192,8 +192,8 @@ sub split_timestamp {
 sub join_timestamp {
     my $self = shift;
     return ($self->{ timestamp } = sprintf(
-        $STAMP_FORMAT, 
-        map { defined $_ ?  $_ : 0 } 
+        $STAMP_FORMAT,
+        map { defined $_ ?  $_ : 0 }
         @$self{ @YMDHMS }
     ));
 }
@@ -201,8 +201,8 @@ sub join_timestamp {
 sub epoch_time {
     my $self = shift;
     return $self->{ etime } ||= timelocal(
-        @$self{@SMHD}, 
-        $self->{ month } - 1, 
+        @$self{@SMHD},
+        $self->{ month } - 1,
         $self->{ year  } - 1900
     );
 }
@@ -215,13 +215,13 @@ sub format {
 
 sub date {
     my $self = shift;
-    return $self->{ date } 
+    return $self->{ date }
        ||= sprintf( $DATE_FORMAT, @$self{ @YMD } );
 }
 
 sub time {
     my $self = shift;
-    return $self->{ time } 
+    return $self->{ time }
        ||= sprintf( $TIME_FORMAT, @$self{ @HMS });
 }
 
@@ -233,7 +233,7 @@ sub adjust {
     if (@_ == 1) {
         # single argument can be a reference to a hash: { days => 3, etc }
         # or a number/string representing a duration: "3 days", "1 year"
-        $args = ref $_[0] eq HASH 
+        $args = ref $_[0] eq HASH
             ? shift
             : { seconds => $self->duration(shift) };
     }
@@ -242,7 +242,7 @@ sub adjust {
         $args = { @_ };
     }
 
-    # If we're only adjusting by a month or a year, then we fix the day 
+    # If we're only adjusting by a month or a year, then we fix the day
     # within the range of the number of days in the new month.  For example:
     # 2007-01-31 + 1 month = 2007-02-28.  We must handle this for a year
     # adjustment for the case: 2008-02-29 + 1 year = 2009-02-28
@@ -253,7 +253,7 @@ sub adjust {
     }
 
     $self->debug("adjust: ", $self->dump_data($args)) if DEBUG;
-    
+
     # allow each element to be singular or plural: day/days, etc.
     foreach $element (@YMDHMS) {
         $args->{ $element } = $args->{ "${element}s" }
@@ -314,14 +314,14 @@ sub adjust {
 
     # handle day wrap-around
     while ($self->{ day } > ($dim = $self->days_in_month)) {
-        # If we're adjusting by a single month or year and the day is 
+        # If we're adjusting by a single month or year and the day is
         # greater than the number days in the new month, then we adjust
-        # the new day to be the last day in the month.  Otherwise we 
+        # the new day to be the last day in the month.  Otherwise we
         # increment the month and remove the number of days in the current
-        # month. 
+        # month.
         if ($fix_month) {
             $self->{ day } = $dim;
-        } 
+        }
         else {
             $self->{ day } -= $dim;
             if ($self->{ month } == 12) {
@@ -336,7 +336,7 @@ sub adjust {
 
     $self->uncache;
     $self->join_timestamp;
-    
+
     return $self;
 }
 
@@ -344,13 +344,13 @@ sub duration {
     my ($self, $duration) = @_;
 
     # $duration can be a number, assumed to be seconds
-    return $duration 
+    return $duration
         if numlike($duration);
 
-    # Otherwise the $duration should be of the form "3 minutes".  We only 
+    # Otherwise the $duration should be of the form "3 minutes".  We only
     # look at the first character of the word (e.g. "3 m"), which creates a
     # potential conflict between "m(inute) and m(onth)".  So we use a capital
-    # 'M' for month.  This is based on code by Mark Fisher in CGI.pm.  
+    # 'M' for month.  This is based on code by Mark Fisher in CGI.pm.
 
     $duration =~ s/month/Month/i;
 
@@ -358,7 +358,7 @@ sub duration {
     # items (e.g. "2 hours 30 minutes") as per adjust()
     if ($duration =~ /^ ( -? (?: \d+ | \d*\.\d+ ) ) \s* ([smhdMy]?) /x) {
         return ($SECONDS->{ $2 } || 1) * $1;
-    } 
+    }
     else {
         return $self->error_msg( bad_duration => $duration );
     }
@@ -373,18 +373,18 @@ sub uncache {
 sub compare {
     my $self = shift;
 
-    # optimisation: if the $self object has an epoch time and a single 
-    # numerical argument is passed (also an epoch time) then we can do a 
+    # optimisation: if the $self object has an epoch time and a single
+    # numerical argument is passed (also an epoch time) then we can do a
     # simple comparison
     return $self->{ etime } <=> $_[0]
-        if $self->{ etime } 
+        if $self->{ etime }
         && @_ == 1
         && numlike $_[0];
 
     # otherwise we upgrade any argument(s) to another timestamp and comare
     # them piecewise
     my $comp = @_ && is_object(ref $self || $self, $_[0]) ? shift : $self->new(@_);
-    
+
     foreach my $item (@YMDHMS) {
         if ($self->{ $item } < $comp->{ $item }) {
             return -1;  # -1 - self earlier than comparison timestamp
@@ -414,6 +414,11 @@ sub not_before {
 
 sub not_after {
     shift->compare(@_) <= 0;
+}
+
+sub tm_wday {
+    my $self = shift;
+    return (localtime($self->epoch_time))[6];
 }
 
 sub days_in_month {
@@ -458,17 +463,17 @@ Badger::Timestamp - object representation of a timestamp
 =head1 SYNOPSIS
 
     use Badger::Timestamp;
-    
+
     # timestamp defaults to date/time now
     my $stamp = Badger::Timestamp->new();
     my $stamp = Badger::Timestamp->now();   # alias to new()
-    
+
     # construct from seconds since epoch
     my $stamp = Badger::Timestamp->new($epoch_seconds);
-    
+
     # or from ISO-8601 timestamp (or similar)
     my $stamp = Badger::Timestamp->new('2006-03-19 04:20:42');
-    
+
     # or from individual arguments
     my $stamp = Badger::Timestamp->new(
         year    => 2006,
@@ -478,14 +483,14 @@ Badger::Timestamp - object representation of a timestamp
         minutes => 20
         seconds => 42
     );
-    
+
     # overloaded stringification operator calls timestamp() method
     print $stamp->timestamp;                # 2006-03-19 04:20:42
     print $stamp;                           # 2006-03-19 04:20:42
-    
+
     # format using strftime()
     print $stamp->format('%d-%b-%y');
-        
+
     # methods to access parts of date and time - in both singular
     # (month, year, etc) and plural (months, years, etc) forms
     print $stamp->date;                     # 2006-03-19
@@ -496,23 +501,23 @@ Badger::Timestamp - object representation of a timestamp
     print $stamp->hours;                    # 04
     print $stamp->minutes;                  # 20
     print $stamp->seconds;                  # 42
-    
+
     # update parts of date/time
     $stamp->year(2007);
     print $stamp;                           # 2007-03-19 04:20:42
-    
+
     # adjust date/time
     $stamp->adjust( months => 3  );         # 3 months time
     $stamp->adjust( days   => 60 );         # 60 days time
     $stamp->adjust( hours  => -3 );         # 3 hours ago
-    
+
     # comparisons
     $stamp->compare($epoch_seconds);        # returns -1/0/1
     $stamp->compare($timestamp_string);
     $stamp->compare($timestamp_object);
     $stamp->compare( year => 2006, month => 03, ...etc... );
     $stamp->compare($hash_ref_of_named_params);
-    
+
     $stamp->before($any_of_the_above);      # returns 1/0
     $stamp->after($any_of_the_above);       # returns 1/0
 
@@ -522,7 +527,7 @@ This module implements a small and simple object for representing a moment in
 time. Its scope is intentionally limited to the kind of applications that
 require very basic date and time functionality with minimal overhead. A
 typical example would be a CGI script or library generating a timestamp for a
-cookie, printing out a "last modified" date at the bottom of a web page, or 
+cookie, printing out a "last modified" date at the bottom of a web page, or
 adding a time stamp to a log file message without having the remember the
 right incantation to pass to C<strftime()>.
 
@@ -535,10 +540,10 @@ The goals of this implementation are:
 
 =item *
 
-To provide an OO wrapper of convenience around the core date and time 
+To provide an OO wrapper of convenience around the core date and time
 functions and modules (C<time()>, C<localtime()>, C<strftime()>, etc).
 
-=item * 
+=item *
 
 To parse timestamps in ISO-8601 format (and formats sufficiently similar to
 it), such as those used to store timestamps in databases. e.g.
@@ -551,13 +556,13 @@ for file modification times.
 
 =item *
 
-To perform basic date manipulation, e.g adding or subtracting days, months, 
+To perform basic date manipulation, e.g adding or subtracting days, months,
 years, etc., such as you might want to do when constructing expiry dates
 for web content, cookies, etc.
 
 =item *
 
-To perform simple date comparisons, e.g. so that you can see if one of the 
+To perform simple date comparisons, e.g. so that you can see if one of the
 previously mentioned expiry dates has lapsed.
 
 =back
@@ -572,10 +577,10 @@ Please note that this documentation may be incorrect or incomplete in places.
 
 =head2 TS / TIMESTAMP
 
-This are shortcut aliases to C<Badger::Timestamp>.
+These are shortcut aliases to C<Badger::Timestamp>.
 
     use Badger::Timestamp 'TS';
-    
+
     my $ts = TS->new();         # same as Badger::Timestamp->new();
 
 =head2 Timestamp()
@@ -585,7 +590,7 @@ without arguments. Thus it can be used as an alias for C<Badger::Timestamp>
 as per L<TS>.
 
     use Badger::Timestamp 'Timestamp';
-    
+
     my $ts = Timestamp->new();  # same as Badger::Timestamp->new();
 
 When called with arguments, it creates a new C<Badger::Timestamp> object.
@@ -621,7 +626,7 @@ of C<YYYY-MM-DD HH:MM:SS>
     my $stamp = Badger::Timestamp->new('2006/03/19T04.20.42');
     print $stamp;       # 2006-03-19 04:20:42
 
-You can also construct a C<Badger::Timestamp> object by specifying the 
+You can also construct a C<Badger::Timestamp> object by specifying the
 number of seconds since the epoch.  This is the value return by system
 functions like C<time()> and used for file creation/modification times.
 
@@ -643,7 +648,7 @@ time.
 
 =head2 copy()
 
-Returns a new C<Badger::Timestamp> object creates as a copy of the 
+Returns a new C<Badger::Timestamp> object creates as a copy of the
 current one.
 
     my $copy = $stamp->copy;
@@ -767,14 +772,14 @@ can be constructed. If no arguments are passed then it defaults to a
 comparison against the current time.
 
     my $stamp = Badger::Timestamp->new('2009-01-10 04:20:00');
-    
-    $stamp->before($another_timestamp_object);       
+
+    $stamp->before($another_timestamp_object);
     $stamp->before('2009-04-20 04:20:00');
     $stamp->before($epoch_seconds);
     $stamp->before;                          # before now
 
-The method returns -1 if the timestamp object represents a time before the 
-timestamp passed as an argument, 1 if it's after, or 0 if it's equal.  
+The method returns -1 if the timestamp object represents a time before the
+timestamp passed as an argument, 1 if it's after, or 0 if it's equal.
 
 =head2 equal($when)
 
@@ -795,7 +800,7 @@ more natural comparisons.
 
 =head2 before($when)
 
-This is a method of convenience which uses L<compare()> to test if one 
+This is a method of convenience which uses L<compare()> to test if one
 timestamp occurs before another.  It returns a true value (1) if the first
 timestamp (the object) is before the second (the argument), or a false value
 (0) otherwise.
@@ -812,7 +817,7 @@ This method is overloaded onto the C<E<lt>> operator.
 
 =head2 after($when)
 
-This is a method of convenience which uses L<compare()> to test if one 
+This is a method of convenience which uses L<compare()> to test if one
 timestamp occurs after another.  It returns a true value (1) if the first
 timestamp (the object) is after the second (the argument), or a false value
 (0) otherwise.
@@ -883,7 +888,7 @@ Method to adjust the timestamp by a fixed amount or amounts.
 
     # positive adjustment
     $date->adjust( months => 6, years => 1 );
-    
+
     # negative adjustment
     $date->adjust( months => -18, hours => -200 );
 
@@ -897,7 +902,7 @@ You can specify units using singular (second, hour, month, etc) or plural
 outside the usual ranges. For example, you can specify a change of 18 months,
 -200 hours, -99 seconds, and so on.
 
-A single non-reference argument is assumed to be a duration which is 
+A single non-reference argument is assumed to be a duration which is
 converted to a number of seconds via the L<duration()> method.
 
 =head2 duration($duration)
@@ -908,14 +913,14 @@ assumed to be a number of seconds and is returned unchanged.
     $date->adjust(300);     # 300 seconds
 
 A single non-numerical argument should have a suffix indicating the units.
-In "compact form" this is a single letter.  We use lower case C<m> for 
+In "compact form" this is a single letter.  We use lower case C<m> for
 minutes and upper case C<M> for months.
 
     $date->adjust("300s");  # or "300 seconds"
     $date->adjust("90m");   # or "90 minutes"
-    $date->adjust("3h");    # or "3 hours"    
+    $date->adjust("3h");    # or "3 hours"
     $date->adjust("2d");    # or "2 days"
-    $date->adjust("6M");    # or "6 months"   
+    $date->adjust("6M");    # or "6 months"
     $date->adjust("5y");    # or "5 years"
 
 Alternately you can spell the units out in full as shown in the right
@@ -927,7 +932,7 @@ without complaint.
     $date->adjust("9 men");     # 9 minutes
     $date->adjust("3 yaks");    # 3 years
 
-For the sake of convenience, the method will automatically convert the 
+For the sake of convenience, the method will automatically convert the
 word C<month> into C<Month> so that the first letter is correctly capitalised.
 
 =head1 INTERNAL METHODS
