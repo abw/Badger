@@ -51,42 +51,42 @@ is( ref $bin, 'Badger::Filesystem::Directory', '$bin is a directory object' );
 # test Path(), File() and Directory()
 #-----------------------------------------------------------------------
 
-my $rel = File::Spec->catdir('foo', 'bar');
+my $rel = File::Spec->catdir('badger_test_p1', 'badger_test_p2');
 my $abs = File::Spec->rel2abs($rel, File::Spec->rootdir);
-my $path = Path('/foo/bar');
+my $path = Path('/badger_test_p1/badger_test_p2');
 ok( $path, 'created path using constructor sub' );
 is( $path, $abs, 'matched path' );
-is( Path('foo', 'bar'), $rel, 'path with separates' );
+is( Path('badger_test_p1', 'badger_test_p2'), $rel, 'path with separates' );
 
-my $file = File('/foo/bar');
+my $file = File('/badger_test_p1/badger_test_p2');
 is( $file, $abs, 'absolute file' );
-is( File('foo', 'bar'), $rel, 'relative file with separates' );
+is( File('badger_test_p1', 'badger_test_p2'), $rel, 'relative file with separates' );
 
-my $dir = Dir('/foo/bar');
+my $dir = Dir('/badger_test_p1/badger_test_p2');
 ok( $dir, 'created dir using constructor sub' );
 is( $dir, $abs, 'absolute dir' );
-is( Dir('foo', 'bar'),  $rel, 'relative dir with separates' );
+is( Dir('badger_test_p1', 'badger_test_p2'),  $rel, 'relative dir with separates' );
 
-$dir = Directory('/foo/bar');
+$dir = Directory('/badger_test_p1/badger_test_p2');
 ok( $dir, 'created directory using constructor sub' );
 is( $dir, $abs, 'absolute directory' );
-is( Directory('foo', 'bar'), $rel, 'relative directory with separates' );
+is( Directory('badger_test_p1', 'badger_test_p2'), $rel, 'relative directory with separates' );
 
 
 #-----------------------------------------------------------------------
 # should also work without arguments as class name providers
 #-----------------------------------------------------------------------
 
-$path = Path->new('/foo/bar');
+$path = Path->new('/badger_test_p1/badger_test_p2');
 ok( $path, 'created path using constructor class' );
 
-$file = File->new('/foo/bar');
+$file = File->new('/badger_test_p1/badger_test_p2');
 ok( $file, 'created file using constructor class' );
 
-$dir = Dir->new('/foo/bar');
+$dir = Dir->new('/badger_test_p1/badger_test_p2');
 ok( $dir, 'created dir using constructor class' );
 
-$dir = Directory->new('/foo/bar');
+$dir = Directory->new('/badger_test_p1/badger_test_p2');
 ok( $dir, 'created directory using constructor class' );
 
 
@@ -94,16 +94,16 @@ ok( $dir, 'created directory using constructor class' );
 # and also via the FS alias for Badger::Filesystem
 #-----------------------------------------------------------------------
 
-$path = FS->path('/foo/bar');
+$path = FS->path('/badger_test_p1/badger_test_p2');
 ok( $path, 'created path using FS class' );
 
-$file = FS->file('/foo/bar');
+$file = FS->file('/badger_test_p1/badger_test_p2');
 ok( $file, 'created file using FS class' );
 
-$dir = FS->dir('/foo/bar');
+$dir = FS->dir('/badger_test_p1/badger_test_p2');
 ok( $dir, 'created dir using FS class' );
 
-$dir = FS->directory->new('/foo/bar');
+$dir = FS->directory->new('/badger_test_p1/badger_test_p2');
 ok( $dir, 'created directory using FS class' );
 
 
@@ -114,7 +114,7 @@ ok( $dir, 'created directory using FS class' );
 my $tmp = FS->temp_directory;
 ok( $tmp, "got temp_directory() $tmp" );
 
-$tmp = FS->temp_directory('foo', 'bar');
+$tmp = FS->temp_directory('badger_test_p1', 'badger_test_p2');
 ok( $tmp, "got temp_directory() $tmp" );
 $tmp = $tmp->file('badger_test1.tmp');
 ok( $tmp->write("Hello World\n"), "wrote text to $tmp" );
@@ -139,9 +139,9 @@ ok( VFS->VERSION, 'VFS version is ' . VFS->VERSION );
 #-----------------------------------------------------------------------
 
 my $root = FS->root;
-my $sub = $root->dir('foo', 'bar');
+my $sub = $root->dir('badger_test_p1', 'badger_test_p2');
 is( $root, File::Spec->rootdir, 'root dir' );
-is( $sub, File::Spec->catfile('', 'foo', 'bar'), 'root dir relative' );
+is( $sub, File::Spec->catfile('', 'badger_test_p1', 'badger_test_p2'), 'root dir relative' );
 
 
 #-----------------------------------------------------------------------
