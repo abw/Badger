@@ -182,6 +182,7 @@ sub xprintf {
                 ? _xprintf_ifdef(\@args, $1, $2, $3)
                 : '%' . $1 . '$' . ($2 || 's')
         }egx;
+    no if $] > 5.021, warnings => "redundant";
     sprintf($format, @_);
 }
 
