@@ -146,7 +146,8 @@ sub export_codec {
     # NOTE: I think it's more correct to attempt the export regardless of 
     # any existing sub and allow a redefine warning to be raised.  This is
     # better than silently failing to export the requested items.
-    *{$cmethod} = sub() { $codec }; # unless defined &{$cmethod};
+    my $temp = $codec; # make sure this is a constant on 5.22
+    *{$cmethod} = sub() { $temp };  # unless defined &{$cmethod};
     *{$emethod} = $codec->encoder;  # unless defined &{$emethod};
     *{$dmethod} = $codec->decoder;  # unless defined &{$dmethod};
 }

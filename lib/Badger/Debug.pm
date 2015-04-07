@@ -107,7 +107,8 @@ sub _export_debug_constant {
         if defined ${ $target.PKG.DEBUG };
 
     $self->debug("$symbol option setting $target DEBUG to $value\n") if $DEBUG;
-    *{ $target.PKG.DEBUG } = sub () { $value };
+    my $temp = $value; # make sure this is a const sub on 5.22
+    *{ $target.PKG.DEBUG } = sub () { $temp };
 }
 
 
