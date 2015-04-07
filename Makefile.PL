@@ -11,6 +11,11 @@ my %opts = (
     'test'         => {
         'TESTS'    => join(' ', glob 't/*/*.t'),
     },
+    'META_MERGE'   => {
+        'resources' => {
+            'repository' => 'https://github.com/abw/Badger',
+        },
+    },
 );
 
 if ($ExtUtils::MakeMaker::VERSION >= 5.43) {
