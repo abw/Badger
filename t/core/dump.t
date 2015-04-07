@@ -75,4 +75,4 @@ my $tre = My::Badger::Tre->new(
 
 my $text = $tre->dump;
 #print $text;
-like( $text, qr/one => {\s+x => 10,\s+y => 20\s+}/, 'partial dump of one' );
+like( $text, qr/one => \{\s+x => 10,\s+y => 20\s+\}/, 'partial dump of one' );
