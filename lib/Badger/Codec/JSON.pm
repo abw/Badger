@@ -15,7 +15,7 @@ package Badger::Codec::JSON;
 use Badger::Class
     version => 0.01,
     base    => 'Badger::Codec',
-    import  => 'class',
+    import  => 'class CLASS',
     codecs  => 'utf8';
 
 eval "require JSON::XS";
@@ -43,7 +43,7 @@ sub decode_json {
 #   $json = encode_utf8($json);
     $JSON->decode($json);
 }
-    
+
 sub encode {
     shift;
     goto &encode_json;
@@ -82,7 +82,7 @@ Badger::Codec::JSON - encode/decode data using JSON
 
 This module implements a subclass of L<Badger::Codec> which uses the
 L<JSON::XS> or L<JSON> module (whichever you have installed) to encode and
-decode data to and from JSON. It is little more than an adapter module 
+decode data to and from JSON. It is little more than an adapter module
 to fit L<JSON> into the L<Badger::Codec> mould.
 
 =head1 METHODS
@@ -92,7 +92,7 @@ to fit L<JSON> into the L<Badger::Codec> mould.
 Encodes the Perl data in C<$data> to a JSON string. This method is a wrapper
 around the internal the L<encode_json()> subroutine.
 
-    $encoded = Badger::Codec::JSON->encode($data);   
+    $encoded = Badger::Codec::JSON->encode($data);
 
 =head2 decode($json)
 
@@ -120,7 +120,7 @@ to the L<JSON::XS> or L<JSON> module, depending on which you have installed.
 
 =head2 decode_json($json)
 
-This is the internal subroutine that decodes the JSON data.  As per 
+This is the internal subroutine that decodes the JSON data.  As per
 L<encode_json()>, it delegates the task to the L<JSON::XS> or L<JSON> module.
 
 =head1 AUTHOR
@@ -144,4 +144,3 @@ L<Badger::Codecs>, L<Badger::Codec>, L<JSON>
 # End:
 #
 # vim: expandtab shiftwidth=4:
-
