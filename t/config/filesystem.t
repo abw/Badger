@@ -13,10 +13,10 @@
 
 use strict;
 use warnings;
-use lib qw( ../../lib );
+use lib qw( ../../lib ../lib ./lib );
 use Badger::Filesystem 'Bin';
 
-use Badger::Test 
+use Badger::Test
     tests => 29,
     debug => 'Badger::Config::Filesystem',
     args  => \@ARGV;
@@ -28,7 +28,7 @@ my $pkg = 'Badger::Config::Filesystem';
 
 my $config = $pkg->new(
     root    => Bin->dir( test_files => 'config1' ),
-    data    => { x => 10, y => 20 }, 
+    data    => { x => 10, y => 20 },
     items   => 'a b c',
     schemas => {
         pages => {
@@ -55,7 +55,7 @@ my $name = $config->get('site.name');
 is( $name, "example", "got name: $name" );
 
 my $pages = $config->get('pages');
-ok( $pages, "got pages" ); 
+ok( $pages, "got pages" );
 
 is( $pages->{ about }->{ name }, 'About Us', 'got "about" page' );
 is( $pages->{"auth/login"}->{ name }, 'Login', 'got "auth/login" page' );
