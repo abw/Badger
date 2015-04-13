@@ -394,6 +394,7 @@ sub list_each {
 
 sub split_to_list {
     my $list = shift;
+    return [ ] unless defined $list and length $list;
 
     if (! ref $list) {
         return [ split(DELIMITER, $list) ];
