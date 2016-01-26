@@ -421,30 +421,29 @@ sub chmod_path {
     my $path = $self->definitive_write(shift);
     chmod(shift, $path);
 }
-    
+
 
 #-----------------------------------------------------------------------
 # file manipulation methods
 #-----------------------------------------------------------------------
 
 sub create_file {
-    my $self = shift;
-    my $path = $self->definitive_write(shift);
-    unless (-e $path) {
-        $self->write_file($path);
+    my ($self, $path) = @_;
+    unless (-e $self->definitive_write($path)) {
+        $self->write_file($path); # calls definitive_write again
     }
     return 1;
 }
 
 sub touch_file {
-    my $self = shift;
-    my $path = $self->definitive_write(shift);
-    if (-e $path) {
+    my ($self, $path) = @_;
+    my $definitive = $self->definitive_write($path);
+    if (-e $definitive) {
         my $now = time();
-        utime $now, $now, $path;
-    } 
+        utime $now, $now, $definitive;
+    }
     else {
-        $self->write_file($path);
+        $self->write_file($path); # calls definitive_write again
     }
 }
 
