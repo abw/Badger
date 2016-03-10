@@ -187,6 +187,7 @@ sub debug {
         sub   => $sub,
         date  => $now->date,
         time  => $now->time,
+        pid   => $$,
         %$CALLER_AT,
     };
     $format  =~ s/<(\w+)>/defined $data->{ $1 } ? $data->{ $1 } : "<$1 undef>"/eg;
