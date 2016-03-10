@@ -12,6 +12,8 @@ use Badger::Class
     constant  => {
         ABSOLUTE => 'absolute',
         RELATIVE => 'relative',
+        # extra debugging flags
+        DEBUG_FETCH => 0,
     },
     messages  => {
         load_fail      => 'Failed to load data from %s: %s',
@@ -22,6 +24,7 @@ use Badger::Class
 our $EXTENSIONS = [YAML, JSON];
 our $ENCODING   = UTF8;
 our $CODECS     = { };
+our $STAT_TTL   = 0;
 
 
 #-----------------------------------------------------------------------------
@@ -42,6 +45,8 @@ sub init {
 sub init_filesystem {
     my ($self, $config) = @_;
     my $class = $self->class;
+
+    $self->debug_data( filesystem_config => $config ) if DEBUG;
 
     # The filespec can be specified as a hash of options for file objects
     # created by the top-level directory object.  If unspecified, we construct
@@ -94,6 +99,8 @@ sub init_filesystem {
     $self->{ filespec   } = $filespec;
     $self->{ quiet      } = $config->{ quiet    } || FALSE;
     $self->{ dir_tree   } = $config->{ dir_tree } // TRUE;
+    $self->{ stat_ttl   } = $config->{ stat_ttl } // $data->{ stat_ttl } // $STAT_TTL;
+    $self->{ not_found  } = { };
 
     # Add any item schemas
     $self->items( $config->{ schemas } )
@@ -164,22 +171,23 @@ sub tail {
 
 sub fetch {
     my ($self, $uri) = @_;
+
+    return if $self->previously_not_found($uri);
+
+    $self->debug("fetch($uri)") if DEBUG or DEBUG_FETCH;
+
     my $file = $self->config_file($uri);
     my $dir  = $self->dir($uri);
     my $fok  = $file && $file->exists;
     my $dok  = $dir  && $dir->exists;
 
-    $self->debugf(
-        "fetch($uri)\n= [file:$fok:$file]\n= [dir:$dok:$dir]",
-    ) if DEBUG;
-
     if ($dok) {
-        $self->debug("Found directory for $uri, loading tree") if DEBUG;
+        $self->debug("Found directory for $uri, loading tree") if DEBUG or DEBUG_FETCH;
         return $self->config_tree($uri, $file, $dir);
     }
 
     if ($fok) {
-        $self->debug("Found file for $uri, loading file data") if DEBUG;
+        $self->debug("Found file for $uri, loading file data => ", $file->absolute) if DEBUG or DEBUG_FETCH;
         my $data = $file->try->data;
         return $self->error_msg( load_fail => $file => $@ ) if $@;
         return $self->tail(
@@ -190,10 +198,24 @@ sub fetch {
         );
     }
 
-    $self->debug("No file or directory found for $uri") if DEBUG;
+    $self->debug("No file or directory found for $uri") if DEBUG or DEBUG_FETCH;
+    $self->{ not_found }->{ $uri } = time();
     return undef;
 }
 
+sub previously_not_found {
+    my ($self, $uri) = @_;
+    my $sttl = $self->{ stat_ttl } || return 0;
+    my $when = $self->{ not_found }->{ $uri } || return 0;
+    # we maintain the "not_found" status until stat_ttl seconds have elapsed
+    if (time < $when + $sttl) {
+        $self->debug("$uri NOT FOUND at $when") if DEBUG; # or DEBUG_FETCH;
+        return 1
+    }
+    else {
+        return 0;
+    }
+}
 
 #-----------------------------------------------------------------------------
 # Tree walking
