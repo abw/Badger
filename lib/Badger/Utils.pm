@@ -492,7 +492,7 @@ sub merge_hash {
 
 sub join_uri {
     my $uri = join('/', @_);
-    $uri =~ s{/+}{/}g;
+    $uri =~ s{(?<!:)/+}{/}g;
     return $uri;
 }
 

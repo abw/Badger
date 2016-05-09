@@ -18,7 +18,7 @@ use lib qw( t/core/lib ./lib ../lib ../../lib );
 use Badger::Debug modules => 'Badger::Utils';
 use Badger::Utils 'UTILS blessed xprintf reftype textlike plural permute_fragments';
 use Badger::Test
-    tests => 117,
+    tests => 118,
     debug => 'Badger::Utils',
     args  => \@ARGV;
 
@@ -456,6 +456,7 @@ is( join_uri('foo',   'bar'), 'foo/bar', 'join_uri("foo", "bar")');
 is( join_uri('foo/',  'bar'), 'foo/bar', 'join_uri("foo/", "bar")');
 is( join_uri('foo',  '/bar'), 'foo/bar', 'join_uri("foo", "/bar")');
 is( join_uri('foo/', '/bar'), 'foo/bar', 'join_uri("foo/", "/bar")');
+is( join_uri('http://foo//bar/', '/baz'), 'http://foo/bar/baz', 'join_uri("http://foo//bar/", "/baz")');
 
 is( resolve_uri('foo',  'bar'), 'foo/bar', 'resolve_uri("foo", "bar")');
 is( resolve_uri('foo', '/bar'), '/bar',    'resolve_uri("foo", "/bar")');
