@@ -43,20 +43,20 @@ use Badger::Class
         },
     };
 
-our $PAD        = '    ';
-our $MAX_TEXT   = 48;
-our $MAX_DEPTH  = 3;     # prevent runaways in debug/dump
-our $FORMAT     = "[<where> line <line>]\n<msg>"
+our $PAD         = '    ';
+our $MAX_TEXT    = 48;
+our $MAX_DEPTH   = 3;     # prevent runaways in debug/dump
+our $FORMAT      = "[<where> line <line>]\n<msg>"
     unless defined $FORMAT;
-our $PROMPT     = '> '
+our $PROMPT      = '> '
     unless defined $PROMPT;
-our $MESSAGE    = "$PROMPT%s";
-our $HIDE_UNDER = 1;
-our $CALLER_UP  = 0;      # hackola to allow debug() to use a different caller
-our $CALLER_AT  = { };    # ditto
-our $DUMPING    = { };
-our $DEBUG      = 0 unless defined $DEBUG;
-
+our $MESSAGE     = "$PROMPT%s";
+our $HIDE_UNDER  = 1;
+our $CALLER_UP   = 0;      # hackola to allow debug() to use a different caller
+our $CALLER_AT   = { };    # ditto
+our $DUMPING     = { };
+our $DEBUG       = 0 unless defined $DEBUG;
+our $DUMP_METHOD = 'dump';
 
 #-----------------------------------------------------------------------
 # export hooks
@@ -187,6 +187,7 @@ sub debug {
         sub   => $sub,
         date  => $now->date,
         time  => $now->time,
+        pid   => $$,
         %$CALLER_AT,
     };
     $format  =~ s/<(\w+)>/defined $data->{ $1 } ? $data->{ $1 } : "<$1 undef>"/eg;
@@ -298,7 +299,7 @@ sub _dump_data {
     elsif (! ref $_[1]) {
         return $_[1];
     }
-    elsif (blessed($_[1]) && (my $code = $_[1]->can('dump'))) {
+    elsif (blessed($_[1]) && (my $code = $_[1]->can($DUMP_METHOD))) {
         shift;  # remove $self object, leave target object first
         return $code->(@_);
     }
