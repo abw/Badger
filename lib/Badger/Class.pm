@@ -663,6 +663,7 @@ sub method {
     my $self = shift;
     my $name = shift;
     no strict REFS;
+    no warnings 'redefines';
 
     # method($name) can be used to fetch a method/sub
     return $self->{ name }->can($name)
@@ -684,6 +685,7 @@ sub methods {
     my $args = @_ && ref $_[0] eq HASH ? shift : { @_ };
     my $pkg  = $self->{ name };
     no strict REFS;
+    no warnings 'redefines';
 
     while (my ($name, $code) = each %$args) {
         _debug("defining method: $self\::$name => $code\n") if DEBUG;
