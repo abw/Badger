@@ -539,14 +539,33 @@ sub _file_copy {
 
     my $file;
 
-    unless (ref $dest) {
-        # NOTE: don't use $self->file($dest) because $self could be a 
+   unless (ref $dest) {
+        # NOTE: don't use $self->file($dest) because $self could be a
         # VFS and $dest is already a definitive path
         $file = File($dest);
-        $file->directory->must_exist(
-            $params->{ mkdir    },
-            $params->{ dir_mode },
-        );
+        # capture our current working directory
+        my $cwd = cwd;
+        eval {
+            # Change to the destination volume if one exists.
+            # Should work for any volume except Windows shares
+            # where resulting behavior is version dependent.
+            chdir $file->volume if ($file->volume);
+            # this code strips volume information
+            $file->directory->must_exist(
+                $params->{ mkdir    },
+                $params->{ dir_mode },
+            );
+            # change back to the current working directory
+            chdir $cwd;
+        } or do {
+            # capture any exception from above
+            # change back to the oringial cwd
+            # and rethrow the execption.
+            if ($@) {
+                chdir $cwd;
+                die $@;
+            }
+        }
     }
 
     $code->($src, $dest)
