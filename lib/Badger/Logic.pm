@@ -3,7 +3,7 @@
 # Badger::Logic
 #
 # DESCRIPTION
-#   Simple parser and evaluator for boolean logic expressions, e.g. 
+#   Simple parser and evaluator for boolean logic expressions, e.g.
 #   'purple or orange', 'animal and (eats_nuts or eats_berries)'
 #
 # AUTHOR
@@ -52,7 +52,7 @@ sub Logic {
 sub new {
     my $class = shift;
     my $text  = shift;
-    return $class->error_msg('no_text') 
+    return $class->error_msg('no_text')
         unless defined $text;
     bless {
         text => ref $text ? $text : \$text,
@@ -67,11 +67,15 @@ sub evaluate {
 
 sub tree {
     my $self = shift;
-    return $self->{ tree } 
+    return $self->{ tree }
        ||= $self->parse($self->{ text });
 }
 
 sub text {
+    ${ shift->{ text } };
+}
+
+sub tree_text {
     shift->tree->text;
 }
 
@@ -80,8 +84,9 @@ sub parse {
     my $text = shift;
     my $tref = ref $text ? $text : \$text;
     $self->debug("parse($$tref)\n") if DEBUG;
-    my $expr = $self->parse_expr($tref) 
+    my $expr = $self->parse_expr($tref)
         || return $self->error_msg( parse => $$tref );
+    $self->debug("expr: ", $expr->text) if DEBUG;
     if ($$tref =~ / \G \s* (.+) $/cigsx) {
         return $self->error_msg( bad_text => $1 );
     }
@@ -92,6 +97,8 @@ sub parse_expr {
     my $self = shift;
     my $text = shift;
     my $left = $self->parse_unary($text) || return;
+
+    $self->debug("got unary: ", $left->text) if DEBUG;
 
     if ($$text =~ / \G \s+ (and|or) \s+ /cigx) {
         my $op = $1;
@@ -105,7 +112,7 @@ sub parse_expr {
             || return $self->error_msg( no_rhs => '(' );
         $$text =~ / \G \s* \) /cgx
             || return $self->error_msg('no_rparen');
-        
+
         return $self->error_msg( bad_text => $1 );
     }
 
@@ -134,6 +141,10 @@ sub parse_term {
     if ($$text =~ / \G \s* (\w+) /cigx) {
         $self->debug("item: $1\n") if $DEBUG;
         return $NODE->{ item }->new($1);
+    }
+    elsif ($$text =~ / \G \s* (['"]) ((?:\\?.)*?) \1 /cigx) {
+        $self->debug("string: $2\n") if $DEBUG;
+        return $NODE->{ item }->new($2);
     }
     elsif ($$text =~ / \G \s* \( /cgx) {
         my $expr = $self->parse_expr($text)
@@ -190,7 +201,7 @@ use base 'Badger::Logic::Expr';
 
 sub evaluate {
     my $self = shift;
-    return $self->[0]->evaluate(@_) 
+    return $self->[0]->evaluate(@_)
         && $self->[1]->evaluate(@_);
 }
 
@@ -205,7 +216,7 @@ use base 'Badger::Logic::Expr';
 use Badger::Debug ':all';
 sub evaluate {
     my $self = shift;
-    return $self->[0]->evaluate(@_) 
+    return $self->[0]->evaluate(@_)
         || $self->[1]->evaluate(@_);
 }
 
@@ -224,13 +235,13 @@ Badger::Logic - parse and evaluate simple logical expressions
 =head1 SYNOPSIS
 
     use Badger::Logic 'Logic';
-    
+
     my $logic  = Logic('animal and (eats_nuts or eats_berries)');
     my $values = {
         animal    => 1,
         eats_nuts => 1,
     }
-    
+
     if ($logic->test($values)) {
         print "This is an animal that eats nuts or berries\n";
     }
@@ -239,7 +250,7 @@ Badger::Logic - parse and evaluate simple logical expressions
 
 This module implements a simple parser and evaluator for boolean logic
 expressions.  It evolved from a piece of code that I originally wrote to
-handle role-based authentication in web applications. 
+handle role-based authentication in web applications.
 
 =head1 EXPORTABLE SUBROUTINES
 
@@ -248,7 +259,7 @@ handle role-based authentication in web applications.
 This is a shortcut alias to C<Badger::Logic>.
 
     use Badger::Logic 'LOGIC';
-    
+
     my $logic = LOGIC->new($expr);      # same as Badger::Logic->new($expr);
 
 =head2 Logic()
@@ -258,7 +269,7 @@ without arguments. Thus it can be used as an alias for C<Badger::Logic>
 as per L<LOGIC>.
 
     use Badger::Logic 'Logic';
-    
+
     my $logic = Logic->new($expr);      # same as Badger::Logic->new($expr);
 
 When called with arguments, it creates a new C<Badger::Logic> object.
@@ -275,14 +286,14 @@ Constructor method to create a new C<Badger::Logic> object from an expression.
 
 =head2 evaluate($values) / test($values)
 
-Method to evaluate the expression.  A reference to a hash array should be 
+Method to evaluate the expression.  A reference to a hash array should be
 passed containing the values that the expression can test.
 
     my $values = {
         animal => 1,
         cat    => 1,
     };
-    
+
     if ($logic->evaluate($values)) {
         print "This animal is a cat or a dog\n";
     }
@@ -301,7 +312,7 @@ Returns a text representation of the logic expression.
 =head2 parse($text)
 
 Main method to parse a logical expression.  This calls L<parse_expr()> and
-then checks that all of the text has been successfully parsed.  It returns 
+then checks that all of the text has been successfully parsed.  It returns
 a reference to a C<Badger::Logic::Node> object.
 
 =head2 parse_expr($text)
