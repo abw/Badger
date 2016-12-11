@@ -5,32 +5,18 @@ CHANGES
     This document contains a brief overview of what has changed between
     successive version of the Badger toolkit.
 
-    Mr T is our badger mascot. He no longer pities the fool that uses Badger
-    in a production system. Which is a roundabout way of saying that Badger
-    is now stable, reliable, and unlikely to change significantly in future
-    versions.
+    Badger is now considered to be mature, stable, reliable, and unlikely to
+    change significantly in future versions.
 
-    Badger is already being deployed in commercial production systems that
-    I've built and I wouldn't be doing that if I wasn't 99.9% certain of its
-    suitability and fitness for purpose. There are no guarantees of course,
-    but it may help you to sleep at night knowing that I have a heavily
-    vested interest in keeping the Badger fit and healthy. But remember that
-    you use it at your own risk and it's not my fault if it doesn't make
-    unicorns dance across the sky for you.
-
-    As of version 0.09, Badger is being used as the foundation for both the
-    new version of the Template Toolkit, Template::TT3 and also for the drop
-    in replacement for the existing Template modules, Template::TT2. They're
-    not on CPAN at the time of writing (although they might be by the time
-    you read this), but the source code is avaiable via github at
-    <http://github.com/abw/Template-TT2> and
-    <http://github.com/abw/Template-TT3>.
-
-  Version 0.10 - Not Yet released
-    Added Badger::Comparable, Badger::Duration, Badger::Filter,
-    Badger::Workplace, Badger::Workspace and Badger::Config::Filesystem.
+  Version 0.10 - 11th December 2016
+    Added Badger::Comparable, Badger::Date, Badger::Duration,
+    Badger::Filter, Badger::Progress, Badger::Workplace, Badger::Workspace
+    and Badger::Config::Filesystem.
 
     Refactored parts of Badger::Config.
+
+    Changed Badger::Base message() method to allow message formats to be
+    defined in "$self-"{ messages }> when $self is a blessed hash object.
 
     Added no_config() method to Badger::Hub.
 
@@ -55,6 +41,13 @@ CHANGES
 
     Fixed Badger::Codec::YAML to work better with YAML::XS and
     Badger::Codec::JSON to work better with JSON::XS.
+
+    Fixed a typo/bug in the "type_args()" in Badger::Factory method which
+    was returning the wrong argument list.
+
+    Fixed a parser bug in Badger::Logic.
+
+    Fixes to silence warnings in perl 5.22.
 
   Version 0.09 - 8th February 2012
     Added Badger::Codec::Timestamp. Changed Badger::Timestamp to numify
@@ -202,10 +195,10 @@ CHANGES
                     },
                 }
             };
-    
+
         package main;
         use Badger::Example ':math';
-    
+
         print e;            # 2.718
         print pi;           # 3.142
         print phi;          # 1.618

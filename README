@@ -3,7 +3,7 @@ NAME
 
 SYNOPSIS
     use Badger;
-   
+
     # 1) have more fun
     # 2) get the job done quicker
     # 3) make your code skimpier
@@ -164,16 +164,15 @@ FURTHER INFORMATION
     See the documentation included with the Badger modules, starting with
     Badger.pm.  Or look online:
 
-       http://badgerpower.com/ 
+       http://badgerpower.com/
 
 AUTHOR
-    Andy Wardley 
-    abw@wardley.org 
+    Andy Wardley
+    abw@wardley.org
     http://wardley.org/
 
 COPYRIGHT
-    Copyright (C) 1996-2013 Andy Wardley. All Rights Reserved.
+    Copyright (C) 1996-2016 Andy Wardley. All Rights Reserved.
 
     This module is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.
-
