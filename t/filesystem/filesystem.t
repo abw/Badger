@@ -17,7 +17,7 @@ use warnings;
 use File::Spec;
 use Badger::Filesystem 'FS VFS :types :dirs cwd getcwd $Bin Bin';
 use Badger::Test
-    tests => 62,
+    tests => 74,
     debug => 'Badger::Filesystem',
     args  => \@ARGV;
 
@@ -188,10 +188,10 @@ my $file2 = $fs->file('filesystem.t');
 ok( $file2, 'fetched second file' );
 
 # both should have references to the same $fs filesystem
-is( $file1->filesystem, $file2->filesystem, 
+is( $file1->filesystem, $file2->filesystem,
     'filesystems are both ' . $file1->filesystem );
 
-is( $file1->filesystem, $fs, 
+is( $file1->filesystem, $fs,
     'matches our filesystem: ' . $fs );
 
 
@@ -226,22 +226,22 @@ package DFS;
 use Badger::Class base => 'Badger::Filesystem';
 
 sub definitive_write {
-  my $self = shift;
-  my $candidate = $self->SUPER::definitive_write(@_);
-  return "$candidate-X";
+    my $self = shift;
+    my $candidate = $self->SUPER::definitive_write(@_);
+    return "$candidate-X";
 }
 
 {
-  no warnings;             # avoid warnings about names used only once
-  *definitive = \&definitive_write;
-  *definitive_read = \&definitive_write;
+    no warnings;             # avoid warnings about names used only once
+    *definitive = \&definitive_write;
+    *definitive_read = \&definitive_write;
 }
 
 package main;
 
 my $dfs = DFS->new;
 my $filename = 'foo-create.txt';
-$path = "testfiles/$filename";
+$path = "$TDIR/testfiles/$filename";
 $abs = $dfs->absolute($path);
 my $def = $dfs->definitive_write($path);
 is($def, "$abs-X", 'definitive_write');
@@ -250,12 +250,13 @@ ok($file1, "fetched $path");
 is($file1->name, $filename, "file object has non-definitive name");
 ok($file1->create, "call create on $path");
 unless (ok(-e $def, "definitive file $path-X exists")) {
-  my @files = grep { /$filename/ } FS->directory('testfiles')->files;
-  fail("Instead found @files") if @files;
+    my @files = grep { /$filename/ } FS->directory('testfiles')->files;
+    fail("Instead found @files") if @files;
 }
+$file1->delete;
 
 $filename = 'foo-touch.txt';
-$path = "testfiles/$filename";
+$path = "$TDIR/testfiles/$filename";
 $abs = $dfs->absolute($path);
 $def = $dfs->definitive_write($path);
 is($def, "$abs-X", 'definitive_write');
@@ -264,12 +265,13 @@ ok($file1, "fetched $path");
 is($file1->name, $filename, "file object has non-definitive name");
 ok($file1->touch, "call touch on $path");
 unless (ok(-e $def, "definitive file $path-X exists")) {
-  my @files = grep { /$filename/ } FS->directory('testfiles')->files;
-  fail("Instead found @files") if @files;
+    my @files = grep { /$filename/ } FS->directory('testfiles')->files;
+    fail("Instead found @files") if @files;
 }
+$file1->delete;
 
 $filename = 'foo-open.txt';
-$path = "testfiles/$filename";
+$path = "$TDIR/testfiles/$filename";
 $abs = $dfs->absolute($path);
 $def = $dfs->definitive_write($path);
 is($def, "$abs-X", 'definitive_write');
@@ -280,6 +282,7 @@ my $fh = $file1->open('w');
 ok($fh, "call open (for write) on $path");
 $fh->close;
 unless (ok(-e $def, "definitive file $path-X exists")) {
-  my @files = grep { /$filename/ } FS->directory('testfiles')->files;
-  fail("Instead found @files") if @files;
+    my @files = grep { /$filename/ } FS->directory('testfiles')->files;
+    fail("Instead found @files") if @files;
 }
+$file1->delete;
