@@ -10,6 +10,10 @@ successive version of the Badger toolkit.
 Badger is now considered to be mature, stable, reliable, and unlikely to
 change significantly in future versions.
 
+=head2 Version 0.11 - 11th December 2016
+
+Fix for missing file in distribution.
+
 =head2 Version 0.10 - 11th December 2016
 
 Added L<Badger::Comparable>, L<Badger::Date>, L<Badger::Duration>, L<Badger::Filter>,

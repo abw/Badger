@@ -8,6 +8,9 @@ CHANGES
     Badger is now considered to be mature, stable, reliable, and unlikely to
     change significantly in future versions.
 
+  Version 0.11 - 11th December 2016
+    Fix for missing file in distribution.
+
   Version 0.10 - 11th December 2016
     Added Badger::Comparable, Badger::Date, Badger::Duration,
     Badger::Filter, Badger::Progress, Badger::Workplace, Badger::Workspace
