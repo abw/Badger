@@ -17,7 +17,6 @@ use lib qw( ../../lib ../lib ./lib );
 use Badger::Filesystem 'Bin';
 
 use Badger::Test
-    #tests => 29,
     debug => 'Badger::Config::Filesystem',
     args  => \@ARGV;
 

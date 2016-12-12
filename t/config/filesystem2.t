@@ -17,7 +17,6 @@ use Badger
     Debug  => [import => ':all'];
 
 use Badger::Test
-    #tests => 41,
     debug => 'Badger::Config Badger::Config::Filesystem',
     args  => \@ARGV;
 

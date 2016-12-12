@@ -16,7 +16,6 @@ use Badger
     Utils => 'Bin';
 
 use Badger::Test
-    #tests => 25,
     debug => 'Badger::Workspace',
     args  => \@ARGV;
 
