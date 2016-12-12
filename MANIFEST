@@ -121,6 +121,7 @@ t/class/vars.t
 t/codec/base64.t
 t/codec/codec.t
 t/codec/codecs.t
+t/codec/data/example.ts
 t/codec/encode.t
 t/codec/encoding.t
 t/codec/html.t
