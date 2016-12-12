@@ -11,15 +11,22 @@
 #
 #========================================================================
 
-use strict;
-use warnings;
-use lib qw( ../../lib );
-use Badger::Filesystem 'Bin';
+use Badger
+    lib => ' ../../lib',
+    Utils => 'Bin';
 
-use Badger::Test 
-    tests => 25,
+use Badger::Test
+    #tests => 25,
     debug => 'Badger::Workspace',
     args  => \@ARGV;
+
+eval "require Badger::Codec::YAML";
+if ($@) {
+    skip_all($@);
+}
+else {
+    plan(25);
+}
 
 use Badger::Debug ':all';
 use Badger::Workspace;
@@ -49,7 +56,7 @@ is( $workspace->config('greetings.hello'), 'Hello World!', 'got greetings.hello'
 
 
 #-----------------------------------------------------------------------------
-# 'dirs' config section in config/workspace.yaml maps 'first' and 'second' 
+# 'dirs' config section in config/workspace.yaml maps 'first' and 'second'
 # directories onto 'one' and 'two'
 #-----------------------------------------------------------------------------
 
@@ -104,11 +111,9 @@ ok( $greets3, 'got greetings config inherited from parent' );
 is( $greets3->{ hello }, 'Hello World!', 'got hello greeting' );
 
 
-# I had some inheritance rules in for a while, but it made things too 
+# I had some inheritance rules in for a while, but it made things too
 # complicated.  For now we assume that all configuration data can be inherited
 # from a parent workspace
 #ok( ! $workspace2->config('fruit'), 'no local or inherited fruit' );
 
 ok( $workspace2->config('fruit'), 'inherited fruit' );
-
-

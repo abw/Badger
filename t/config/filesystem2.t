@@ -16,10 +16,18 @@ use Badger
     Utils  => 'Bin',
     Debug  => [import => ':all'];
 
-use Badger::Test 
-    tests => 41,
+use Badger::Test
+    #tests => 41,
     debug => 'Badger::Config Badger::Config::Filesystem',
     args  => \@ARGV;
+
+eval "require Badger::Codec::YAML";
+if ($@) {
+    skip_all($@);
+}
+else {
+    plan(41);
+}
 
 use Badger::Config::Filesystem;
 my $pkg  = 'Badger::Config::Filesystem';
@@ -80,7 +88,7 @@ is( $nested->{ two }->{ three }->{ three_a }, 'Three A', 'got nested.two.three.t
 
 #-----------------------------------------------------------------------------
 # widgets have both a widgets.yaml and a widgets sub-directory.  The schema
-# defined for widgets above specifies the contents should be merged into a 
+# defined for widgets above specifies the contents should be merged into a
 # flat tree (tree_type => 'flat')
 #-----------------------------------------------------------------------------
 
@@ -103,7 +111,7 @@ is( $widgets->{ flip }->{ name }, 'Flip', 'got the flip widget name' );
 is( $config->get('widgets.flop.name'), 'Flop', 'got the flop widget name' );
 
 #-----------------------------------------------------------------------------
-# A URI tree where files in directories under the top level directories get 
+# A URI tree where files in directories under the top level directories get
 # appropriate URIs, e.g. a 'baz' entry in 'foo/bar.yaml' becomes 'foo/bar/baz'
 # in the master config hash.
 #-----------------------------------------------------------------------------
@@ -114,50 +122,50 @@ main->debug(
     main->dump_data($nibbles)
 ) if DEBUG;
 
-is( 
-    $nibbles->{ crackers }, 
-    'to go with cheese', 
-    'got crackers from nibbles' 
+is(
+    $nibbles->{ crackers },
+    'to go with cheese',
+    'got crackers from nibbles'
 );
-is( 
-    $config->get('nibbles.pickled_eggs'), 
-    'a bit of variety', 
-    'nibbles.picked_eggs' 
+is(
+    $config->get('nibbles.pickled_eggs'),
+    'a bit of variety',
+    'nibbles.picked_eggs'
 );
 
 # "tree_type: uri" in _schema_ forces items in cheeses.yaml to appear
 # as cheese/xxx
 
-is( 
-    $nibbles->{"cheese/cheddar"}, 
-    'very tangy', 
-    'cheese/cheddar' 
+is(
+    $nibbles->{"cheese/cheddar"},
+    'very tangy',
+    'cheese/cheddar'
 );
 
 # As above, our selection of beers should be in drinks/beers
 
-is( 
-    $nibbles->{"drinks/beers/ales"}->[0], 
-    'Tangle Foot', 
-    'a lovely beer' 
+is(
+    $nibbles->{"drinks/beers/ales"}->[0],
+    'Tangle Foot',
+    'a lovely beer'
 );
 
-# /cheese_knife is forced up a level to the root data hash and the 
+# /cheese_knife is forced up a level to the root data hash and the
 # "uri_paths: relative" option removes the leading slash
 
-is( 
-    $nibbles->{ cheese_knife }, 
-    'for cutting cheese', 
-    'cheese_knife' 
+is(
+    $nibbles->{ cheese_knife },
+    'for cutting cheese',
+    'cheese_knife'
 );
 
 # /bottle_opener is forced up two levels to the root data hash from drinks/beer
 # As above, the "uri_paths: relative" option removes the leading slash
 
-is( 
-    $nibbles->{ bottle_opener }, 
-    'to open beer', 
-    'bottle_opener' 
+is(
+    $nibbles->{ bottle_opener },
+    'to open beer',
+    'bottle_opener'
 );
 
 #-----------------------------------------------------------------------------
@@ -172,25 +180,25 @@ main->debug(
     main->dump_data($ents)
 ) if DEBUG;
 
-is( 
-    $ents->{ misc_I }, 
-    'see', 
-    'I see', 
+is(
+    $ents->{ misc_I },
+    'see',
+    'I see',
 );
-is( 
-    $ents->{ misc_trees }, 
-    'of green', 
-    'trees of green', 
+is(
+    $ents->{ misc_trees },
+    'of green',
+    'trees of green',
 );
-is( 
-    $ents->{ four_ten_volume }, 
-    'This goes up to eleven', 
-    'the volume goes up to eleven', 
+is(
+    $ents->{ four_ten_volume },
+    'This goes up to eleven',
+    'the volume goes up to eleven',
 );
-is( 
-    $ents->{ four_twenty_music }, 
-    'Pink Floyd', 
-    'four twenty music is Pink Floyd', 
+is(
+    $ents->{ four_twenty_music },
+    'Pink Floyd',
+    'four twenty music is Pink Floyd',
 );
 
 #-----------------------------------------------------------------------------
@@ -205,38 +213,38 @@ main->debug(
 
 
 #-----------------------------------------------------------------------------
-# This also makes it useful for checking that we can defeat the default 
+# This also makes it useful for checking that we can defeat the default
 # behaviour of get() to split dotted items.
 #-----------------------------------------------------------------------------
 
-is( 
-    $urls->{ home }, 
-    '/index.html', 
-    'urls.home', 
+is(
+    $urls->{ home },
+    '/index.html',
+    'urls.home',
 );
 
-is( 
-    $urls->{'foo.about'}, 
-    '/about_us.html', 
-    'urls.foo.about', 
+is(
+    $urls->{'foo.about'},
+    '/about_us.html',
+    'urls.foo.about',
 );
 
-is( 
-    $config->get(['urls', 'foo.about']), 
-    '/about_us.html', 
-    "get(['urls', 'foo.about'])", 
+is(
+    $config->get(['urls', 'foo.about']),
+    '/about_us.html',
+    "get(['urls', 'foo.about'])",
 );
 
-is( 
-    $config->get(['urls', 'foo.user', 'login']), 
-    '/auth/login', 
-    "get(['urls', 'foo.user', 'login'])", 
+is(
+    $config->get(['urls', 'foo.user', 'login']),
+    '/auth/login',
+    "get(['urls', 'foo.user', 'login'])",
 );
 
-is( 
-    $urls->{'foo.user'}->{'logout'}, 
-    '/auth/logout', 
-    'urls.foo.user.logout', 
+is(
+    $urls->{'foo.user'}->{'logout'},
+    '/auth/logout',
+    'urls.foo.user.logout',
 );
 
 
@@ -246,7 +254,7 @@ is(
 
 my $dir2 = Bin->dir('test_files/dir2');
 
-$config = $pkg->new( 
+$config = $pkg->new(
     directory  => $dir2,
     file       => 'config',
     schemas    => {
@@ -274,10 +282,10 @@ main->debug(
 
 my $three = $config->get('three');
 ok( $three, 'got tree three' );
-is( 
-    join(', ', sort keys %$three), 
-    'e, f, five*six*i, five*six*j, four*g, four*h, iv*i-j, iv*i-k', 
-    'got joined keys' 
+is(
+    join(', ', sort keys %$three),
+    'e, f, five*six*i, five*six*j, four*g, four*h, iv*i-j, iv*i-k',
+    'got joined keys'
 );
 
 main->debug(
@@ -289,7 +297,7 @@ main->debug(
 # Same again but with default schema specified as 'schema' option
 #-----------------------------------------------------------------------------
 
-$config = $pkg->new( 
+$config = $pkg->new(
     directory  => $dir2,
     schemas    => {
         one    => {
@@ -306,7 +314,7 @@ is( join(', ', sort keys %$one), 'a, b, two+c, two+d', 'got joined keys' );
 # Another similar once with dedicated schema rule for item ten
 #-----------------------------------------------------------------------------
 
-$config = $pkg->new( 
+$config = $pkg->new(
     directory   => $dir2,
     schemas     => {
         ten     => {
@@ -321,17 +329,17 @@ main->debug(
     "ten: ",
     main->dump_data($ten)
 ) if DEBUG;
-is( 
-    join(', ', sort keys %$ten), 
+is(
+    join(', ', sort keys %$ten),
     '/eleven/m, /eleven/n, /k, /l',
-    'got ten keys' 
+    'got ten keys'
 );
 
 #-----------------------------------------------------------------------------
 # Same thing but using a config_file.
 #-----------------------------------------------------------------------------
 
-$config = $pkg->new( 
+$config = $pkg->new(
     dir  => $dir2,
     file => 'config',
 );
@@ -341,10 +349,10 @@ main->debug(
     "ten2: ",
     main->dump_data($ten2)
 ) if DEBUG;
-is( 
+is(
     join(', ', sort keys %$ten2),
     'eleven/m, eleven/n, k, l',
-    'got ten keys' 
+    'got ten keys'
 );
 
 my $ten3 = $config->get('ten');
