@@ -10,6 +10,10 @@ successive version of the Badger toolkit.
 Badger is now considered to be mature, stable, reliable, and unlikely to
 change significantly in future versions.
 
+=head2 Version 0.12 - 12th December 2016
+
+Added some tests for YAML modules in 3 test scripts that were failing.
+
 =head2 Version 0.11 - 11th December 2016
 
 Fix for missing file in distribution.
