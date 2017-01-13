@@ -68,7 +68,7 @@ sub release {
 #        || return $self->base_error_msg( bad_close => $self->{ filename }, $! );
 }
 
-sub log {
+sub _output {
     my ($self, $level, $message) = @_;
 
     my $handle = $self->{ handle } 
