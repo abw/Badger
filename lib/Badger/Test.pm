@@ -9,7 +9,7 @@ use Badger::Class
     constants => 'ARRAY DELIMITER PKG',
     words     => 'DEBUG DEBUG_MODULES',
     exports   => {
-        all   => 'plan ok is isnt like unlike pass fail     
+        all   => 'plan ok is isnt like unlike pass fail
                   skip_some skip_rest skip_all manager',
         after => \&_after_hook,
         hooks => {
@@ -57,9 +57,9 @@ sub _export_hook {
 
 sub _debug_hook {
     my ($class, $target, $key, $symbols, $import) = @_;
-    croak "You didn't specify any values for the 'debug' load option.\n" 
+    croak "You didn't specify any values for the 'debug' load option.\n"
         unless @$symbols;
-        
+
 
     # define $DEBUG in caller
     no strict 'refs';
@@ -75,15 +75,15 @@ sub _debug_hook {
 
 sub _after_hook {
     my ($class, $target) = @_;
-    
-    # See if we've got any constraints specified and assert that they're 
+
+    # See if we've got any constraints specified and assert that they're
     # met.  If the --all command line parameter is specified (which sets
     # $ALL) then we run the tests regardless
 
     if ($IF_ENV && ! $ALL) {
         my $run   = 0;
         my @names = @$IF_ENV;
-        
+
         foreach my $var (@names) {
             $run++, last if $ENV{$var};
         }
@@ -116,7 +116,7 @@ sub args {
     my $self = shift;
     my $args = @_ && ref $_[0] eq ARRAY ? shift : [ @_ ];
     my $arg;
-    
+
     # quick hack until Badger::Config is done
     while (@$args && $args->[0] =~ /^-/) {
         $arg =  shift @$args;
@@ -145,11 +145,11 @@ sub args {
             unshift(@$args, $arg);
             last;
         }
-    }  
+    }
 }
 
 sub tests {
-    shift; 
+    shift;
     plan(@_);
 }
 
@@ -219,20 +219,20 @@ Badger::Test - test module
         tests => 8,
         debug => 'My::Badger::Module Your::Badger::Module',
         args  => \@ARGV;
-    
-    # -d in @ARGV will enable $DEBUG for My::Badger::Module 
+
+    # -d in @ARGV will enable $DEBUG for My::Badger::Module
     # and Your::Badger::Module, as well as exporting a $DEBUG
     # flag here. -c will enable colour mode.
     # e.g.   $ perl t/test.t -d -c
-    
+
     ok( $bool, 'Test passes if $bool true' );
-    
+
     is( $one, $two, 'Test passes if $one eq $two' );
     isnt( $one, $two, 'Test passes if $one ne $two' );
-    
+
     like( $one, qr/regex/, 'Test passes if $one =~ /regex/' );
     unlike( $one, qr/regex/, 'Test passes if $one !~ /regex/' );
-    
+
     pass('This test always passes');
     fail('This test always fails');
 
@@ -246,7 +246,7 @@ Badger-specific features.
 
 =head1 EXPORTED SUBROUTINES
 
-The C<Badger::Test> module exports the following subroutines, similar to 
+The C<Badger::Test> module exports the following subroutines, similar to
 those found in L<Test::Simple> or L<Test::More>.
 
 =head2 plan($tests)
@@ -327,7 +327,7 @@ Skip any remaining tests.
 
 =head1 CLASS METHODS
 
-The C<Badger::Test> module defines the following class methods to 
+The C<Badger::Test> module defines the following class methods to
 access and/or configure the test framework.
 
 =head2 tests()
@@ -348,7 +348,7 @@ L<Badger::Test::Manager>.
 
 =head2 args(@args)
 
-This method can be used to set various testing options from command line 
+This method can be used to set various testing options from command line
 arguments.  It is typically called via the L<args> import option.
 
     use Badger::Test
@@ -363,8 +363,8 @@ The method parses the arguments looking for the following options:
     -c      --colour/--color    Enable colour output
     -s      --summary           Display summary of test results
     -h      --help              This help summary
-    
-Arguments can be passed as a list or reference to a list.  
+
+Arguments can be passed as a list or reference to a list.
 
     Badger::Test->args(@ARGV);      # either
     Badger::Test->args(\@ARGV);     # or
@@ -393,24 +393,24 @@ An alias for L<colour()>.
 
 This method can be called to define one or more modules that should have their
 C<$DEBUG> flag enabled when running in debug mode (i.e. with the C<-d> command
-line option). This method is called by the L<debug> import hook. 
+line option). This method is called by the L<debug> import hook.
 
-    Badger::Test->debug('My::Badger::Module');  
+    Badger::Test->debug('My::Badger::Module');
 
 Multiple modules can be specified in a single string or by reference to a list.
 
     # whitespace-delimited string
-    Badger::Test->debug('My::Badger::Module Your::Badger::Module');  
+    Badger::Test->debug('My::Badger::Module Your::Badger::Module');
 
     # list reference
-    Badger::Test->debug(['My::Badger::Module', 'Your::Badger::Module']);  
+    Badger::Test->debug(['My::Badger::Module', 'Your::Badger::Module']);
 
-This method simply stores the list of modules in the C<$DEBUG_MODULES> 
+This method simply stores the list of modules in the C<$DEBUG_MODULES>
 package variable for the L<debugging()> method to use.
 
 =head2 debugging($flag)
 
-This method enables or disables debugging for all modules named in the 
+This method enables or disables debugging for all modules named in the
 C<$DEBUG_MODULES> list.  It also sets the internal C<$DEBUG> flag.
 
     Badger::Test->debugging(1);         # enable debugging
@@ -423,14 +423,14 @@ module.
 
 =head2 all($flag)
 
-This method enables or disables the internal C<$ALL> flag.  It is called 
+This method enables or disables the internal C<$ALL> flag.  It is called
 by the L<args()> method when the C<-a> or C<-all> command line argument is
 specified.  When the flag is set, it forces all tests to be run regardless
 of any L<if_env> conditions.
 
 =head2 help()
 
-This method returns the help text display when help is requested with the 
+This method returns the help text display when help is requested with the
 C<-h> or C<--help> command line options.  See L<args()> for further details.
 
 =head1 IMPORT HOOKS
@@ -443,7 +443,7 @@ C<Badger::Test> module in one fell swoop.
 Specify the number of tests.  Does the same thing as calling the L<plan()>
 subroutine or L<tests()> class method.
 
-    use Badger::Test 
+    use Badger::Test
         tests => 42;
 
 =head2 manager
@@ -452,14 +452,14 @@ An import hook to define a different test manager module. See the L<manager()>
 method.
 
     use My::Test::Manager;
-    use Badger::Test 
+    use Badger::Test
         manager => 'My::Test::Manager';
 
 =head2 colour
 
 An import hook to enable colour mode.  See the L<colour()> method.
 
-    use Badger::Test 
+    use Badger::Test
         colour => 1;
 
 =head2 color
@@ -468,11 +468,11 @@ An alias for L<colour>
 
 =head2 args
 
-This import hook can be used to feed the command line arguments to the 
-L<args()> method so that C<-d> and C<-c> enable debugging and colour 
+This import hook can be used to feed the command line arguments to the
+L<args()> method so that C<-d> and C<-c> enable debugging and colour
 moes, respectively.
 
-    use Badger::Test 
+    use Badger::Test
         args => \@ARGV;
 
 =head2 debug
@@ -480,7 +480,7 @@ moes, respectively.
 An import hook to associate a list of module with our debugging mode.
 See the L<debug()> method.
 
-    use Badger::Test 
+    use Badger::Test
         debug => 'My::Badger::Module Your Badger::Module',
         args  => \@ARGV;
 
@@ -507,7 +507,7 @@ regardless.
 
 =head2 $MANAGER
 
-This package variable stores the name of the manager class, 
+This package variable stores the name of the manager class,
 L<Badger::Test::Manager> by default.
 
 =head2 $DEBUG

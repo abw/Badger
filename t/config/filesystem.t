@@ -17,9 +17,16 @@ use lib qw( ../../lib ../lib ./lib );
 use Badger::Filesystem 'Bin';
 
 use Badger::Test
-    tests => 29,
     debug => 'Badger::Config::Filesystem',
     args  => \@ARGV;
+
+eval "require Badger::Codec::YAML";
+if ($@) {
+    skip_all($@);
+}
+else {
+    plan(29);
+}
 
 use Badger::Debug ':all';
 use Badger::Config::Filesystem;
