@@ -378,6 +378,7 @@ sub export {
 sub exportables {
     my $class = shift;
     no strict REFS;
+    no warnings 'once';
 
     my $cache = ${ $class.PKG.EXPORTABLES } ||= do {
         my ($pkg, $symbols, %done, @all, %any, %tags, %hooks, @fails, @before, @after);
