@@ -277,7 +277,7 @@ sub merge_paths {
     my @p2   = $spec->splitpath($path);
 
     # check volumes match
-    if (defined $p2[0]) {
+    if (defined $p2[0] and length $p2[0]) {
         $p1[0] ||= $p2[0];
         return $self->error_msg( bad_volume => $p1[0], $p1[0] )
             unless $p1[0] eq $p2[0];
