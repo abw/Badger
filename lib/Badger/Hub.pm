@@ -409,6 +409,8 @@ sub DESTROY {
 1;
 __END__
 
+=encoding utf8
+
 =head1 NAME
 
 Badger::Hub - central repository of shared resources
