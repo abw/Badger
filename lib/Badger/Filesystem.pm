@@ -724,6 +724,8 @@ sub _child_args {
 
 __END__
 
+=encoding utf8
+
 =head1 NAME
 
 Badger::Filesystem - filesystem functionality
