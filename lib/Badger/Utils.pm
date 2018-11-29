@@ -457,6 +457,7 @@ sub merge {
         }
         elsif (ref $_[0] eq HASH) {
             $more = shift;
+            $more = { %$more };
         }
         else {
             $more = params(@_);
