@@ -392,6 +392,8 @@ sub metadata {
 
 1;
 
+=encoding utf8
+
 =head1 NAME
 
 Badger::Filesystem::Path - generic fileystem path object
