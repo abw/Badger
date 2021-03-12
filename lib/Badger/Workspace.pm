@@ -296,15 +296,16 @@ sub resolve_dir {
 
 sub file {
     my ($self, @path) = @_;
+    my $opts = @path && ref $path[-1] eq 'HASH' ? pop(@path) : { };
     my $path = join(SLASH, @path);
     my @bits = split(SLASH, $path);
     my $file = pop(@bits);
 
     if (@bits) {
-        return $self->dir(@bits)->file($file);
+        return $self->dir(@bits)->file($file, $opts);
     }
     else {
-        return $self->dir->file($file);
+        return $self->dir->file($file, $opts);
     }
 }
 
