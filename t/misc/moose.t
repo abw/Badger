@@ -17,6 +17,7 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test
+    skip  => 'Moose is borken? (invalid version format)',
     debug => 'Badger',
     args  => \@ARGV;
 

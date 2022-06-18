@@ -14,6 +14,7 @@
 use lib qw( ../../lib );
 use Badger;
 use Badger::Test
+    skip   => "Move along, there's nothing to see",
     tests  => 71,
     debug  => 'Badger::Yup',
     args   => \@ARGV;
