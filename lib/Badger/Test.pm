@@ -10,7 +10,7 @@ use Badger::Class
     words     => 'DEBUG DEBUG_MODULES',
     exports   => {
         all   => 'plan ok is isnt like unlike pass fail
-                  skip skip_some skip_rest skip_all manager',
+                  skip_some skip_rest skip_all manager',
         after => \&_after_hook,
         hooks => {
             lib      => [\&_lib_hook,    1],
