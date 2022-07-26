@@ -7,38 +7,55 @@
 #
 # AUTHOR
 #   Andy Wardley   <abw@wardley.org>
+#   Kevin L. Esteb  <kevin@kesteb.us> (13-Jan-2017)
+#     use Badger::Timestamp for the timestamp
+#     added configuration variable 'strftime' for changing the timestamp format
+#     decoupled toggling levels from actual level output
+#     added CALLBACKS package variable to control output
+#       callbacks are passed $self, $level, $message
+#     added callback() method to manipulate CALLBACKS variable
 #
 #========================================================================
 
 package Badger::Log;
 
+use Badger::Timestamp;
 use Badger::Class
-    version   => 0.01,
-    base      => 'Badger::Prototype',
-    import    => 'class',
-    utils     => 'blessed',
-    config    => 'system|class:SYSTEM format|class:FORMAT',
-    constants => 'ARRAY CODE',
-    constant  => {
-        MSG   => '_msg',        # suffix for message methods, e.g. warn_msg()
-        LOG   => 'log',         # method a delegate must implement
+  version   => 0.02,
+  base      => 'Badger::Prototype',
+  utils     => 'blessed',
+  config    => 'system|class:SYSTEM format|class:FORMAT strftime|class:STRFTIME',
+  import    => 'class',
+  constants => 'ARRAY CODE',
+  constant => {
+    MSG => '_msg',
+    LOG => 'log',
+  },
+  vars => {
+    CALLBACKS => {
+      debug => \&_output,
+      trace => \&_output,
+      info  => \&_output,
+      warn  => \&_output,
+      error => \&_output,
+      fatal => \&_output,
     },
-    vars      => {
-        SYSTEM => 'Badger',
-        FORMAT => '[<time>] [<system>] [<level>] <message>',
-        LEVELS => {
-            debug => 0,
-            info  => 0,
-            warn  => 1,
-            error => 1,
-            fatal => 1,
-        }
+    LEVELS => {
+      debug => 0,
+      trace => 0,
+      info  => 0,
+      warn  => 1,
+      error => 1,
+      fatal => 1,
     },
-    messages  => {
-        bad_level => 'Invalid logging level: %s',
-    };
-    
-
+    SYSTEM   => 'Badger',
+    FORMAT   => '[<time>] [<system>] [<level>] <message>',
+    STRFTIME => '%a %b %d %T %Y',
+  },
+  messages => {
+    bad_level => 'invalid logging level: %s',
+  }
+;
 
 class->methods(
     # Our init method is called init_log() so that we can use Badger::Log as 
@@ -46,22 +63,24 @@ class->methods(
     # with init() methods from other base classes or mixins.  We create an 
     # alias from init() to init_log() so that it also Just Works[tm] as a 
     # stand-alone object
-    init   => \&init_log,
 
+    init => \&init_log,
+ 
     # Now we define two methods for each logging level.  The first expects
     # a pre-formatted output message (e.g. debug(), info(), warn(), etc)
     # the second additionally wraps around the message() method inherited
     # from Badger::Base (eg. debug_msg(), info_msg(), warn_msg(), etc)
+
     map {
         my $level = $_;             # lexical variable for closure
-        
+
         $level => sub {
             my $self = shift;
             return $self->{ $level } unless @_;
             $self->log($level, @_) 
                 if $self->{ $level };
         },
-
+ 
         ($level.MSG) => sub {
             my $self = shift;
             return $self->{ $level } unless @_;
@@ -70,16 +89,18 @@ class->methods(
         }
     }
     keys %$LEVELS
-);
 
+);
 
 sub init_log {
     my ($self, $config) = @_;
+
     my $class  = $self->class;
     my $levels = $class->hash_vars( LEVELS => $config->{ levels } );
-    
+
     # populate $self for each level in $LEVEL using the 
     # value in $config, or the default in $LEVEL
+
     while (my ($level, $default) = each %$levels) {
         $self->{ $level } = 
             defined $config->{ $level }
@@ -88,89 +109,130 @@ sub init_log {
     }
 
     # call the auto-generated configure() method to update $self from $config
+
     $self->configure($config);
 
     return $self;
+
 }
 
 sub log {
     my $self    = shift;
     my $level   = shift;
-    my $action  = $self->{ $level };
     my $message = join('', @_);
+
     my $method;
+    my $action = $CALLBACKS->{ $level };
 
     return $self->_fatal_msg( bad_level => $level )
-        unless defined $action;
-        
+      unless defined $action;
+
     # depending on what the $action is set to, we add the message to
     # an array, call a code reference, delegate to another log object,
     # print or ignore the mesage
 
     if (ref $action eq ARRAY) {
-        push(@$action, $message);
-    }
-    elsif (ref $action eq CODE) {
-        &$action($level, $message);
-    }
-    elsif (blessed $action && ($method = $action->can(LOG))) {
+
+        push(@$action, $self->format($level, $message));
+
+    } elsif (ref $action eq CODE) {
+
+        &$action($self, $level, $message);
+
+    } elsif (blessed $action && ($method = $action->can(LOG))) {
+
         $method->($action, $level, $message);
+
     }
-    elsif ($action) {
-        warn $self->format($level, $message), "\n";
-    }
+
 }
 
 sub format {
     my $self = shift;
+
+    my $format = $self->{'format'};
+    my $dt = Badger::Timestamp->now();
     my $args = {
-        time    => scalar(localtime(time)),
-        system  => $self->{ system },
+        time    => $dt->format($self->{'strftime'}),
+        system  => $self->{'system'},
         level   => shift,
         message => shift,
     };
-    my $format = $self->{ format };
+
     $format =~ 
             s/<(\w+)>/
               defined $args->{ $1 } 
                     ? $args->{ $1 }
                     : "<$1>"
             /eg;
+
     return $format;
+
 }
 
 sub level {
     my $self  = shift;
     my $level = shift;
+
     return $self->_fatal_msg( bad_level => $level )
         unless exists $LEVELS->{ $level };
+
     return @_ ? ($self->{ $level } = shift) : $self->{ $level };
+
 }
 
 sub enable {
     my $self = shift;
+
     $self->level($_ => 1) for @_;
+
 }
 
 sub disable {
     my $self = shift;
+
     $self->level($_ => 0) for @_;
+
+}
+
+sub callback {
+    my $self  = shift;
+    my $level = shift;
+    my $callback = shift;
+
+    return $self->_fatal_msg( bad_level => $level )
+      unless exists $CALLBACKS->{ $level };
+
+    $CALLBACKS->{ $level } = $callback;
+
+}
+
+sub _output {
+    my $self    = shift;
+    my $level   = shift;
+    my $message = shift;
+
+    warn $self->format($level, $message), "\n";
+
 }
 
 sub _error_msg {
     my $self = shift;
+
     $self->Badger::Base::error(
         $self->Badger::Base::message(@_)
     );
+
 }
 
 sub _fatal_msg {
     my $self = shift;
+
     $self->Badger::Base::fatal(
         $self->Badger::Base::message(@_)
     );
-}
 
+}
 
 1;
 
