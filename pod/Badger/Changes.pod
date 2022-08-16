@@ -10,6 +10,18 @@ successive version of the Badger toolkit.
 Badger is now considered to be mature, stable, reliable, and unlikely to
 change significantly in future versions.
 
+=head2 Version 0.14 - 16th August 2022
+
+Added support for L<Cpanel::JSON::XS> to L<Badger::Codec::JSON>.
+
+Added strftime option to L<Badger::Log>.
+
+=head2 Version 0.13 - 18th October 2018
+
+Silenced various "used only once" warnings.
+
+Win32 fixes for L<Badger::Filesystem::Virtual>.
+
 =head2 Version 0.12 - 12th December 2016
 
 Added some tests for YAML modules in 3 test scripts that were failing.
