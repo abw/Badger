@@ -15,11 +15,12 @@ use strict;
 use warnings;
 use lib qw( ./lib ../lib ../../lib );
 use Badger::Test
-    tests => 40,
+    tests => 41,
     debug => 'Badger::Log',
     args  => \@ARGV;
 
 use Badger::Log;
+use Badger::Utils 'Now';
 use constant LOG => 'Badger::Log';
 
 
@@ -156,6 +157,21 @@ $log4->fatal('blah blah blah');
 
 is( $ERRORS[5], "<barf>/fatal (blah blah blah)\n", 'checked barf format' );
 
+#------------------------------------------------------------------------
+# test strftime
+#------------------------------------------------------------------------
+
+my $strftime = '%a %b %d %Y';
+my $today = Now->format($strftime);
+my $log5 = LOG->new({
+    format   => '<time> - <message>',
+    strftime => '%a %b %d %Y'
+});
+
+$log5->error('one of our badgers is missing');
+
+is( $ERRORS[6], "$today - one of our badgers is missing\n", 'checked strftime' );
+
 
 #-----------------------------------------------------------------------
 # test subclass
@@ -173,8 +189,8 @@ our $MESSAGES = {
 package main;
 
 my (@warnings);
-my $mylog = My::Log->new( 
-    warn  => \@warnings, 
+my $mylog = My::Log->new(
+    warn  => \@warnings,
 );
 $mylog->warn_msg( sorry => 'Dave' );
 
