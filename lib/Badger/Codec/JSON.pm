@@ -18,21 +18,31 @@ use Badger::Class
     import  => 'class CLASS',
     codecs  => 'utf8';
 
-eval "require JSON::XS";
-our $HAS_JSON_XS = $@ ? 0 : 1;
-our $HAS_JSON;
+our ($HAS_CP_JSON_XS, $HAS_JSON_XS, $HAS_JSON);
 
-unless ($HAS_JSON_XS) {
+# Cpanel::JSON::XS is more complete/correct than JSON::XS
+eval "require Cpanel::JSON::XS";
+$HAS_CP_JSON_XS = $@ ? 0 : 1;
+
+# JSON::XS has bits missing (e.g. allow_bignum)
+unless ($HAS_CP_JSON_XS) {
+    eval "require JSON::XS";
+    $HAS_JSON_XS = $@ ? 0 : 1;
+}
+
+# fallback to Perl implementation
+unless ($HAS_CP_JSON_XS || $HAS_JSON_XS) {
     eval "require JSON";
     $HAS_JSON = $@ ? 0 : 1;
 }
 
 our $MODULE =
-    $HAS_JSON_XS ? 'JSON::XS' :
-    $HAS_JSON    ? 'JSON'     :
-    CLASS->error("You don't have JSON or JSON::XS installed");
+    $HAS_CP_JSON_XS ? 'Cpanel::JSON::XS' :
+    $HAS_JSON_XS    ? 'JSON::XS' :
+    $HAS_JSON       ? 'JSON'     :
+    CLASS->error("You don't have JSON, JSON::XS or Cpanel::JSON::XS installed");
 
-our $JSON = $HAS_JSON_XS ? JSON::XS->new : JSON->new;
+our $JSON = $MODULE->new;
 
 sub encode_json {
     $JSON->encode(shift);
