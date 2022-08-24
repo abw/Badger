@@ -216,13 +216,13 @@ sub format {
 sub date {
     my $self = shift;
     return $self->{ date }
-       ||= sprintf( $DATE_FORMAT, @$self{ @YMD } );
+        ||= sprintf( $DATE_FORMAT, @$self{ @YMD } );
 }
 
 sub time {
     my $self = shift;
     return $self->{ time }
-       ||= sprintf( $TIME_FORMAT, @$self{ @HMS });
+        ||= sprintf( $TIME_FORMAT, @$self{ @HMS });
 }
 
 sub adjust {
