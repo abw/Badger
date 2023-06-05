@@ -8,6 +8,11 @@ CHANGES
     Badger is now considered to be mature, stable, reliable, and unlikely to
     change significantly in future versions.
 
+  Version 0.16 - 5th June 2023
+    Fix numerous spelling mistakes in POD
+
+    <https://github.com/abw/Badger/pull/18>
+
   Version 0.15 - 24th August 2022
     Added "filename_format" option to Badger::Log::File.
 

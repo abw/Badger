@@ -10,6 +10,12 @@ successive version of the Badger toolkit.
 Badger is now considered to be mature, stable, reliable, and unlikely to
 change significantly in future versions.
 
+=head2 Version 0.16 - 5th June 2023
+
+Fix numerous spelling mistakes in POD
+
+L<https://github.com/abw/Badger/pull/18>
+
 =head2 Version 0.15 - 24th August 2022
 
 Added C<filename_format> option to L<Badger::Log::File>.
