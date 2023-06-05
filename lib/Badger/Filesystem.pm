@@ -931,7 +931,7 @@ against it.
     my $dir  = $fs->dir('/path/to/dir');
 
 Creating an object allows you to define additional configuration parameters
-for the filesystem. There aren't any interesting paramters worth mentioning in
+for the filesystem. There aren't any interesting parameters worth mentioning in
 the base class L<Badger::Filesystem> module at the moment, but subclasses
 (like L<Badger::Filesystem::Virtual>) do use them.
 

@@ -413,7 +413,7 @@ Like L<move_to()> but working in reverse.
 
 =head2 print(@content)
 
-This method concatentates all arguments into a single string which it then
+This method concatenates all arguments into a single string which it then
 forwards to the L<write()> method.  This effectively forces the L<write()>
 method to always write something to the file, even if it's an empty string.
 

@@ -633,7 +633,7 @@ that it is using.
 This method configures and instantiates a component. The first argument is the
 component name. This is mapped to a module via the L<component()> method and
 the module is loaded. A list of named parameters, or a reference to a hash
-array of named paramters may follow. A reference to the hub is added to these
+array of named parameters may follow. A reference to the hub is added to these
 as the C<hub> item before forwarding them to the constructor method for the
 component.  The component is then cached for subsequent use.
 

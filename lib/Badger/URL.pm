@@ -492,7 +492,7 @@ This constructor method is used to create a new URL object.
         'http://abw@badgerpower.com:8080/under/ground?animal=badger#stripe'
     );
 
-You can also specify the individual parts of the URL using named paramters.
+You can also specify the individual parts of the URL using named parameters.
 
     my $url = Badger::URL->new(
         scheme      => 'http',
