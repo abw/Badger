@@ -254,7 +254,7 @@ A regular expression used to match strings containing the C<*> or C<?>
 wildcard characters.
 
     if ($path =~ WILDCARD) {
-        # do someting...
+        # do something...
     } 
 
 =head2 UTF8

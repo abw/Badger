@@ -396,7 +396,7 @@ sub metadata {
 
 =head1 NAME
 
-Badger::Filesystem::Path - generic fileystem path object
+Badger::Filesystem::Path - generic filesystem path object
 
 =head1 SYNOPSIS
 

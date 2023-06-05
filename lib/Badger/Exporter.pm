@@ -738,7 +738,7 @@ of named parameters and forwards the arguments onto the relevant method(s).
         },
     );
 
-Each key correponds to one of the methods below, specified without the
+Each key corresponds to one of the methods below, specified without the
 C<export_> prefix. e.g. C<all> for L<export_all()>, C<any> for L<export_any()>
 and so on. The method is called with the corresponding value being passed
 as an argument.

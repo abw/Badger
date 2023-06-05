@@ -174,8 +174,8 @@ as shown in the earlier example.
         # ...code follows...
     }
 
-If you prefer a more succint idiom and aren't too worried about calling the
-L<prototype> method unneccessarily, then you can write it like this:
+If you prefer a more succinct idiom and aren't too worried about calling the
+L<prototype> method unnecessarily, then you can write it like this:
 
     sub greeting {
         my $self = shift->prototype;

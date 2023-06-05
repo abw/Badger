@@ -325,7 +325,7 @@ to be included.
 
 =item *
 
-A string containing a '*' wilcard character, e.g. C<foo/*>.  The star is used
+A string containing a '*' wildcard character, e.g. C<foo/*>.  The star is used
 to represent any sequence of characters.
 
 =item *

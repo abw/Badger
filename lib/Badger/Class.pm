@@ -2246,7 +2246,7 @@ C<Badger::Foo::Bar> would return C<foo.bar>.
 
 This method returns C<Badger> by default.  It is used by the L<id()>
 method to determine the common base part of a module name to remove
-when generating an identifer for error reporting.
+when generating an identifier for error reporting.
 
 =head2 instance()
 
@@ -2716,7 +2716,7 @@ for further details
 
 This method can be used to update the C<$MESSAGES> package variable in the
 target class to include the messages passed as arguments, either as a list
-or reference to a hash array of named paramters.
+or reference to a hash array of named parameters.
 
     # define new class message
     class->messages( careful => 'Careful with that %s %s!' );
@@ -3083,7 +3083,7 @@ local precedence order of AB says that A should resolve before B, while the
 LPO of BA says that B should come before A. The C3 algorithm will
 intentionally fail at this point and throw an error warning about an
 inconsistent heterarchy. In contrast, this implementation will resolve A
-before B becase the more specialised ABBA subclass defines AB before BA. AB is
+before B because the more specialised ABBA subclass defines AB before BA. AB is
 the winner that takes it all and BA is the loser standing small.
 
 This implementation was originally written for the C<Template Toolkit> where
