@@ -5,7 +5,7 @@ use Badger::Class
 
 
 sub validate {
-    my ($self, $value, $type) = @_
+    my ($self, $value, $type) = @_;
 
     return $$value >= $self->{ value }
         || $self->invalid_msg( 
