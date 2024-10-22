@@ -75,15 +75,15 @@ Badger::Comparable - base class for comparable objects
     package Your::Comparable::Object;
     use base 'Badger::Comparable';
 
-    # You must define a compare method that returns -1, 0 or +1 
-    # if the object is less than, equal to, or greater than the 
+    # You must define a compare method that returns -1, 0 or +1
+    # if the object is less than, equal to, or greater than the
     # object passed as an argument.
 
     sub compare {
         my ($this, $that) = @_;
-        
+
         # for example: comparing by a surname field
-        return  $this->surname 
+        return  $this->surname
             cmp $that->surname;
     }
 
@@ -106,7 +106,7 @@ provided.  Overloaded comparison operators are also defined.
 
 This method must be defined by subclasses.  It received the implicit C<$self>
 object reference as the first argument and the object it is being compared to
-as the second.  
+as the second.
 
 The method can do whatever is necessary to compare the two objects.  It should
 return C<-1> if the C<$self> object should be ordered I<before> the C<$that>
@@ -120,7 +120,7 @@ Wrapper around L<compare()> that returns true if the two objects are equal
 
 =head2 not_equal($that)
 
-Wrapper around L<compare()> that returns true if the two objects are not 
+Wrapper around L<compare()> that returns true if the two objects are not
 equal (L<compare()> returns any non-zero value).
 
 =head2 before($that)
@@ -130,9 +130,9 @@ before the C<$that> object passed as an argument (L<compare()> returns C<-1>).
 
 =head2 not_before($that)
 
-Wrapper around L<compare()> that returns the logical opposite of the 
+Wrapper around L<compare()> that returns the logical opposite of the
 L<before()> method, returning a true value if the C<$self> object is greater
-than or equal to the L<$that> object passed as an argument (L<compare()> 
+than or equal to the L<$that> object passed as an argument (L<compare()>
 returns C<0> or C<+1>).
 
 =head2 after($that)
@@ -142,14 +142,14 @@ after the C<$that> object passed as an argument (L<compare()> returns C<+1>).
 
 =head2 not_after($that)
 
-Wrapper around L<compare()> that returns the logical opposite of the 
+Wrapper around L<compare()> that returns the logical opposite of the
 L<after()> method, returning a true value if the C<$self> object is less
-than or equal to the L<$that> object passed as an argument (L<compare()> 
+than or equal to the L<$that> object passed as an argument (L<compare()>
 returns C<-1> or C<0>).
 
 =head1 OVERLOADED OPERATORS
 
-=head2 ==
+=head2 C<==>
 
 This is mapped to the L<equal()> method.
 
@@ -157,7 +157,7 @@ This is mapped to the L<equal()> method.
         # do something
     }
 
-=head2 !=
+=head2 C<!=>
 
 This is mapped to the L<not_equal()> method.
 
@@ -165,7 +165,7 @@ This is mapped to the L<not_equal()> method.
         # do something
     }
 
-=head2 <
+=head2 C<E<lt>>
 
 This is mapped to the L<before()> method.
 
@@ -173,7 +173,7 @@ This is mapped to the L<before()> method.
         # do something
     }
 
-=head2 >
+=head2 C<E<gt>>
 
 This is mapped to the L<after()> method.
 
@@ -181,7 +181,7 @@ This is mapped to the L<after()> method.
         # do something
     }
 
-=head2 <=
+=head2 C<E<lt>=>
 
 This is mapped to the L<not_after()> method.
 
@@ -189,7 +189,7 @@ This is mapped to the L<not_after()> method.
         # do something
     }
 
-=head2 >=
+=head2 C<E<gt>=>
 
 This is mapped to the L<not_before()> method.
 
