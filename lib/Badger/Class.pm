@@ -1728,13 +1728,13 @@ configuration values for a module. The only limitation is that you can't
 change them once they're defined (although you can subclass the module and
 define a new constant). This limitation may be a Good Thing in some cases.
 
-See the L<constant()> method for further details.
+See L<Badger::Constants> for further details.
 
 =head2 constants
 
 This can be used to import one or more symbols from the L<Badger::Constants>
 module (or a constants module of your choosing if you subclass
-C<Badger::Class> as described above in L<SUBCLASSING Badger::Class>).
+C<Badger::Class> as described above in C<SUBCLASSING Badger::Class>).
 
     use Badger::Class
         constants => 'ARRAY TRUE FALSE';
@@ -1744,7 +1744,7 @@ C<Badger::Class> as described above in L<SUBCLASSING Badger::Class>).
         return ref $thingy eq ARRAY ? TRUE : FALSE;
     }
 
-See the L<constants()> method and L<Badger::Constants> for further details.
+See L<Badger::Constants> for further details.
 
 =head2 words
 
@@ -2620,7 +2620,7 @@ variable for the class.  Here's how you would typically use it.
 
 This method can be used to import one or more symbols from the
 L<Badger::Constants> module (or a constants module of your choosing if you
-subclass C<Badger::Class> as described above in L<SUBCLASSING Badger::Class>).
+subclass C<Badger::Class> as described above in C<SUBCLASSING Badger::Class>).
 
     class->constants('ARRAY TRUE');
 
@@ -2966,7 +2966,7 @@ instead of C<Badger::Class>.
 
 The following constants are defined for internal use.  You can redefine
 them in subclasses to hook in different delegate modules, as shown in
-L<SUBCLASSING Badger::Class>.
+C<SUBCLASSING Badger::Class>.
 
 =head2 CODECS
 
